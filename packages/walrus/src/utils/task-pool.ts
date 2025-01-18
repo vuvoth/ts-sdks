@@ -52,8 +52,8 @@ export class TaskPool {
 	}
 
 	abortPendingTasks() {
-		this.#abortController.abort();
-		this.#queue = [];
+		// this.#abortController.abort();
+		// this.#queue = [];
 	}
 
 	async awaitAll() {

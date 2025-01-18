@@ -160,7 +160,6 @@ export class WalrusClient {
 		const nodeAddress = nodes[Math.floor(Math.random() * nodes.length)].node_info.network_address;
 
 		const response = await fetch(`https://${nodeAddress}${path}`, init);
-		console.log(`https://${nodeAddress}${path}`);
 
 		if (!response.ok) {
 			throw new Error(`Failed to fetch from node ${nodeAddress}: ${response.statusText}`);
@@ -250,7 +249,7 @@ export class WalrusClient {
 		const slivers: (typeof SliverData.$inferType)[] = [];
 		const blobMetadata = await this.getBlobMetadata(blobId);
 
-		const sliverPromises = new Array(numShards).fill(null).map((_, sliverPairIndex) => {
+		const sliverPromises = new Array(numShards).fill(null).map((_, sliverPairIndex) =>
 			taskPool
 				.runTask((signal) => {
 					return this.getSliver({ blobId, sliverPairIndex, signal }).then((response) => {
@@ -268,8 +267,8 @@ export class WalrusClient {
 					}
 
 					throw error;
-				});
-		});
+				}),
+		);
 
 		await Promise.allSettled(sliverPromises);
 

@@ -65,7 +65,13 @@ export function decodePrimarySlivers(
 	slivers: (typeof SliverData.$inferInput)[],
 ): Uint8Array {
 	const encoder = new BlobEncoder(nShards);
-	const bytes = encoder.decode_primary(BigInt(size), slivers);
+	const bytes = encoder.decode_primary(
+		BigInt(size),
+		slivers.map((sliver) => ({
+			...sliver,
+			_sliver_type: undefined,
+		})),
+	);
 	return new Uint8Array(bytes);
 }
 

@@ -5,7 +5,10 @@ import type { BcsType } from '@mysten/bcs';
 import { pureBcsSchemaFromTypeName } from '@mysten/sui/bcs';
 import type { PureTypeName, ShapeFromPureTypeName } from '@mysten/sui/bcs';
 import type { SuiClient, SuiObjectData, SuiObjectResponse } from '@mysten/sui/client';
+import { deriveDynamicFieldID } from '@mysten/sui/utils';
 import DataLoader from 'dataloader';
+
+import { Field } from '../contracts/deps/0x0000000000000000000000000000000000000000000000000000000000000002/dynamic_field.js';
 
 export class SuiObjectDataLoader extends DataLoader<string, SuiObjectData> {
 	#suiClient: SuiClient;
@@ -17,6 +20,7 @@ export class SuiObjectDataLoader extends DataLoader<string, SuiObjectData> {
 					ids: ids as string[],
 					options: {
 						showBcs: true,
+						showContent: true,
 					},
 				});
 
@@ -98,38 +102,6 @@ export class SuiObjectDataLoader extends DataLoader<string, SuiObjectData> {
 		return response.data;
 	}
 
-	async #getDynamicFieldObject<T extends PureTypeName>(
-		parent: string,
-		name: {
-			type: PureTypeName;
-			value: ShapeFromPureTypeName<T>;
-		},
-	) {
-		const encodedName = pureBcsSchemaFromTypeName<T>(name.type as never)
-			.serialize(name.value)
-			.toBase64();
-
-		if (!this.#dynamicFieldCache.has(parent)) {
-			this.#dynamicFieldCache.set(parent, new Map());
-		}
-
-		const cache = this.#dynamicFieldCache.get(parent)!;
-		if (cache.has(encodedName)) {
-			return cache.get(encodedName)!;
-		}
-
-		const objectResponse = await this.#suiClient.getDynamicFieldObject({
-			parentId: parent,
-			name,
-		});
-
-		const data = this.#getObjectFromResponse(parent, objectResponse);
-
-		cache.set(encodedName, data);
-
-		return data;
-	}
-
 	async loadFieldObject<K extends PureTypeName, T>(
 		parent: string,
 		name: {
@@ -138,7 +110,9 @@ export class SuiObjectDataLoader extends DataLoader<string, SuiObjectData> {
 		},
 		type: BcsType<T, any>,
 	): Promise<T> {
-		const data = await this.#getDynamicFieldObject(parent, name);
-		return this.load(data.objectId, type);
+		const schema = pureBcsSchemaFromTypeName<K>(name.type as never);
+		const id = deriveDynamicFieldID(parent, 'u64', schema.serialize(name.value).toBytes());
+
+		return (await this.load(id, Field(schema, type))).value;
 	}
 }
