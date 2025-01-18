@@ -68,6 +68,18 @@ export class SuiObjectDataLoader extends DataLoader<string, SuiObjectData> {
 		});
 	}
 
+	async loadManyOrThrow<T>(ids: string[], schema: BcsType<T, any>): Promise<T[]> {
+		const data = await this.loadMany(ids, schema);
+
+		for (const d of data) {
+			if (d instanceof Error) {
+				throw d;
+			}
+		}
+
+		return data as T[];
+	}
+
 	override clearAll() {
 		this.#dynamicFieldCache.clear();
 		return super.clearAll();
@@ -124,8 +136,8 @@ export class SuiObjectDataLoader extends DataLoader<string, SuiObjectData> {
 			type: K;
 			value: ShapeFromPureTypeName<K>;
 		},
-		type: BcsType<any, T>,
-	) {
+		type: BcsType<T, any>,
+	): Promise<T> {
 		const data = await this.#getDynamicFieldObject(parent, name);
 		return this.load(data.objectId, type);
 	}
