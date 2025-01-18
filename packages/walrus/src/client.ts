@@ -4,11 +4,11 @@
 import { SuiClient } from '@mysten/sui/client';
 
 import { TESTNET_WALRUS_PACKAGE_CONFIG } from './constants.js';
-import { StakingInnerV1 } from './contracts/walrus/staking_inner.js';
-import { StakingPool } from './contracts/walrus/staking_pool.js';
-import { Staking } from './contracts/walrus/staking.js';
-import { SystemStateInnerV1 } from './contracts/walrus/system_state_inner.js';
-import { System } from './contracts/walrus/system.js';
+import { StakingInnerV1 } from './contracts/staking_inner.js';
+import { StakingPool } from './contracts/staking_pool.js';
+import { Staking } from './contracts/staking.js';
+import { SystemStateInnerV1 } from './contracts/system_state_inner.js';
+import { System } from './contracts/system.js';
 import { BlobMetadataWithId, SliverData } from './utils/bcs.js';
 import { getPrimarySourceSymbols, getShardIndicesByNodeId, toShardIndex } from './utils/index.js';
 import { SuiObjectDataLoader } from './utils/object-loader.js';
