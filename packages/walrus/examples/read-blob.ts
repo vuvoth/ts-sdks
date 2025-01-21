@@ -6,6 +6,7 @@ import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { WalrusClient } from '../src/client.js';
 import { computeMetadata } from '../src/wasm.js';
 
+/** @ts-ignore */
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 const suiClient = new SuiClient({

@@ -11,7 +11,6 @@ import DataLoader from 'dataloader';
 import { Field } from '../contracts/deps/0x0000000000000000000000000000000000000000000000000000000000000002/dynamic_field.js';
 
 export class SuiObjectDataLoader extends DataLoader<string, SuiObjectData> {
-	#suiClient: SuiClient;
 	#dynamicFieldCache = new Map<string, Map<string, SuiObjectData>>();
 	constructor(suiClient: SuiClient) {
 		super(
@@ -32,7 +31,6 @@ export class SuiObjectDataLoader extends DataLoader<string, SuiObjectData> {
 				maxBatchSize: 50,
 			},
 		);
-		this.#suiClient = suiClient;
 	}
 
 	override async load<T = SuiObjectData>(id: string, schema?: BcsType<T, any>): Promise<T> {

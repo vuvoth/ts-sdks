@@ -3,7 +3,7 @@
 
 import type { InferBcsType } from '@mysten/bcs';
 
-import type { Committee } from '../contracts/walrus/committee.js';
+import type { Committee } from '../contracts/committee.js';
 import { BlobId } from './bcs.js';
 
 const DIGEST_LEN = 32;
