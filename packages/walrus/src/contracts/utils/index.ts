@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { BcsType, TypeTag } from '@mysten/sui/bcs';
 import { bcs, TypeTagSerializer } from '@mysten/sui/bcs';
+import type { BcsType, TypeTag } from '@mysten/sui/bcs';
 import { isArgument } from '@mysten/sui/transactions';
 import type { TransactionArgument } from '@mysten/sui/transactions';
 import { normalizeSuiAddress } from '@mysten/sui/utils';
@@ -89,4 +89,24 @@ export function normalizeMoveArguments(args: unknown[], argTypes: string[]) {
 	}
 
 	return normalizedArgs;
+}
+
+export function promiseWithResolver<T>(): {
+	promise: Promise<T>;
+	resolve: (value: T) => void;
+	reject: (error: unknown) => void;
+} {
+	let resolver!: (value: T) => void;
+	let rejecter!: (error: unknown) => void;
+
+	const promise = new Promise<T>((resolve, reject) => {
+		resolver = resolve;
+		rejecter = reject;
+	});
+
+	return {
+		promise,
+		resolve: resolver,
+		reject: rejecter,
+	};
 }
