@@ -1,6 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+import { promiseWithResolver } from '../contracts/utils/index.js';
+
 interface Task<T = unknown> {
 	run: (abortSignal: AbortSignal) => Promise<T>;
 	promise: PromiseWithResolvers<T>;
@@ -52,13 +54,14 @@ export class TaskPool {
 	}
 
 	abortPendingTasks() {
+		// TODO: this doesn't work, but we are going to probably use an entirely different scheduler anyways
 		// this.#abortController.abort();
 		// this.#queue = [];
 	}
 
 	async awaitAll() {
 		if (this.#concurrency > 0) {
-			const promise = Promise.withResolvers<void>();
+			const promise = promiseWithResolver<void>();
 			this.#onEmpty.push(() => promise.resolve());
 			await promise.promise;
 		}

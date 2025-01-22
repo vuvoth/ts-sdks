@@ -94,44 +94,35 @@ export class WalrusClient {
 		return this.#objectLoader.load(this.#packageConfig.stakingPoolId, Staking());
 	}
 
+	async #getNodesWithoutCache() {
+		const nodes = await this.#stakingPool();
+		const shardIndicesByNodeId = getShardIndicesByNodeId((await this.stakingState()).committee);
+		const byShardIndex = new Map<number, StorageNode>();
+		const committee = nodes.map(({ node_info }) => {
+			const shardIndices = shardIndicesByNodeId.get(node_info.node_id) ?? [];
+			const node: StorageNode = {
+				id: node_info.node_id,
+				networkAddress: node_info.network_address,
+				shardIndices,
+			};
+
+			for (const shardIndex of shardIndices) {
+				byShardIndex.set(shardIndex, node);
+			}
+
+			return node;
+		});
+
+		return {
+			byShardIndex,
+			committee,
+		};
+	}
+
 	async #getNodes() {
 		if (!this.#nodes) {
-			const { promise, resolve, reject } = Promise.withResolvers<{
-				byShardIndex: Map<number, StorageNode>;
-				committee: StorageNode[];
-			}>();
-
-			this.#nodes = promise;
-
-			try {
-				const nodes = await this.#stakingPool();
-				const shardIndicesByNodeId = getShardIndicesByNodeId((await this.stakingState()).committee);
-				const byShardIndex = new Map<number, StorageNode>();
-				const committee = nodes.map(({ node_info }) => {
-					const shardIndices = shardIndicesByNodeId.get(node_info.node_id) ?? [];
-					const node: StorageNode = {
-						id: node_info.node_id,
-						networkAddress: node_info.network_address,
-						shardIndices,
-					};
-
-					for (const shardIndex of shardIndices) {
-						byShardIndex.set(shardIndex, node);
-					}
-
-					return node;
-				});
-
-				this.#nodes = {
-					byShardIndex,
-					committee,
-				};
-
-				resolve(this.#nodes);
-			} catch (error) {
-				reject(error);
-				throw error;
-			}
+			this.#nodes = this.#getNodesWithoutCache();
+			this.#nodes = await this.#nodes;
 		}
 
 		return this.#nodes;
@@ -237,8 +228,7 @@ export class WalrusClient {
 	}
 
 	async readBlob(blobId: string) {
-		// calculate this using the unencoded_length and primary source symbols + other data
-		// wasm bindings? re-implement?
+		// TODO: calculate this using the unencoded_length and primary source symbols + other data
 		const concurrencyLimit = 20;
 
 		const systemState = await this.systemState();
@@ -249,6 +239,7 @@ export class WalrusClient {
 		const slivers: (typeof SliverData.$inferType)[] = [];
 		const blobMetadata = await this.getBlobMetadata(blobId);
 
+		// TODO: implement better shard selection logic
 		const sliverPromises = new Array(numShards).fill(null).map((_, sliverPairIndex) =>
 			taskPool
 				.runTask((signal) => {
@@ -270,6 +261,7 @@ export class WalrusClient {
 				}),
 		);
 
+		// TODO: implement retry/scheduling logic
 		await Promise.allSettled(sliverPromises);
 
 		if (slivers.length < minSymbols) {
