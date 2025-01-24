@@ -4,7 +4,6 @@
 import { secp256r1 } from '@noble/curves/p256';
 import { blake2b } from '@noble/hashes/blake2b';
 import { sha256 } from '@noble/hashes/sha256';
-import { AuthenticationCredential, RegistrationCredential } from '@simplewebauthn/typescript-types';
 import { describe, expect, it } from 'vitest';
 
 import { bcs } from '../../../src/bcs';
@@ -16,6 +15,10 @@ import {
 	PasskeyPublicKey,
 	SECP256R1_SPKI_HEADER,
 } from '../../../src/keypairs/passkey/publickey';
+import {
+	AuthenticationCredential,
+	RegistrationCredential,
+} from '../../../src/keypairs/passkey/types';
 import { fromBase64 } from '../../../src/utils';
 
 function compressedPubKeyToDerSPKI(compressedPubKey: Uint8Array): Uint8Array {

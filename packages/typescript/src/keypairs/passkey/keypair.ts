@@ -6,10 +6,6 @@ import { secp256r1 } from '@noble/curves/p256';
 import { blake2b } from '@noble/hashes/blake2b';
 import { sha256 } from '@noble/hashes/sha256';
 import { randomBytes } from '@noble/hashes/utils';
-import type {
-	AuthenticationCredential,
-	RegistrationCredential,
-} from '@simplewebauthn/typescript-types';
 
 import { PasskeyAuthenticator } from '../../bcs/bcs.js';
 import type { IntentScope, SignatureWithBytes } from '../../cryptography/index.js';
@@ -22,6 +18,7 @@ import {
 	PASSKEY_SIGNATURE_SIZE,
 	PasskeyPublicKey,
 } from './publickey.js';
+import type { AuthenticationCredential, RegistrationCredential } from './types.js';
 
 type DeepPartialConfigKeys = 'rp' | 'user' | 'authenticatorSelection';
 
