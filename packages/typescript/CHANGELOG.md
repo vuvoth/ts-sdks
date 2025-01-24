@@ -1,5 +1,15 @@
 # @mysten/sui.js
 
+## 1.21.0
+
+### Minor Changes
+
+- 3d8a0d9: expose `pureBcsSchemaFromTypeName` utility
+
+### Patch Changes
+
+- 20a5aaa: remove dependency on deprecate webauthn types
+
 ## 1.20.0
 
 ### Minor Changes
