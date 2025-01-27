@@ -18,6 +18,7 @@ export class SuiPriceServiceConnection extends PriceServiceConnection {
 	 * @param priceIds Array of hex-encoded price IDs.
 	 * @returns Array of buffers containing the price update data.
 	 */
+	// eslint-disable-next-line @typescript-eslint/ban-types
 	async getPriceFeedsUpdateData(priceIds: HexString[]): Promise<Buffer[]> {
 		const latestVaas = await this.getLatestVaas(priceIds);
 		return latestVaas.map((vaa) => Buffer.from(vaa, 'base64'));
@@ -41,6 +42,7 @@ export class SuiPythClient {
 	 * @param tx Transaction block to add commands to.
 	 * @returns Array of verified VAAs.
 	 */
+	// eslint-disable-next-line @typescript-eslint/ban-types
 	async verifyVaas(vaas: Buffer[], tx: Transaction) {
 		const wormholePackageId = await this.getWormholePackageId();
 		const verifiedVaas = [];
@@ -73,7 +75,7 @@ export class SuiPythClient {
 	 */
 	async updatePriceFeeds(
 		tx: Transaction,
-		updates: Buffer[],
+		updates: Buffer[], // eslint-disable-line @typescript-eslint/ban-types
 		feedIds: HexString[],
 	): Promise<ObjectId[]> {
 		const packageId = await this.getPythPackageId();
@@ -193,6 +195,7 @@ export class SuiPythClient {
 	 * @param accumulatorMessage The accumulator price update message.
 	 * @returns VAA bytes as a Buffer.
 	 */
+	// eslint-disable-next-line @typescript-eslint/ban-types
 	extractVaaBytesFromAccumulatorMessage(accumulatorMessage: Buffer): Buffer {
 		const trailingPayloadSize = accumulatorMessage.readUint8(6);
 		const vaaSizeOffset = 7 + trailingPayloadSize + 1; // Header (7 bytes), trailing payload size, proof type

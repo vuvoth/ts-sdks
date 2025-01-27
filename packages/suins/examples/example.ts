@@ -4,8 +4,8 @@
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { Transaction } from '@mysten/sui/transactions';
 
-import { SuinsClient } from '../src/suins-client';
-import { SuinsTransaction } from '../src/suins-transaction';
+import { SuinsClient } from '../src/suins-client.js';
+import { SuinsTransaction } from '../src/suins-transaction.js';
 
 // Initialize and execute the SuinsClient to fetch the renewal price list
 (async () => {
