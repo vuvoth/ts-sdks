@@ -5,7 +5,7 @@ import { Transaction } from '@mysten/sui/transactions';
 import { MIST_PER_SUI, normalizeSuiAddress } from '@mysten/sui/utils';
 import { expect } from 'vitest';
 
-import { ALLOWED_METADATA, SuinsClient, SuinsTransaction } from '../src';
+import { ALLOWED_METADATA, SuinsClient, SuinsTransaction } from '../src/index.js';
 
 export const e2eLiveNetworkDryRunFlow = async (network: 'mainnet' | 'testnet') => {
 	const client = new SuiClient({ url: getFullnodeUrl(network) });
