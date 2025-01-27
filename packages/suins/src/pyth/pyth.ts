@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Buffer } from 'buffer';
 import { bcs } from '@mysten/sui/bcs';
-import { SuiClient } from '@mysten/sui/client';
-import { Transaction } from '@mysten/sui/transactions';
+import type { SuiClient } from '@mysten/sui/client';
+import type { Transaction } from '@mysten/sui/transactions';
 import { SUI_CLOCK_OBJECT_ID } from '@mysten/sui/utils';
 
-import { HexString, PriceServiceConnection } from './PriceServiceConnection';
+import type { HexString } from './PriceServiceConnection.js';
+import { PriceServiceConnection } from './PriceServiceConnection.js';
 
 const MAX_ARGUMENT_SIZE = 16 * 1024;
 export type ObjectId = string;

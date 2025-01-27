@@ -1,10 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 import type { SuiClient } from '@mysten/sui/client';
-import type { TransactionObjectArgument } from '@mysten/sui/transactions';
-
-/** You can pass in a TransactionArgument OR an objectId by string. */
-export type ObjectArgument = string | TransactionObjectArgument;
+import type { TransactionObjectArgument, TransactionObjectInput } from '@mysten/sui/transactions';
 
 export type Network = 'mainnet' | 'testnet' | 'custom';
 
@@ -22,7 +19,7 @@ export type CoinConfigType = {
 };
 
 export type DiscountInfo = {
-	discountNft: ObjectArgument;
+	discountNft: TransactionObjectInput;
 	type: string;
 	isFreeClaim?: boolean;
 };
@@ -30,7 +27,7 @@ export type DiscountInfo = {
 export type BaseParams = {
 	years: number;
 	coinConfig: CoinConfigType;
-	coin?: ObjectArgument;
+	coin?: TransactionObjectInput;
 	couponCode?: string;
 	discountInfo?: DiscountInfo;
 	maxAmount?: bigint;
@@ -42,14 +39,14 @@ export type RegistrationParams = BaseParams & {
 };
 
 export type RenewalParams = BaseParams & {
-	nft: ObjectArgument;
+	nft: TransactionObjectInput;
 };
 
 export type ReceiptParams = {
 	paymentIntent: TransactionObjectArgument;
 	priceAfterDiscount: TransactionObjectArgument;
 	coinConfig: CoinConfigType;
-	coin?: ObjectArgument;
+	coin?: TransactionObjectInput;
 	maxAmount?: bigint;
 	priceInfoObjectId?: string | null;
 };

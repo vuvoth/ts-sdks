@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
-import { SuiClient } from '@mysten/sui/client';
-import { Transaction } from '@mysten/sui/transactions';
+import type { SuiClient } from '@mysten/sui/client';
+import type { Transaction } from '@mysten/sui/transactions';
 import { isValidSuiNSName, normalizeSuiNSName } from '@mysten/sui/utils';
 
-import { SuiPriceServiceConnection, SuiPythClient } from '../src/pyth/pyth';
+import { SuiPriceServiceConnection, SuiPythClient } from '../src/pyth/pyth.js';
 import {
 	getCoinDiscountConfigType,
 	getConfigType,
@@ -17,11 +17,11 @@ import { isSubName, validateYears } from './helpers.js';
 import type {
 	CoinTypeDiscount,
 	NameRecord,
+	Network,
 	PackageInfo,
 	SuinsClientConfig,
 	SuinsPriceList,
 } from './types.js';
-import { Network } from './types.js';
 
 /// The SuinsClient is the main entry point for the Suins SDK.
 /// It allows you to interact with SuiNS.

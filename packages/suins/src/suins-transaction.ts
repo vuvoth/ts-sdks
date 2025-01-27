@@ -2,19 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { bcs } from '@mysten/sui/bcs';
-import type { Transaction, TransactionObjectArgument } from '@mysten/sui/transactions';
+import type {
+	Transaction,
+	TransactionObjectArgument,
+	TransactionObjectInput,
+} from '@mysten/sui/transactions';
 import { isValidSuiNSName, normalizeSuiNSName, SUI_CLOCK_OBJECT_ID } from '@mysten/sui/utils';
 
 import { ALLOWED_METADATA, MAX_U64 } from './constants.js';
 import { isNestedSubName, isSubName, zeroCoin } from './helpers.js';
 import type { SuinsClient } from './suins-client.js';
-import type {
-	DiscountInfo,
-	ObjectArgument,
-	ReceiptParams,
-	RegistrationParams,
-	RenewalParams,
-} from './types.js';
+import type { DiscountInfo, ReceiptParams, RegistrationParams, RenewalParams } from './types.js';
 
 export class SuinsTransaction {
 	suinsClient: SuinsClient;
@@ -108,7 +106,7 @@ export class SuinsTransaction {
 		});
 	};
 
-	initRenewal = (nft: ObjectArgument, years: number) => {
+	initRenewal = (nft: TransactionObjectInput, years: number) => {
 		const config = this.suinsClient.config;
 		return this.transaction.moveCall({
 			target: `${config.packageId}::payment::init_renewal`,
@@ -182,7 +180,7 @@ export class SuinsTransaction {
 		});
 	};
 
-	finalizeRenew = (receipt: TransactionObjectArgument, nft: ObjectArgument) => {
+	finalizeRenew = (receipt: TransactionObjectArgument, nft: TransactionObjectInput) => {
 		const config = this.suinsClient.config;
 		return this.transaction.moveCall({
 			target: `${config.packageId}::payment::renew`,
@@ -293,7 +291,7 @@ export class SuinsTransaction {
 		allowChildCreation,
 		allowTimeExtension,
 	}: {
-		parentNft: ObjectArgument;
+		parentNft: TransactionObjectInput;
 		name: string;
 		expirationTimestampMs: number;
 		allowChildCreation: boolean;
@@ -335,7 +333,7 @@ export class SuinsTransaction {
 		name,
 		targetAddress,
 	}: {
-		parentNft: ObjectArgument;
+		parentNft: TransactionObjectInput;
 		name: string;
 		targetAddress: string;
 	}) {
@@ -364,7 +362,7 @@ export class SuinsTransaction {
 	/**
 	 * Removes a leaf subname.
 	 */
-	removeLeafSubName({ parentNft, name }: { parentNft: ObjectArgument; name: string }) {
+	removeLeafSubName({ parentNft, name }: { parentNft: TransactionObjectInput; name: string }) {
 		if (!isValidSuiNSName(name)) throw new Error('Invalid SuiNS name');
 		const isParentSubdomain = isNestedSubName(name);
 		if (!isSubName(name)) throw new Error('This can only be invoked for subnames');
@@ -395,7 +393,7 @@ export class SuinsTransaction {
 		address,
 		isSubname,
 	}: {
-		nft: ObjectArgument;
+		nft: TransactionObjectInput;
 		address?: string;
 		isSubname?: boolean;
 	}) {
@@ -440,7 +438,7 @@ export class SuinsTransaction {
 		allowChildCreation,
 		allowTimeExtension,
 	}: {
-		parentNft: ObjectArgument;
+		parentNft: TransactionObjectInput;
 		name: string;
 		allowChildCreation: boolean;
 		allowTimeExtension: boolean;
@@ -475,7 +473,7 @@ export class SuinsTransaction {
 		nft,
 		expirationTimestampMs,
 	}: {
-		nft: ObjectArgument;
+		nft: TransactionObjectInput;
 		expirationTimestampMs: number;
 	}) {
 		if (!this.suinsClient.config.suins) throw new Error('SuiNS Object ID not found');
@@ -501,7 +499,7 @@ export class SuinsTransaction {
 		key,
 		isSubname,
 	}: {
-		nft: ObjectArgument;
+		nft: TransactionObjectInput;
 		value: string;
 		key: string;
 		isSubname?: boolean;
@@ -529,7 +527,7 @@ export class SuinsTransaction {
 	/**
 	 * Burns an expired NFT to collect storage rebates.
 	 */
-	burnExpired({ nft, isSubname }: { nft: ObjectArgument; isSubname?: boolean }) {
+	burnExpired({ nft, isSubname }: { nft: TransactionObjectInput; isSubname?: boolean }) {
 		if (!this.suinsClient.config.suins) throw new Error('SuiNS Object ID not found');
 
 		this.transaction.moveCall({

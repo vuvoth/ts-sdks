@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Config } from './types';
+import type { Config } from './types.js';
 
 export const MAX_U64 = BigInt('18446744073709551615');
 
