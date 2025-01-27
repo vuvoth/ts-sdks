@@ -197,9 +197,9 @@ export class SuiPythClient {
 	 */
 	// eslint-disable-next-line @typescript-eslint/ban-types
 	extractVaaBytesFromAccumulatorMessage(accumulatorMessage: Buffer): Buffer {
-		const trailingPayloadSize = accumulatorMessage.readUint8(6);
+		const trailingPayloadSize = accumulatorMessage.readUInt8(6);
 		const vaaSizeOffset = 7 + trailingPayloadSize + 1; // Header (7 bytes), trailing payload size, proof type
-		const vaaSize = accumulatorMessage.readUint16BE(vaaSizeOffset);
+		const vaaSize = accumulatorMessage.readUInt16BE(vaaSizeOffset);
 		const vaaOffset = vaaSizeOffset + 2; // 2 bytes for VAA size
 		return accumulatorMessage.subarray(vaaOffset, vaaOffset + vaaSize);
 	}
