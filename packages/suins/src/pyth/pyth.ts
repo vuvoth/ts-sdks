@@ -1,5 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
+
+/* eslint-disable @typescript-eslint/ban-types */
+
 import { Buffer } from 'buffer';
 import { bcs } from '@mysten/sui/bcs';
 import type { SuiClient } from '@mysten/sui/client';
@@ -18,7 +21,6 @@ export class SuiPriceServiceConnection extends PriceServiceConnection {
 	 * @param priceIds Array of hex-encoded price IDs.
 	 * @returns Array of buffers containing the price update data.
 	 */
-	// eslint-disable-next-line @typescript-eslint/ban-types
 	async getPriceFeedsUpdateData(priceIds: HexString[]): Promise<Buffer[]> {
 		const latestVaas = await this.getLatestVaas(priceIds);
 		return latestVaas.map((vaa) => Buffer.from(vaa, 'base64'));
@@ -42,7 +44,6 @@ export class SuiPythClient {
 	 * @param tx Transaction block to add commands to.
 	 * @returns Array of verified VAAs.
 	 */
-	// eslint-disable-next-line @typescript-eslint/ban-types
 	async verifyVaas(vaas: Buffer[], tx: Transaction) {
 		const wormholePackageId = await this.getWormholePackageId();
 		const verifiedVaas = [];
@@ -75,7 +76,7 @@ export class SuiPythClient {
 	 */
 	async updatePriceFeeds(
 		tx: Transaction,
-		updates: Buffer[], // eslint-disable-line @typescript-eslint/ban-types
+		updates: Buffer[],
 		feedIds: HexString[],
 	): Promise<ObjectId[]> {
 		const packageId = await this.getPythPackageId();
@@ -160,7 +161,6 @@ export class SuiPythClient {
 			}
 			this.priceFeedObjectIdCache.set(
 				normalizedFeedId,
-				// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 				// @ts-ignore
 				result.data.content.fields.value,
 			);
