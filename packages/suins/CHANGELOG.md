@@ -70,7 +70,8 @@
 
 ### Minor Changes
 
-- 6c5d7a1: Breaking: `getNameRecord` returns null if the request succeeds but the name does not exist in the registry.
+- 6c5d7a1: Breaking: `getNameRecord` returns null if the request succeeds but the name does not
+  exist in the registry.
 
 ## 0.3.1
 
