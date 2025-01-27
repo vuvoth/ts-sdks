@@ -1,14 +1,14 @@
 {
 	"name": "@mysten/suins",
+	"author": "Mysten Labs <build@mystenlabs.com>",
+	"description": "SuiNS SDK",
 	"version": "0.6.3",
-	"description": "An SDK to simplify SuiNS integration.",
 	"license": "Apache-2.0",
 	"private": false,
 	"type": "commonjs",
 	"main": "./dist/cjs/index.js",
 	"module": "./dist/esm/index.js",
 	"types": "./dist/cjs/index.d.ts",
-	"author": "Mysten Labs <build@mystenlabs.com>",
 	"keywords": [
 		"Sui",
 		"suins",
@@ -27,18 +27,15 @@
 		"src"
 	],
 	"scripts": {
-		"build": "cd ../scripts && pnpm ts-node build-tools/build.ts",
-		"test": "echo 'No unit tests for SuiNS SDK'",
-		"pre-commit": "pnpm prettier:fix && pnpm lint && pnpm build",
+		"clean": "rm -rf tsconfig.tsbuildinfo ./dist",
+		"build": "build-package",
 		"prepublishOnly": "pnpm build",
 		"prettier:check": "prettier -c --ignore-unknown .",
 		"prettier:fix": "prettier -w --ignore-unknown .",
 		"eslint:check": "eslint --max-warnings=0 .",
 		"eslint:fix": "pnpm run eslint:check --fix",
 		"lint": "pnpm run eslint:check && pnpm run prettier:check",
-		"lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix",
-		"test:e2e": "wait-on http://127.0.0.1:9123 -l --timeout 120000 && vitest run",
-		"prepare:e2e": "cargo build --bin sui --profile dev && cross-env RUST_LOG=info,sui=error,anemo_tower=warn,consensus=off cargo run --bin sui -- start --with-faucet --force-regenesis --epoch-duration-ms 300000"
+		"lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix"
 	},
 	"engines": {
 		"node": ">=16"
@@ -50,6 +47,7 @@
 		"buffer": "^6.0.3"
 	},
 	"devDependencies": {
+		"@mysten/build-scripts": "workspace:*",
 		"@types/tmp": "^0.2.6",
 		"bn.js": "^5.2.1",
 		"cross-env": "^7.0.3",

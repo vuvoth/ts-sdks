@@ -741,6 +741,9 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
     devDependencies:
+      '@mysten/build-scripts':
+        specifier: workspace:*
+        version: link:../build-scripts
       '@types/tmp':
         specifier: ^0.2.6
         version: 0.2.6
