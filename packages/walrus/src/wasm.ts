@@ -8,7 +8,7 @@ import type { BlobMetadataWithId, SliverData, SliverPair } from './utils/bcs.js'
 
 export interface EncodedBlob {
 	sliverPairs: (typeof SliverPair.$inferInput)[];
-	metadata: typeof BlobMetadataWithId.$inferInput & { blob_id: string };
+	metadata: Omit<typeof BlobMetadataWithId.$inferInput, 'blob_id'> & { blob_id: string };
 	rootHash: Uint8Array;
 }
 
@@ -44,7 +44,10 @@ export function combineSignatures(
 ): CombinedSignature {
 	const combined = from_signed_messages_and_indices(
 		MessageType.Confirmation,
-		confirmations,
+		confirmations.map((confirmation) => ({
+			serializedMessage: confirmation.serializedMessage,
+			signature: confirmation.signature,
+		})),
 		new Uint16Array(signerIndices),
 	) as {
 		signers: number[];

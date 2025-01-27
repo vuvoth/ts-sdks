@@ -1,5 +1,6 @@
 /* tslint:disable */
 /* eslint-disable */
+export function from_signed_messages_and_indices(message_type: MessageType, signed_messages: any, signer_indices: Uint16Array): any;
 export function bls12381_min_pk_verify(signature: Uint8Array, public_key: Uint8Array, msg: Uint8Array): boolean;
 /**
  * Aggregate a list of signatures.
@@ -11,7 +12,6 @@ export function bls12381_min_pk_aggregate(signatures: any): Uint8Array;
  */
 export function bls12381_min_pk_verify_aggregate(public_keys: any, msg: Uint8Array, signature: Uint8Array): boolean;
 export function blake2b256(msg: Uint8Array): Uint8Array;
-export function from_signed_messages_and_indices(message_type: MessageType, signed_messages: any, signer_indices: Uint16Array): any;
 /**
  * The message type for the [ProtocolMessageCertificate].
  */
