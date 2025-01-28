@@ -3,10 +3,10 @@
 
 /* eslint-disable @typescript-eslint/ban-types */
 
-import { Buffer } from 'buffer';
 import { bcs } from '@mysten/sui/bcs';
 import type { SuiClient } from '@mysten/sui/client';
 import type { Transaction } from '@mysten/sui/transactions';
+import { fromBase64 } from '@mysten/sui/utils';
 
 import type { HexString } from './PriceServiceConnection.js';
 import { PriceServiceConnection } from './PriceServiceConnection.js';
@@ -20,9 +20,9 @@ export class SuiPriceServiceConnection extends PriceServiceConnection {
 	 * @param priceIds Array of hex-encoded price IDs.
 	 * @returns Array of buffers containing the price update data.
 	 */
-	async getPriceFeedsUpdateData(priceIds: HexString[]): Promise<Buffer[]> {
+	async getPriceFeedsUpdateData(priceIds: HexString[]): Promise<Uint8Array[]> {
 		const latestVaas = await this.getLatestVaas(priceIds);
-		return latestVaas.map((vaa) => Buffer.from(vaa, 'base64'));
+		return latestVaas.map((vaa) => fromBase64(vaa));
 	}
 }
 export class SuiPythClient {
@@ -47,7 +47,7 @@ export class SuiPythClient {
 	 * @param tx Transaction block to add commands to.
 	 * @returns Array of verified VAAs.
 	 */
-	async verifyVaas(vaas: Buffer[], tx: Transaction) {
+	async verifyVaas(vaas: Uint8Array[], tx: Transaction) {
 		const wormholePackageId = await this.getWormholePackageId();
 		const verifiedVaas = [];
 		for (const vaa of vaas) {
@@ -79,7 +79,7 @@ export class SuiPythClient {
 	 */
 	async updatePriceFeeds(
 		tx: Transaction,
-		updates: Buffer[],
+		updates: Uint8Array[],
 		feedIds: HexString[],
 	): Promise<ObjectId[]> {
 		const packageId = await this.getPythPackageId();
@@ -152,7 +152,9 @@ export class SuiPythClient {
 				name: {
 					type: `${fieldType}::price_identifier::PriceIdentifier`,
 					value: {
-						bytes: Array.from(Buffer.from(normalizedFeedId, 'hex')),
+						bytes: Array.from(
+							Uint8Array.from(normalizedFeedId.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))),
+						),
 					},
 				},
 			});
@@ -199,11 +201,16 @@ export class SuiPythClient {
 	 * @returns VAA bytes as a Buffer.
 	 */
 	// eslint-disable-next-line @typescript-eslint/ban-types
-	extractVaaBytesFromAccumulatorMessage(accumulatorMessage: Buffer): Buffer {
-		const trailingPayloadSize = accumulatorMessage.readUInt8(6);
-		const vaaSizeOffset = 7 + trailingPayloadSize + 1; // Header (7 bytes), trailing payload size, proof type
-		const vaaSize = accumulatorMessage.readUInt16BE(vaaSizeOffset);
-		const vaaOffset = vaaSizeOffset + 2; // 2 bytes for VAA size
+	extractVaaBytesFromAccumulatorMessage(accumulatorMessage: Uint8Array): Uint8Array {
+		const dataView = new DataView(
+			accumulatorMessage.buffer,
+			accumulatorMessage.byteOffset,
+			accumulatorMessage.byteLength,
+		);
+		const trailingPayloadSize = dataView.getUint8(6);
+		const vaaSizeOffset = 7 + trailingPayloadSize + 1;
+		const vaaSize = dataView.getUint16(vaaSizeOffset, false);
+		const vaaOffset = vaaSizeOffset + 2;
 		return accumulatorMessage.subarray(vaaOffset, vaaOffset + vaaSize);
 	}
 	/**
