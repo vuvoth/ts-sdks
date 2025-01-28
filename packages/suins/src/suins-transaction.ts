@@ -26,7 +26,7 @@ export class SuinsTransaction {
 	/**
 	 * Registers a domain for a number of years.
 	 */
-	register = (params: RegistrationParams) => {
+	register(params: RegistrationParams): TransactionObjectArgument {
 		if (params.couponCode && params.discountInfo) {
 			throw new Error('Cannot apply both coupon and discount NFT');
 		}
@@ -66,12 +66,12 @@ export class SuinsTransaction {
 		}
 
 		return nft as TransactionObjectArgument;
-	};
+	}
 
 	/**
 	 * Renews an NFT for a number of years.
 	 */
-	renew = (params: RenewalParams) => {
+	renew(params: RenewalParams): void {
 		if (params.couponCode && params.discountInfo) {
 			throw new Error('Cannot apply both coupon and discount NFT');
 		}
@@ -96,17 +96,17 @@ export class SuinsTransaction {
 			priceInfoObjectId: params.priceInfoObjectId,
 		});
 		this.finalizeRenew(receipt, params.nft);
-	};
+	}
 
-	initRegistration = (domain: string) => {
+	initRegistration(domain: string): TransactionObjectArgument {
 		const config = this.suinsClient.config;
 		return this.transaction.moveCall({
 			target: `${config.packageId}::payment::init_registration`,
 			arguments: [this.transaction.object(config.suins), this.transaction.pure.string(domain)],
 		});
-	};
+	}
 
-	initRenewal = (nft: TransactionObjectInput, years: number) => {
+	initRenewal(nft: TransactionObjectInput, years: number): TransactionObjectArgument {
 		const config = this.suinsClient.config;
 		return this.transaction.moveCall({
 			target: `${config.packageId}::payment::init_renewal`,
@@ -116,15 +116,14 @@ export class SuinsTransaction {
 				this.transaction.pure.u8(years),
 			],
 		});
-	};
+	}
 
-	calculatePrice = (
+	calculatePrice(
 		baseAmount: TransactionObjectArgument,
 		paymentType: string,
 		priceInfoObjectId: string,
-	) => {
+	): TransactionObjectArgument {
 		const config = this.suinsClient.config;
-		// Perform the Move call
 		return this.transaction.moveCall({
 			target: `${config.payments.packageId}::payments::calculate_price`,
 			arguments: [
@@ -135,28 +134,28 @@ export class SuinsTransaction {
 			],
 			typeArguments: [paymentType],
 		});
-	};
+	}
 
-	handleBasePayment = (
+	handleBasePayment(
 		paymentIntent: TransactionObjectArgument,
 		payment: TransactionObjectArgument,
 		paymentType: string,
-	) => {
+	): TransactionObjectArgument {
 		const config = this.suinsClient.config;
 		return this.transaction.moveCall({
 			target: `${config.payments.packageId}::payments::handle_base_payment`,
 			arguments: [this.transaction.object(config.suins), paymentIntent, payment],
 			typeArguments: [paymentType],
 		});
-	};
+	}
 
-	handlePayment = (
+	handlePayment(
 		paymentIntent: TransactionObjectArgument,
 		payment: TransactionObjectArgument,
 		paymentType: string,
 		priceInfoObjectId: string,
 		maxAmount: bigint = MAX_U64,
-	) => {
+	): TransactionObjectArgument {
 		const config = this.suinsClient.config;
 		return this.transaction.moveCall({
 			target: `${config.payments.packageId}::payments::handle_payment`,
@@ -166,21 +165,24 @@ export class SuinsTransaction {
 				payment,
 				this.transaction.object.clock(),
 				this.transaction.object(priceInfoObjectId),
-				this.transaction.pure.u64(maxAmount), // This is the maximum user is willing to pay
+				this.transaction.pure.u64(maxAmount),
 			],
 			typeArguments: [paymentType],
 		});
-	};
+	}
 
-	finalizeRegister = (receipt: TransactionObjectArgument) => {
+	finalizeRegister(receipt: TransactionObjectArgument): TransactionObjectArgument {
 		const config = this.suinsClient.config;
 		return this.transaction.moveCall({
 			target: `${config.packageId}::payment::register`,
 			arguments: [receipt, this.transaction.object(config.suins), this.transaction.object.clock()],
 		});
-	};
+	}
 
-	finalizeRenew = (receipt: TransactionObjectArgument, nft: TransactionObjectInput) => {
+	finalizeRenew(
+		receipt: TransactionObjectArgument,
+		nft: TransactionObjectInput,
+	): TransactionObjectArgument {
 		const config = this.suinsClient.config;
 		return this.transaction.moveCall({
 			target: `${config.packageId}::payment::renew`,
@@ -191,18 +193,21 @@ export class SuinsTransaction {
 				this.transaction.object.clock(),
 			],
 		});
-	};
+	}
 
-	calculatePriceAfterDiscount = (paymentIntent: TransactionObjectArgument, paymentType: string) => {
+	calculatePriceAfterDiscount(
+		paymentIntent: TransactionObjectArgument,
+		paymentType: string,
+	): TransactionObjectArgument {
 		const config = this.suinsClient.config;
 		return this.transaction.moveCall({
 			target: `${config.payments.packageId}::payments::calculate_price_after_discount`,
 			arguments: [this.transaction.object(config.suins), paymentIntent],
 			typeArguments: [paymentType],
 		});
-	};
+	}
 
-	generateReceipt = (params: ReceiptParams): TransactionObjectArgument => {
+	generateReceipt(params: ReceiptParams): TransactionObjectArgument {
 		const baseAssetPurchase = params.coinConfig.feed === '';
 		if (baseAssetPurchase) {
 			const payment = params.coin
@@ -232,12 +237,12 @@ export class SuinsTransaction {
 			);
 			return receipt;
 		}
-	};
+	}
 
 	/**
 	 * Applies a coupon to the payment intent.
 	 */
-	applyCoupon = (intent: TransactionObjectArgument, couponCode: string) => {
+	applyCoupon(intent: TransactionObjectArgument, couponCode: string): TransactionObjectArgument {
 		const config = this.suinsClient.config;
 		return this.transaction.moveCall({
 			target: `${config.coupons.packageId}::coupon_house::apply_coupon`,
@@ -248,12 +253,12 @@ export class SuinsTransaction {
 				this.transaction.object.clock(),
 			],
 		});
-	};
+	}
 
 	/**
 	 * Applies a discount to the payment intent.
 	 */
-	applyDiscount = (intent: TransactionObjectArgument, discountInfo: DiscountInfo) => {
+	applyDiscount(intent: TransactionObjectArgument, discountInfo: DiscountInfo): void {
 		const config = this.suinsClient.config;
 
 		if (discountInfo.isFreeClaim) {
@@ -279,7 +284,7 @@ export class SuinsTransaction {
 				typeArguments: [discountInfo.type],
 			});
 		}
-	};
+	}
 
 	/**
 	 * Creates a subdomain.
