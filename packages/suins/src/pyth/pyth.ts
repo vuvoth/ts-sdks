@@ -53,18 +53,7 @@ export class SuiPythClient {
 		for (const vaa of vaas) {
 			const [verifiedVaa] = tx.moveCall({
 				target: `${wormholePackageId}::vaa::parse_and_verify`,
-				arguments: [
-					tx.object(this.wormholeStateId),
-					tx.pure(
-						bcs
-							.vector(bcs.U8)
-							.serialize(Array.from(vaa), {
-								maxSize: MAX_ARGUMENT_SIZE,
-							})
-							.toBytes(),
-					),
-					tx.object.clock(),
-				],
+				arguments: [tx.object(this.wormholeStateId), tx.pure.vector('u8', vaa), tx.object.clock()],
 			});
 			verifiedVaas.push(verifiedVaa);
 		}
