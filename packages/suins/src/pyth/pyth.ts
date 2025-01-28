@@ -26,11 +26,11 @@ export class SuiPriceServiceConnection extends PriceServiceConnection {
 	}
 }
 export class SuiPythClient {
-	#pythPackageId?: ObjectId;
-	#wormholePackageId?: ObjectId;
+	#pythPackageId?: Promise<ObjectId>;
+	#wormholePackageId?: Promise<ObjectId>;
 	#priceFeedObjectIdCache: Map<HexString, Promise<ObjectId>> = new Map();
 	#priceTableInfo?: { id: ObjectId; fieldType: ObjectId };
-	#baseUpdateFee?: number;
+	#baseUpdateFee?: Promise<number>;
 	provider: SuiClient;
 	pythStateId: ObjectId;
 	wormholeStateId: ObjectId;
@@ -170,49 +170,71 @@ export class SuiPythClient {
 	 * @returns price table object id
 	 */
 	async getPriceTableInfo(): Promise<{ id: ObjectId; fieldType: ObjectId }> {
-		if (this.#priceTableInfo === undefined) {
-			const result = await this.provider.getDynamicFieldObject({
-				parentId: this.pythStateId,
-				name: {
-					type: 'vector<u8>',
-					value: 'price_info',
-				},
-			});
-			if (!result.data || !result.data.type) {
-				throw new Error('Price Table not found, contract may not be initialized');
-			}
-			const priceIdentifier = parseStructTag(result.data.type).typeParams[0];
-			if (
-				typeof priceIdentifier === 'object' &&
-				priceIdentifier !== null &&
-				priceIdentifier.name === 'PriceIdentifier' &&
-				'address' in priceIdentifier
-			) {
-				this.#priceTableInfo = { id: result.data.objectId, fieldType: priceIdentifier.address };
-			} else {
-				throw new Error('fieldType not found');
-			}
+		if (!this.#priceTableInfo) {
+			const promise = (async () => {
+				const result = await this.provider.getDynamicFieldObject({
+					parentId: this.pythStateId,
+					name: {
+						type: 'vector<u8>',
+						value: 'price_info',
+					},
+				});
+				if (!result.data || !result.data.type) {
+					throw new Error('Price Table not found, contract may not be initialized');
+				}
+				const priceIdentifier = parseStructTag(result.data.type).typeParams[0];
+				if (
+					typeof priceIdentifier === 'object' &&
+					priceIdentifier !== null &&
+					priceIdentifier.name === 'PriceIdentifier' &&
+					'address' in priceIdentifier
+				) {
+					return { id: result.data.objectId, fieldType: priceIdentifier.address };
+				} else {
+					throw new Error('fieldType not found');
+				}
+			})();
+
+			this.#priceTableInfo = await promise;
+			return this.#priceTableInfo;
 		}
+
 		return this.#priceTableInfo;
 	}
 	/**
-	 * Fetches the package ID for the Wormhole contract.
+	 * Fetches the package ID for the Wormhole contract, with caching.
 	 */
-	async getWormholePackageId(): Promise<ObjectId> {
+	getWormholePackageId(): Promise<ObjectId> {
 		if (!this.#wormholePackageId) {
-			this.#wormholePackageId = await this.getPackageId(this.wormholeStateId);
+			this.#wormholePackageId = this.#fetchWormholePackageId();
 		}
 		return this.#wormholePackageId;
 	}
+
 	/**
-	 * Fetches the package ID for the Pyth contract.
+	 * Fetches the package ID for the Wormhole contract (no caching).
 	 */
-	async getPythPackageId(): Promise<ObjectId> {
+	async #fetchWormholePackageId(): Promise<ObjectId> {
+		return await this.getPackageId(this.wormholeStateId);
+	}
+
+	/**
+	 * Fetches the package ID for the Pyth contract, with caching.
+	 */
+	getPythPackageId(): Promise<ObjectId> {
 		if (!this.#pythPackageId) {
-			this.#pythPackageId = await this.getPackageId(this.pythStateId);
+			this.#pythPackageId = this.#fetchPythPackageId();
 		}
 		return this.#pythPackageId;
 	}
+
+	/**
+	 * Fetches the package ID for the Pyth contract (no caching).
+	 */
+	async #fetchPythPackageId(): Promise<ObjectId> {
+		return await this.getPackageId(this.pythStateId);
+	}
+
 	/**
 	 * Fetches the package ID for a given object.
 	 *
@@ -223,6 +245,7 @@ export class SuiPythClient {
 			id: objectId,
 			options: { showContent: true },
 		});
+
 		if (
 			result.data?.content?.dataType === 'moveObject' &&
 			'upgrade_cap' in result.data.content.fields
@@ -236,24 +259,32 @@ export class SuiPythClient {
 			};
 			return fields.upgrade_cap.fields.package;
 		}
+
 		throw new Error(`Cannot fetch package ID for object ${objectId}`);
 	}
 	/**
 	 * Gets the base update fee from the Pyth state object.
 	 */
-	async getBaseUpdateFee(): Promise<number> {
-		if (this.#baseUpdateFee === undefined) {
-			const result = await this.provider.getObject({
-				id: this.pythStateId,
-				options: { showContent: true },
-			});
-			if (!result.data || result.data.content?.dataType !== 'moveObject') {
-				throw new Error('Unable to fetch Pyth state object');
-			}
-			const fields = result.data.content.fields as {
-				base_update_fee: number;
-			};
-			this.#baseUpdateFee = fields.base_update_fee as number;
+	async #fetchBaseUpdateFee(): Promise<number> {
+		const result = await this.provider.getObject({
+			id: this.pythStateId,
+			options: { showContent: true },
+		});
+
+		if (!result.data || result.data.content?.dataType !== 'moveObject') {
+			throw new Error('Unable to fetch Pyth state object');
+		}
+
+		const fields = result.data.content.fields as { base_update_fee: number };
+		return fields.base_update_fee;
+	}
+
+	/**
+	 * Returns the cached base update fee, fetching it if necessary.
+	 */
+	getBaseUpdateFee(): Promise<number> {
+		if (!this.#baseUpdateFee) {
+			this.#baseUpdateFee = this.#fetchBaseUpdateFee();
 		}
 		return this.#baseUpdateFee;
 	}
