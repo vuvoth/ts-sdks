@@ -1,10 +1,10 @@
 {
-	"name": "@mysten/bcs",
-	"version": "1.3.0",
-	"description": "BCS - Canonical Binary Serialization implementation for JavaScript",
+	"name": "@mysten/seal",
+	"version": "0.0.0",
+	"private": true,
+	"description": "Seal SDK",
 	"license": "Apache-2.0",
 	"author": "Mysten Labs <build@mystenlabs.com>",
-	"sideEffects": false,
 	"type": "commonjs",
 	"main": "./dist/cjs/index.js",
 	"module": "./dist/esm/index.js",
@@ -15,18 +15,15 @@
 			"require": "./dist/cjs/index.js"
 		}
 	},
+	"sideEffects": false,
 	"files": [
 		"CHANGELOG.md",
-		"dist",
-		"src"
+		"dist"
 	],
 	"scripts": {
 		"clean": "rm -rf tsconfig.tsbuildinfo ./dist",
-		"dev": "pnpm build --watch",
 		"build": "build-package",
 		"prepublishOnly": "pnpm build",
-		"test": "vitest run",
-		"test:watch": "vitest",
 		"prettier:check": "prettier -c --ignore-unknown .",
 		"prettier:fix": "prettier -w --ignore-unknown .",
 		"eslint:check": "eslint --max-warnings=0 .",
@@ -36,38 +33,24 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/MystenLabs/ts-sdks.git"
+		"url": "git+https://github.com/mystenlabs/ts-sdks.git"
 	},
-	"keywords": [
-		"bcs",
-		"libra",
-		"diem",
-		"move",
-		"serialization",
-		"serde"
-	],
 	"bugs": {
-		"url": "https://github.com/MystenLabs/ts-sdks/issues"
+		"url": "https://github.com/mystenlabs/ts-sdks/issues"
 	},
-	"size-limit": [
-		{
-			"path": "dist/index.js",
-			"limit": "10 kB"
-		},
-		{
-			"path": "dist/index.mjs",
-			"limit": "10 kB"
-		}
-	],
-	"homepage": "https://github.com/MystenLabs/ts-sdks#readme",
+	"homepage": "https://github.com/mystenlabs/ts-sdks#readme",
 	"devDependencies": {
+		"@hey-api/openapi-ts": "^0.61.2",
 		"@mysten/build-scripts": "workspace:*",
-		"@size-limit/preset-small-lib": "^11.1.4",
-		"size-limit": "^11.1.4",
+		"@types/node": "^22.10.5",
 		"typescript": "^5.7.2",
 		"vitest": "^2.1.8"
 	},
 	"dependencies": {
-		"bs58": "^6.0.0"
+		"@mysten/bcs": "workspace:*",
+		"@mysten/sui": "workspace:*",
+		"@noble/curves": "^1.4.2",
+		"@noble/hashes": "^1.4.0",
+		"shamir-secret-sharing": "0.0.3"
 	}
 }

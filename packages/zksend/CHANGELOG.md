@@ -1,5 +1,12 @@
 # @mysten/zksend
 
+## 0.12.15
+
+### Patch Changes
+
+- @mysten/sui@1.21.1
+- @mysten/wallet-standard@0.13.25
+
 ## 0.12.14
 
 ### Patch Changes
