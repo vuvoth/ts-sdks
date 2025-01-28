@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.3.0
+
+### Minor Changes
+
+- 10e2724: Allow BcsType.transform to omit input or output transform
+
 ## 1.2.1
 
 ### Patch Changes
