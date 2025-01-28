@@ -36,7 +36,7 @@
 		"eslint:fix": "pnpm run eslint:check --fix",
 		"lint": "pnpm run eslint:check && pnpm run prettier:check",
 		"lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix",
-		"test": "pnpm exec vitest"
+		"test:e2e": "pnpm exec vitest"
 	},
 	"engines": {
 		"node": ">=16"
