@@ -29,7 +29,7 @@ export class SuiPythClient {
 	#pythPackageId?: Promise<ObjectId>;
 	#wormholePackageId?: Promise<ObjectId>;
 	#priceFeedObjectIdCache: Map<HexString, Promise<ObjectId>> = new Map();
-	#priceTableInfo?: { id: ObjectId; fieldType: ObjectId };
+	#priceTableInfo?: Promise<{ id: ObjectId; fieldType: ObjectId }>;
 	#baseUpdateFee?: Promise<number>;
 	provider: SuiClient;
 	pythStateId: ObjectId;
@@ -123,83 +123,97 @@ export class SuiPythClient {
 		return priceInfoObjects;
 	}
 	/**
-	 * Get the priceFeedObjectId for a given feedId if not already cached
+	 * Get the price feed object ID for a given feed ID, caching the promise.
 	 * @param feedId
 	 */
-	async getPriceFeedObjectId(feedId: HexString): Promise<ObjectId | undefined> {
+	getPriceFeedObjectId(feedId: HexString): Promise<ObjectId | undefined> {
 		if (!this.#priceFeedObjectIdCache.has(feedId)) {
-			const promise = (async () => {
-				const { id: tableId, fieldType } = await this.getPriceTableInfo();
-				const result = await this.provider.getDynamicFieldObject({
-					parentId: tableId,
-					name: {
-						type: `${fieldType}::price_identifier::PriceIdentifier`,
-						value: {
-							bytes: Array.from(fromHex(feedId)),
-						},
-					},
-				});
-
-				if (!result.data || !result.data.content) {
-					return undefined;
-				}
-				if (result.data.content.dataType !== 'moveObject') {
-					throw new Error('Price feed type mismatch');
-				}
-
-				// @ts-ignore
-				return result.data.content.fields.value;
-			})();
-
-			this.#priceFeedObjectIdCache.set(feedId, promise);
-
-			try {
-				return await promise;
-			} catch (err) {
-				// If an error occurs, remove the promise from the cache to allow retries
-				this.#priceFeedObjectIdCache.delete(feedId);
-				throw err;
-			}
+			this.#priceFeedObjectIdCache.set(
+				feedId,
+				this.#fetchPriceFeedObjectId(feedId).catch((err) => {
+					// Remove failed promises from the cache to allow retries
+					this.#priceFeedObjectIdCache.delete(feedId);
+					throw err;
+				}),
+			);
 		}
 
-		// Return the cached promise
 		return this.#priceFeedObjectIdCache.get(feedId)!;
 	}
-	/**
-	 * Fetches the price table object id for the current state id if not cached
-	 * @returns price table object id
-	 */
-	async getPriceTableInfo(): Promise<{ id: ObjectId; fieldType: ObjectId }> {
-		if (!this.#priceTableInfo) {
-			const promise = (async () => {
-				const result = await this.provider.getDynamicFieldObject({
-					parentId: this.pythStateId,
-					name: {
-						type: 'vector<u8>',
-						value: 'price_info',
-					},
-				});
-				if (!result.data || !result.data.type) {
-					throw new Error('Price Table not found, contract may not be initialized');
-				}
-				const priceIdentifier = parseStructTag(result.data.type).typeParams[0];
-				if (
-					typeof priceIdentifier === 'object' &&
-					priceIdentifier !== null &&
-					priceIdentifier.name === 'PriceIdentifier' &&
-					'address' in priceIdentifier
-				) {
-					return { id: result.data.objectId, fieldType: priceIdentifier.address };
-				} else {
-					throw new Error('fieldType not found');
-				}
-			})();
 
-			this.#priceTableInfo = await promise;
-			return this.#priceTableInfo;
+	/**
+	 * Fetches the price feed object ID for a given feed ID (no caching).
+	 * Throws an error if the object is not found.
+	 */
+	async #fetchPriceFeedObjectId(feedId: HexString): Promise<ObjectId> {
+		const { id: tableId, fieldType } = await this.getPriceTableInfo();
+		const result = await this.provider.getDynamicFieldObject({
+			parentId: tableId,
+			name: {
+				type: `${fieldType}::price_identifier::PriceIdentifier`,
+				value: {
+					bytes: Array.from(fromHex(feedId)),
+				},
+			},
+		});
+
+		if (!result.data || !result.data.content) {
+			throw new Error(`Price feed object ID for feed ID ${feedId} not found.`);
+		}
+		if (result.data.content.dataType !== 'moveObject') {
+			throw new Error('Price feed type mismatch');
+		}
+
+		// @ts-ignore
+		return result.data.content.fields.value;
+	}
+
+	/**
+	 * Fetches the price table object ID for the current state ID, caching the promise.
+	 * @returns Price table object ID and field type
+	 */
+	getPriceTableInfo(): Promise<{ id: ObjectId; fieldType: ObjectId }> {
+		if (!this.#priceTableInfo) {
+			const promise = this.#fetchPriceTableInfo().catch((err) => {
+				// Clear the cached promise on error
+				this.#priceTableInfo = undefined;
+				throw err;
+			});
+
+			this.#priceTableInfo = promise;
 		}
 
 		return this.#priceTableInfo;
+	}
+
+	/**
+	 * Fetches the price table object ID and field type (no caching).
+	 * @returns Price table object ID and field type
+	 */
+	async #fetchPriceTableInfo(): Promise<{ id: ObjectId; fieldType: ObjectId }> {
+		const result = await this.provider.getDynamicFieldObject({
+			parentId: this.pythStateId,
+			name: {
+				type: 'vector<u8>',
+				value: 'price_info',
+			},
+		});
+
+		if (!result.data || !result.data.type) {
+			throw new Error('Price Table not found, contract may not be initialized');
+		}
+
+		const priceIdentifier = parseStructTag(result.data.type).typeParams[0];
+		if (
+			typeof priceIdentifier === 'object' &&
+			priceIdentifier !== null &&
+			priceIdentifier.name === 'PriceIdentifier' &&
+			'address' in priceIdentifier
+		) {
+			return { id: result.data.objectId, fieldType: priceIdentifier.address };
+		} else {
+			throw new Error('fieldType not found');
+		}
 	}
 	/**
 	 * Fetches the package ID for the Wormhole contract, with caching.
@@ -215,7 +229,7 @@ export class SuiPythClient {
 	 * Fetches the package ID for the Wormhole contract (no caching).
 	 */
 	async #fetchWormholePackageId(): Promise<ObjectId> {
-		return await this.getPackageId(this.wormholeStateId);
+		return await this.#getPackageId(this.wormholeStateId);
 	}
 
 	/**
@@ -232,7 +246,7 @@ export class SuiPythClient {
 	 * Fetches the package ID for the Pyth contract (no caching).
 	 */
 	async #fetchPythPackageId(): Promise<ObjectId> {
-		return await this.getPackageId(this.pythStateId);
+		return await this.#getPackageId(this.pythStateId);
 	}
 
 	/**
@@ -240,7 +254,7 @@ export class SuiPythClient {
 	 *
 	 * @param objectId Object ID to fetch the package ID for.
 	 */
-	private async getPackageId(objectId: ObjectId): Promise<ObjectId> {
+	async #getPackageId(objectId: ObjectId): Promise<ObjectId> {
 		const result = await this.provider.getObject({
 			id: objectId,
 			options: { showContent: true },
