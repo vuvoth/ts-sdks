@@ -14,20 +14,6 @@ export const ALLOWED_METADATA = {
 	walrusSiteId: 'walrus_site_id',
 };
 
-export const getConfigType = (suinsPackageV1: string, innerType: string) =>
-	`${suinsPackageV1}::suins::ConfigKey<${innerType}>`;
-
-export const getDomainType = (suinsPackageV1: string) => `${suinsPackageV1}::domain::Domain`;
-
-export const getPricelistConfigType = (suinsPackageId: string) =>
-	`${suinsPackageId}::pricing_config::PricingConfig`;
-
-export const getRenewalPricelistConfigType = (suinsPackageId: string) =>
-	`${suinsPackageId}::pricing_config::RenewalConfig`;
-
-export const getCoinDiscountConfigType = (paymentPackageId: string) =>
-	`${paymentPackageId}::payments::PaymentsConfig`;
-
 export const mainPackage: Config = {
 	mainnet: {
 		packageId: '0x71af035413ed499710980ed8adb010bbf2cc5cacf4ab37c7710a4bb87eb58ba5',
@@ -110,5 +96,3 @@ export const mainPackage: Config = {
 		registryTableId: '0xb120c0d55432630fce61f7854795a3463deb6e3b443cc4ae72e1282073ff56e4',
 	},
 };
-
-export const MIST_PER_USDC = 1000000;

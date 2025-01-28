@@ -5,15 +5,16 @@ import type { Transaction } from '@mysten/sui/transactions';
 import { isValidSuiNSName, normalizeSuiNSName } from '@mysten/sui/utils';
 
 import { SuiPriceServiceConnection, SuiPythClient } from '../src/pyth/pyth.js';
+import { mainPackage } from './constants.js';
 import {
 	getCoinDiscountConfigType,
 	getConfigType,
 	getDomainType,
 	getPricelistConfigType,
 	getRenewalPricelistConfigType,
-	mainPackage,
-} from './constants.js';
-import { isSubName, validateYears } from './helpers.js';
+	isSubName,
+	validateYears,
+} from './helpers.js';
 import type {
 	CoinTypeDiscount,
 	NameRecord,

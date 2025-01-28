@@ -24,9 +24,29 @@ export function validateYears(years: number) {
 	if (!(years > 0 && years < 6)) throw new Error('Years must be between 1 and 5');
 }
 
-export const zeroCoin = (tx: Transaction, type: string) => {
+export function zeroCoin(tx: Transaction, type: string) {
 	return tx.moveCall({
 		target: '0x2::coin::zero',
 		typeArguments: [type],
 	});
-};
+}
+
+export function getConfigType(suinsPackageV1: string, innerType: string): string {
+	return `${suinsPackageV1}::suins::ConfigKey<${innerType}>`;
+}
+
+export function getDomainType(suinsPackageV1: string): string {
+	return `${suinsPackageV1}::domain::Domain`;
+}
+
+export function getPricelistConfigType(suinsPackageId: string): string {
+	return `${suinsPackageId}::pricing_config::PricingConfig`;
+}
+
+export function getRenewalPricelistConfigType(suinsPackageId: string): string {
+	return `${suinsPackageId}::pricing_config::RenewalConfig`;
+}
+
+export function getCoinDiscountConfigType(paymentPackageId: string): string {
+	return `${paymentPackageId}::payments::PaymentsConfig`;
+}

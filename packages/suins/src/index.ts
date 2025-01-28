@@ -3,13 +3,14 @@
 export { SuinsClient } from './suins-client.js';
 export { SuinsTransaction } from './suins-transaction.js';
 export type { Network, SuinsClientConfig, Config } from './types.js';
+export { ALLOWED_METADATA, mainPackage } from './constants.js';
 export {
+	isSubName,
+	isNestedSubName,
+	validateYears,
 	getConfigType,
 	getDomainType,
 	getPricelistConfigType,
 	getRenewalPricelistConfigType,
 	getCoinDiscountConfigType,
-	ALLOWED_METADATA,
-	mainPackage,
-} from './constants.js';
-export { isSubName, isNestedSubName, validateYears } from './helpers.js';
+} from './helpers.js';
