@@ -7,7 +7,6 @@ import { Buffer } from 'buffer';
 import { bcs } from '@mysten/sui/bcs';
 import type { SuiClient } from '@mysten/sui/client';
 import type { Transaction } from '@mysten/sui/transactions';
-import { SUI_CLOCK_OBJECT_ID } from '@mysten/sui/utils';
 
 import type { HexString } from './PriceServiceConnection.js';
 import { PriceServiceConnection } from './PriceServiceConnection.js';
@@ -60,7 +59,7 @@ export class SuiPythClient {
 							})
 							.toBytes(),
 					),
-					tx.object(SUI_CLOCK_OBJECT_ID),
+					tx.object.clock(),
 				],
 			});
 			verifiedVaas.push(verifiedVaa);
@@ -101,7 +100,7 @@ export class SuiPythClient {
 						.toBytes(),
 				),
 				verifiedVaas[0],
-				tx.object(SUI_CLOCK_OBJECT_ID),
+				tx.object.clock(),
 			],
 		});
 		const priceInfoObjects: ObjectId[] = [];
@@ -124,7 +123,7 @@ export class SuiPythClient {
 					priceUpdatesHotPotato,
 					tx.object(priceInfoObjectId),
 					coins[coinId],
-					tx.object(SUI_CLOCK_OBJECT_ID),
+					tx.object.clock(),
 				],
 			});
 			coinId++;
