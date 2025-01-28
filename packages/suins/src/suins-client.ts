@@ -280,7 +280,7 @@ export class SuinsClient {
 	}: {
 		name: string;
 		years: number;
-		isRegistration: boolean;
+		isRegistration?: boolean;
 	}) {
 		if (!isValidSuiNSName(name)) {
 			throw new Error('Invalid SuiNS name');
