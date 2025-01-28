@@ -26,11 +26,11 @@ export class SuiPriceServiceConnection extends PriceServiceConnection {
 	}
 }
 export class SuiPythClient {
-	private pythPackageId: ObjectId | undefined;
-	private wormholePackageId: ObjectId | undefined;
-	private priceFeedObjectIdCache: Map<HexString, ObjectId> = new Map();
-	private priceTableInfo: { id: ObjectId; fieldType: ObjectId } | undefined;
-	private baseUpdateFee: number | undefined;
+	#pythPackageId?: ObjectId;
+	#wormholePackageId?: ObjectId;
+	#priceFeedObjectIdCache: Map<HexString, ObjectId> = new Map();
+	#priceTableInfo?: { id: ObjectId; fieldType: ObjectId };
+	#baseUpdateFee?: number;
 	constructor(
 		public provider: SuiClient,
 		public pythStateId: ObjectId,
@@ -141,7 +141,7 @@ export class SuiPythClient {
 	 */
 	async getPriceFeedObjectId(feedId: HexString): Promise<ObjectId | undefined> {
 		const normalizedFeedId = feedId.replace('0x', '');
-		if (!this.priceFeedObjectIdCache.has(normalizedFeedId)) {
+		if (!this.#priceFeedObjectIdCache.has(normalizedFeedId)) {
 			const { id: tableId, fieldType } = await this.getPriceTableInfo();
 			const result = await this.provider.getDynamicFieldObject({
 				parentId: tableId,
@@ -158,20 +158,20 @@ export class SuiPythClient {
 			if (result.data.content.dataType !== 'moveObject') {
 				throw new Error('Price feed type mismatch');
 			}
-			this.priceFeedObjectIdCache.set(
+			this.#priceFeedObjectIdCache.set(
 				normalizedFeedId,
 				// @ts-ignore
 				result.data.content.fields.value,
 			);
 		}
-		return this.priceFeedObjectIdCache.get(normalizedFeedId);
+		return this.#priceFeedObjectIdCache.get(normalizedFeedId);
 	}
 	/**
 	 * Fetches the price table object id for the current state id if not cached
 	 * @returns price table object id
 	 */
 	async getPriceTableInfo(): Promise<{ id: ObjectId; fieldType: ObjectId }> {
-		if (this.priceTableInfo === undefined) {
+		if (this.#priceTableInfo === undefined) {
 			const result = await this.provider.getDynamicFieldObject({
 				parentId: this.pythStateId,
 				name: {
@@ -184,9 +184,9 @@ export class SuiPythClient {
 			}
 			let type = result.data.type.replace('0x2::table::Table<', '');
 			type = type.replace('::price_identifier::PriceIdentifier, 0x2::object::ID>', '');
-			this.priceTableInfo = { id: result.data.objectId, fieldType: type };
+			this.#priceTableInfo = { id: result.data.objectId, fieldType: type };
 		}
-		return this.priceTableInfo;
+		return this.#priceTableInfo;
 	}
 	/**
 	 * Extracts the VAA bytes embedded in an accumulator message.
@@ -206,19 +206,19 @@ export class SuiPythClient {
 	 * Fetches the package ID for the Wormhole contract.
 	 */
 	async getWormholePackageId(): Promise<ObjectId> {
-		if (!this.wormholePackageId) {
-			this.wormholePackageId = await this.getPackageId(this.wormholeStateId);
+		if (!this.#wormholePackageId) {
+			this.#wormholePackageId = await this.getPackageId(this.wormholeStateId);
 		}
-		return this.wormholePackageId;
+		return this.#wormholePackageId;
 	}
 	/**
 	 * Fetches the package ID for the Pyth contract.
 	 */
 	async getPythPackageId(): Promise<ObjectId> {
-		if (!this.pythPackageId) {
-			this.pythPackageId = await this.getPackageId(this.pythStateId);
+		if (!this.#pythPackageId) {
+			this.#pythPackageId = await this.getPackageId(this.pythStateId);
 		}
-		return this.pythPackageId;
+		return this.#pythPackageId;
 	}
 	/**
 	 * Fetches the package ID for a given object.
@@ -249,7 +249,7 @@ export class SuiPythClient {
 	 * Gets the base update fee from the Pyth state object.
 	 */
 	async getBaseUpdateFee(): Promise<number> {
-		if (this.baseUpdateFee === undefined) {
+		if (this.#baseUpdateFee === undefined) {
 			const result = await this.provider.getObject({
 				id: this.pythStateId,
 				options: { showContent: true },
@@ -260,8 +260,8 @@ export class SuiPythClient {
 			const fields = result.data.content.fields as {
 				base_update_fee: number;
 			};
-			this.baseUpdateFee = fields.base_update_fee as number;
+			this.#baseUpdateFee = fields.base_update_fee as number;
 		}
-		return this.baseUpdateFee;
+		return this.#baseUpdateFee;
 	}
 }
