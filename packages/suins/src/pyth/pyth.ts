@@ -1,8 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-/* eslint-disable @typescript-eslint/ban-types */
-
 import { bcs } from '@mysten/sui/bcs';
 import type { SuiClient } from '@mysten/sui/client';
 import type { Transaction } from '@mysten/sui/transactions';
@@ -11,6 +9,7 @@ import { fromBase64, parseStructTag } from '@mysten/sui/utils';
 
 import type { HexString } from './PriceServiceConnection.js';
 import { PriceServiceConnection } from './PriceServiceConnection.js';
+import { extractVaaBytesFromAccumulatorMessage } from './pyth-helpers.js';
 
 const MAX_ARGUMENT_SIZE = 16 * 1024;
 export type ObjectId = string;
@@ -90,7 +89,7 @@ export class SuiPythClient {
 				'SDK does not support sending multiple accumulator messages in a single transaction',
 			);
 		}
-		const vaa = this.extractVaaBytesFromAccumulatorMessage(updates[0]);
+		const vaa = extractVaaBytesFromAccumulatorMessage(updates[0]);
 		const verifiedVaas = await this.verifyVaas([vaa], tx);
 		[priceUpdatesHotPotato] = tx.moveCall({
 			target: `${packageId}::pyth::create_authenticated_price_infos_using_accumulator`,
@@ -196,25 +195,6 @@ export class SuiPythClient {
 			}
 		}
 		return this.#priceTableInfo;
-	}
-	/**
-	 * Extracts the VAA bytes embedded in an accumulator message.
-	 *
-	 * @param accumulatorMessage The accumulator price update message.
-	 * @returns VAA bytes as a Buffer.
-	 */
-	// eslint-disable-next-line @typescript-eslint/ban-types
-	extractVaaBytesFromAccumulatorMessage(accumulatorMessage: Uint8Array): Uint8Array {
-		const dataView = new DataView(
-			accumulatorMessage.buffer,
-			accumulatorMessage.byteOffset,
-			accumulatorMessage.byteLength,
-		);
-		const trailingPayloadSize = dataView.getUint8(6);
-		const vaaSizeOffset = 7 + trailingPayloadSize + 1;
-		const vaaSize = dataView.getUint16(vaaSizeOffset, false);
-		const vaaOffset = vaaSizeOffset + 2;
-		return accumulatorMessage.subarray(vaaOffset, vaaOffset + vaaSize);
 	}
 	/**
 	 * Fetches the package ID for the Wormhole contract.
