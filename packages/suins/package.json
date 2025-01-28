@@ -35,8 +35,7 @@
 		"eslint:check": "eslint --max-warnings=0 .",
 		"eslint:fix": "pnpm run eslint:check --fix",
 		"lint": "pnpm run eslint:check && pnpm run prettier:check",
-		"lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix",
-		"test:e2e": "pnpm exec vitest"
+		"lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix"
 	},
 	"engines": {
 		"node": ">=16"
