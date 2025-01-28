@@ -183,14 +183,14 @@ export class SuiPythClient {
 			if (!result.data || !result.data.type) {
 				throw new Error('Price Table not found, contract may not be initialized');
 			}
-			let structTag = parseStructTag(result.data.type).typeParams[0];
+			let priceIdentifier = parseStructTag(result.data.type).typeParams[0];
 			if (
-				typeof structTag === 'object' &&
-				structTag !== null &&
-				structTag.name === 'PriceIdentifier' &&
-				'address' in structTag
+				typeof priceIdentifier === 'object' &&
+				priceIdentifier !== null &&
+				priceIdentifier.name === 'PriceIdentifier' &&
+				'address' in priceIdentifier
 			) {
-				this.#priceTableInfo = { id: result.data.objectId, fieldType: structTag.address };
+				this.#priceTableInfo = { id: result.data.objectId, fieldType: priceIdentifier.address };
 			} else {
 				throw new Error('fieldType not found');
 			}
