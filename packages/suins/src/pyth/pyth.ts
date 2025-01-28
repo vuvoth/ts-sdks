@@ -5,7 +5,7 @@ import { bcs } from '@mysten/sui/bcs';
 import type { SuiClient } from '@mysten/sui/client';
 import type { Transaction } from '@mysten/sui/transactions';
 import { coinWithBalance } from '@mysten/sui/transactions';
-import { fromBase64, parseStructTag } from '@mysten/sui/utils';
+import { fromBase64, fromHex, parseStructTag } from '@mysten/sui/utils';
 
 import type { HexString } from './PriceServiceConnection.js';
 import { PriceServiceConnection } from './PriceServiceConnection.js';
@@ -31,9 +31,9 @@ export class SuiPythClient {
 	#priceFeedObjectIdCache: Map<HexString, Promise<ObjectId>> = new Map();
 	#priceTableInfo?: { id: ObjectId; fieldType: ObjectId };
 	#baseUpdateFee?: number;
-	public provider: SuiClient;
-	public pythStateId: ObjectId;
-	public wormholeStateId: ObjectId;
+	provider: SuiClient;
+	pythStateId: ObjectId;
+	wormholeStateId: ObjectId;
 
 	constructor(provider: SuiClient, pythStateId: ObjectId, wormholeStateId: ObjectId) {
 		this.provider = provider;
@@ -127,9 +127,7 @@ export class SuiPythClient {
 	 * @param feedId
 	 */
 	async getPriceFeedObjectId(feedId: HexString): Promise<ObjectId | undefined> {
-		const normalizedFeedId = feedId.replace('0x', '');
-
-		if (!this.#priceFeedObjectIdCache.has(normalizedFeedId)) {
+		if (!this.#priceFeedObjectIdCache.has(feedId)) {
 			const promise = (async () => {
 				const { id: tableId, fieldType } = await this.getPriceTableInfo();
 				const result = await this.provider.getDynamicFieldObject({
@@ -137,11 +135,7 @@ export class SuiPythClient {
 					name: {
 						type: `${fieldType}::price_identifier::PriceIdentifier`,
 						value: {
-							bytes: Array.from(
-								Uint8Array.from(
-									normalizedFeedId.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)),
-								),
-							),
+							bytes: Array.from(fromHex(feedId)),
 						},
 					},
 				});
@@ -157,19 +151,19 @@ export class SuiPythClient {
 				return result.data.content.fields.value;
 			})();
 
-			this.#priceFeedObjectIdCache.set(normalizedFeedId, promise);
+			this.#priceFeedObjectIdCache.set(feedId, promise);
 
 			try {
 				return await promise;
 			} catch (err) {
 				// If an error occurs, remove the promise from the cache to allow retries
-				this.#priceFeedObjectIdCache.delete(normalizedFeedId);
+				this.#priceFeedObjectIdCache.delete(feedId);
 				throw err;
 			}
 		}
 
 		// Return the cached promise
-		return this.#priceFeedObjectIdCache.get(normalizedFeedId)!;
+		return this.#priceFeedObjectIdCache.get(feedId)!;
 	}
 	/**
 	 * Fetches the price table object id for the current state id if not cached
@@ -187,7 +181,7 @@ export class SuiPythClient {
 			if (!result.data || !result.data.type) {
 				throw new Error('Price Table not found, contract may not be initialized');
 			}
-			let priceIdentifier = parseStructTag(result.data.type).typeParams[0];
+			const priceIdentifier = parseStructTag(result.data.type).typeParams[0];
 			if (
 				typeof priceIdentifier === 'object' &&
 				priceIdentifier !== null &&
