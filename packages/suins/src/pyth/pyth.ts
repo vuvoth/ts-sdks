@@ -7,7 +7,7 @@ import { bcs } from '@mysten/sui/bcs';
 import type { SuiClient } from '@mysten/sui/client';
 import type { Transaction } from '@mysten/sui/transactions';
 import { coinWithBalance } from '@mysten/sui/transactions';
-import { fromBase64 } from '@mysten/sui/utils';
+import { fromBase64, parseStructTag } from '@mysten/sui/utils';
 
 import type { HexString } from './PriceServiceConnection.js';
 import { PriceServiceConnection } from './PriceServiceConnection.js';
@@ -183,9 +183,17 @@ export class SuiPythClient {
 			if (!result.data || !result.data.type) {
 				throw new Error('Price Table not found, contract may not be initialized');
 			}
-			let type = result.data.type.replace('0x2::table::Table<', '');
-			type = type.replace('::price_identifier::PriceIdentifier, 0x2::object::ID>', '');
-			this.#priceTableInfo = { id: result.data.objectId, fieldType: type };
+			let structTag = parseStructTag(result.data.type).typeParams[0];
+			if (
+				typeof structTag === 'object' &&
+				structTag !== null &&
+				structTag.name === 'PriceIdentifier' &&
+				'address' in structTag
+			) {
+				this.#priceTableInfo = { id: result.data.objectId, fieldType: structTag.address };
+			} else {
+				throw new Error('fieldType not found');
+			}
 		}
 		return this.#priceTableInfo;
 	}
