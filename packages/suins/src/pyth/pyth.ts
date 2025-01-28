@@ -6,6 +6,7 @@
 import { bcs } from '@mysten/sui/bcs';
 import type { SuiClient } from '@mysten/sui/client';
 import type { Transaction } from '@mysten/sui/transactions';
+import { coinWithBalance } from '@mysten/sui/transactions';
 import { fromBase64 } from '@mysten/sui/utils';
 
 import type { HexString } from './PriceServiceConnection.js';
@@ -109,11 +110,6 @@ export class SuiPythClient {
 		});
 		const priceInfoObjects: ObjectId[] = [];
 		const baseUpdateFee = await this.getBaseUpdateFee();
-		const coins = tx.splitCoins(
-			tx.gas,
-			feedIds.map(() => tx.pure.u64(baseUpdateFee)),
-		);
-		let coinId = 0;
 		for (const feedId of feedIds) {
 			const priceInfoObjectId = await this.getPriceFeedObjectId(feedId);
 			if (!priceInfoObjectId) {
@@ -126,11 +122,10 @@ export class SuiPythClient {
 					tx.object(this.pythStateId),
 					priceUpdatesHotPotato,
 					tx.object(priceInfoObjectId),
-					coins[coinId],
+					coinWithBalance({ balance: baseUpdateFee }),
 					tx.object.clock(),
 				],
 			});
-			coinId++;
 		}
 		tx.moveCall({
 			target: `${packageId}::hot_potato_vector::destroy`,
