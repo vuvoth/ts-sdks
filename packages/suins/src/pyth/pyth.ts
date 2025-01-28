@@ -31,11 +31,15 @@ export class SuiPythClient {
 	#priceFeedObjectIdCache: Map<HexString, ObjectId> = new Map();
 	#priceTableInfo?: { id: ObjectId; fieldType: ObjectId };
 	#baseUpdateFee?: number;
-	constructor(
-		public provider: SuiClient,
-		public pythStateId: ObjectId,
-		public wormholeStateId: ObjectId,
-	) {}
+	public provider: SuiClient;
+	public pythStateId: ObjectId;
+	public wormholeStateId: ObjectId;
+
+	constructor(provider: SuiClient, pythStateId: ObjectId, wormholeStateId: ObjectId) {
+		this.provider = provider;
+		this.pythStateId = pythStateId;
+		this.wormholeStateId = wormholeStateId;
+	}
 	/**
 	 * Verifies the VAAs using the Wormhole contract.
 	 *
