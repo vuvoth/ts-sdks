@@ -1,5 +1,11 @@
 # @mysten/suins
 
+## 0.7.0
+
+### Minor Changes
+
+- 591c9d8: Removing Pyth SDK Dependency
+
 ## 0.6.3
 
 ### Patch Changes
