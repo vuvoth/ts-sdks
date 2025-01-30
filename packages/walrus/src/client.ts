@@ -272,7 +272,7 @@ export class WalrusClient {
 
 		return {
 			digest,
-			blob: Storage().fromBase64(suiBlobObject.data!.bcs.bcsBytes),
+			blob: Storage().fromBase64(suiBlobObject.data.bcs.bcsBytes),
 		};
 	}
 
@@ -365,7 +365,7 @@ export class WalrusClient {
 
 		return {
 			digest,
-			blob: Blob().fromBase64(suiBlobObject.data!.bcs.bcsBytes),
+			blob: Blob().fromBase64(suiBlobObject.data.bcs.bcsBytes),
 		};
 	}
 
@@ -393,18 +393,17 @@ export class WalrusClient {
 		const filteredConfirmations = confirmations
 			.map((confirmation, index) => {
 				const isValid =
-					confirmation &&
-					confirmation.serializedMessage === confirmationMessage &&
+					confirmation?.serializedMessage === confirmationMessage &&
 					bls12381_min_pk_verify(
-						fromBase64(confirmation!.signature),
+						fromBase64(confirmation.signature),
 						new Uint8Array(nodes.committee[index].info.public_key.bytes),
-						fromBase64(confirmation!.serializedMessage),
+						fromBase64(confirmation.serializedMessage),
 					);
 
 				return isValid
 					? {
 							index,
-							...confirmation!,
+							...confirmation,
 						}
 					: null;
 			})
