@@ -8,8 +8,6 @@ import { coinWithBalance, Transaction } from '@mysten/sui/transactions';
 import { MIST_PER_SUI } from '@mysten/sui/utils';
 
 import { WalrusClient } from '../src/client.js';
-import { TaskPool } from '../src/utils/task-pool.js';
-import { encodeBlob } from '../src/wasm.js';
 
 /** @ts-ignore */
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
@@ -25,110 +23,14 @@ const walrusClient = new WalrusClient({
 
 async function uploadFile() {
 	const keypair = await getFundedKeypair();
-	const systemState = await walrusClient.systemState();
 
 	const file = new TextEncoder().encode('Hello from the TS SDK!!!\n');
 
-	const {
-		sliverPairs,
-		metadata: { metadata, blob_id: blobId },
-		rootHash,
-	} = encodeBlob(systemState.committee.n_shards, file);
-
-	const suiBlobObject = await walrusClient.executeRegisterBlobTransaction({
-		signer: keypair,
-		size: file.length,
-		epochs: 3,
-		blobId,
-		rootHash,
+	const { blobId } = await walrusClient.writeBlob({
+		blob: file,
 		deletable: false,
-	});
-
-	const taskPool = new TaskPool(100);
-
-	for (const [nodeIndex] of systemState.committee.members.entries()) {
-		taskPool.runTask(() => {
-			return walrusClient
-				.writeMetadataToNode({
-					blobId,
-					nodeIndex,
-					metadata,
-				})
-				.then(async (res) => {})
-				.catch((err) => {
-					console.error(err);
-				});
-		});
-	}
-
-	await taskPool.awaitAll();
-
-	for (const sliver of sliverPairs) {
-		taskPool.runTask(() =>
-			walrusClient
-				.writeSliver({
-					sliver: sliver.primary,
-					type: 'primary',
-					blobId,
-					sliverIndex: sliver.primary.index,
-				})
-				.catch((err) => {
-					console.error(err);
-				}),
-		);
-
-		taskPool
-			.runTask(() =>
-				walrusClient.writeSliver({
-					sliver: sliver.secondary,
-					type: 'secondary',
-					blobId,
-					sliverIndex: sliver.secondary.index,
-				}),
-			)
-
-			.catch((err) => {
-				console.error(err);
-			});
-	}
-
-	await taskPool.awaitAll();
-
-	await console.log('finished uploading shards');
-
-	const confirmations = await Promise.all(
-		systemState.committee.members.map(
-			async (
-				_node,
-				nodeIndex,
-			): Promise<{
-				serializedMessage: string;
-				signature: string;
-			} | null> => {
-				const res = await taskPool.runTask(async () => {
-					try {
-						return await walrusClient.getStorageConfirmationFromNode({
-							nodeIndex,
-							blobId,
-							deletable: false,
-							objectId: suiBlobObject.blob.id.id,
-						});
-					} catch (err) {
-						console.error(err);
-						return null;
-					}
-				});
-
-				return res;
-			},
-		),
-	);
-
-	await walrusClient.executeCertifyBlobTransaction({
+		epochs: 3,
 		signer: keypair,
-		blobId,
-		blobObjectId: suiBlobObject.blob.id.id,
-		confirmations,
 	});
 
 	console.log(blobId);

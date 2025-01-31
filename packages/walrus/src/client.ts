@@ -20,12 +20,16 @@ import type {
 	GetSliverOptions,
 	GetStorageConfirmationOptions,
 	RegisterBlobOptions,
+	SliversForNode,
 	StorageNode,
 	StorageWithSizeOptions,
 	WalrusClientConfig,
 	WalrusPackageConfig,
+	WriteBlobOptions,
+	WriteEncodedBlobOptions,
 	WriteMetadataOptions,
 	WriteSliverOptions,
+	WriteSliversToNodeOptions,
 } from './types.js';
 import {
 	blobIdToInt,
@@ -45,7 +49,7 @@ import {
 } from './utils/index.js';
 import { SuiObjectDataLoader } from './utils/object-loader.js';
 import { TaskPool } from './utils/task-pool.js';
-import { combineSignatures, decodePrimarySlivers } from './wasm.js';
+import { combineSignatures, decodePrimarySlivers, encodeBlob } from './wasm.js';
 
 export class WalrusClient {
 	packageConfig: WalrusPackageConfig;
@@ -457,7 +461,7 @@ export class WalrusClient {
 		return { digest };
 	}
 
-	async writeSliver({ blobId, sliverIndex, type, sliver }: WriteSliverOptions) {
+	async writeSliver({ blobId, sliverIndex, type, sliver, signal }: WriteSliverOptions) {
 		const systemState = await this.systemState();
 		const shardIndex = toShardIndex(sliverIndex, blobId, systemState.committee.n_shards);
 
@@ -473,6 +477,7 @@ export class WalrusClient {
 				headers: {
 					'Content-Type': 'application/octet-stream',
 				},
+				signal,
 			},
 		);
 
@@ -483,7 +488,7 @@ export class WalrusClient {
 		await response.body?.cancel();
 	}
 
-	async writeMetadataToNode({ nodeIndex, blobId, metadata }: WriteMetadataOptions) {
+	async writeMetadataToNode({ nodeIndex, blobId, metadata, signal }: WriteMetadataOptions) {
 		const response = await this.#fetchFromNode(nodeIndex, `/v1/blobs/${blobId}/metadata`, {
 			body:
 				typeof metadata === 'object' && 'V1' in metadata
@@ -493,6 +498,7 @@ export class WalrusClient {
 			headers: {
 				'Content-Type': 'application/octet-stream',
 			},
+			signal,
 		});
 
 		if (!response.ok) {
@@ -539,6 +545,164 @@ export class WalrusClient {
 		return json.success.data.signed;
 	}
 
+	async encodeBlob(blob: Uint8Array) {
+		const systemState = await this.systemState();
+		const { blobId, metadata, sliverPairs, rootHash } = encodeBlob(
+			systemState.committee.n_shards,
+			blob,
+		);
+
+		const sliversByNodeMap = new Map<number, SliversForNode>();
+
+		while (sliverPairs.length > 0) {
+			// remove from list so we don't preserve references to the original data
+			const { primary, secondary } = sliverPairs.pop()!;
+
+			const primaryShardIndex = toShardIndex(primary.index, blobId, systemState.committee.n_shards);
+			const secondaryShardIndex = toShardIndex(
+				secondary.index,
+				blobId,
+				systemState.committee.n_shards,
+			);
+
+			const primaryNode = await this.#getNodeByShardIndex(primaryShardIndex);
+			const secondaryNode = await this.#getNodeByShardIndex(secondaryShardIndex);
+
+			if (!sliversByNodeMap.has(primaryNode.nodeIndex)) {
+				sliversByNodeMap.set(primaryNode.nodeIndex, { primary: [], secondary: [] });
+			}
+
+			if (!sliversByNodeMap.has(secondaryNode.nodeIndex)) {
+				sliversByNodeMap.set(secondaryNode.nodeIndex, { primary: [], secondary: [] });
+			}
+
+			sliversByNodeMap.get(primaryNode.nodeIndex)!.primary.push({
+				sliverIndex: primary.index,
+				shardIndex: primaryShardIndex,
+				sliver: SliverData.serialize(primary).toBytes(),
+			});
+
+			sliversByNodeMap.get(secondaryNode.nodeIndex)!.secondary.push({
+				sliverIndex: secondary.index,
+				shardIndex: secondaryShardIndex,
+				sliver: SliverData.serialize(secondary).toBytes(),
+			});
+		}
+
+		const sliversByNode = new Array<SliversForNode>();
+
+		for (let i = 0; i < systemState.committee.members.length; i++) {
+			sliversByNode.push(sliversByNodeMap.get(i) ?? { primary: [], secondary: [] });
+		}
+
+		return { blobId, metadata, rootHash, sliversByNode };
+	}
+
+	async writeSliversToNode({ blobId, slivers, signal }: WriteSliversToNodeOptions) {
+		const controller = new AbortController();
+
+		signal?.addEventListener('abort', () => {
+			controller.abort();
+		});
+
+		await Promise.all(
+			slivers.primary.map((sliver) =>
+				this.writeSliver({
+					blobId,
+					sliverIndex: sliver.sliverIndex,
+					type: 'primary',
+					sliver: sliver.sliver,
+					signal: controller.signal,
+				}),
+			),
+		).catch((error) => {
+			controller.abort();
+			throw error;
+		});
+	}
+
+	async writeEncodedBlobToNode({
+		nodeIndex,
+		blobId,
+		metadata,
+		slivers,
+		signal,
+		...options
+	}: WriteEncodedBlobOptions) {
+		await this.writeMetadataToNode({
+			nodeIndex,
+			blobId,
+			metadata,
+			signal,
+		});
+
+		await this.writeSliversToNode({ blobId, slivers, signal, nodeIndex });
+
+		return this.getStorageConfirmationFromNode({
+			nodeIndex,
+			blobId,
+			...options,
+		});
+	}
+
+	async writeBlob({ blob, deletable, epochs, signer, signal }: WriteBlobOptions) {
+		const systemState = await this.systemState();
+		const nodes = await this.#getNodes();
+		const controller = new AbortController();
+
+		signal?.addEventListener('abort', () => {
+			controller.abort();
+		});
+
+		const { sliversByNode, blobId, metadata, rootHash } = await this.encodeBlob(blob);
+
+		const suiBlobObject = await this.executeRegisterBlobTransaction({
+			signer,
+			size: blob.length,
+			epochs,
+			blobId,
+			rootHash,
+			deletable,
+		});
+
+		const blobObjectId = suiBlobObject.blob.id.id;
+
+		const maxFaulty = Math.floor((systemState.committee.n_shards - 1) / 3);
+		let failures = 0;
+
+		const confirmations = await Promise.all(
+			sliversByNode.map((slivers, nodeIndex) =>
+				this.writeEncodedBlobToNode({
+					blobId,
+					nodeIndex,
+					metadata,
+					slivers,
+					deletable: false,
+					signal: controller.signal,
+				}).catch(() => {
+					failures += nodes.committee[nodeIndex].shardIndices.length;
+
+					if (failures > maxFaulty) {
+						controller.abort();
+
+						throw new Error(`Too many failures while writing blob ${blobId} to nodes`);
+					}
+
+					return null;
+				}),
+			),
+		);
+
+		await this.executeCertifyBlobTransaction({
+			signer,
+			blobId,
+			blobObjectId,
+			confirmations,
+		});
+
+		return { blobId, blobObjectId };
+	}
+
 	async #executeTransaction(transaction: Transaction, signer: Signer, action: string) {
 		const { digest, effects } = await this.#suiClient.signAndExecuteTransaction({
 			transaction,
@@ -563,13 +727,14 @@ export class WalrusClient {
 		const nodes = await this.#stakingPool();
 		const shardIndicesByNodeId = getShardIndicesByNodeId((await this.stakingState()).committee);
 		const byShardIndex = new Map<number, StorageNode>();
-		const committee = nodes.map(({ node_info }) => {
+		const committee = nodes.map(({ node_info }, nodeIndex) => {
 			const shardIndices = shardIndicesByNodeId.get(node_info.node_id) ?? [];
 			const node: StorageNode = {
 				id: node_info.node_id,
 				info: node_info,
 				networkAddress: node_info.network_address,
 				shardIndices,
+				nodeIndex,
 			};
 
 			for (const shardIndex of shardIndices) {
@@ -630,7 +795,6 @@ export class WalrusClient {
 		const response = await fetch(`https://${node.networkAddress}${path}`, init);
 
 		if (!response.ok) {
-			console.error(response.statusText, await response.text());
 			throw new Error(`Failed to fetch from node ${node.networkAddress}: ${response.statusText}`);
 		}
 
