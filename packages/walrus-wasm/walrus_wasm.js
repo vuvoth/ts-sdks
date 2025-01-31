@@ -183,6 +183,38 @@ function passArray8ToWasm0(arg, malloc) {
     WASM_VECTOR_LEN = arg.length;
     return ptr;
 }
+
+let cachedUint16ArrayMemory0 = null;
+
+function getUint16ArrayMemory0() {
+    if (cachedUint16ArrayMemory0 === null || cachedUint16ArrayMemory0.byteLength === 0) {
+        cachedUint16ArrayMemory0 = new Uint16Array(wasm.memory.buffer);
+    }
+    return cachedUint16ArrayMemory0;
+}
+
+function passArray16ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 2, 2) >>> 0;
+    getUint16ArrayMemory0().set(arg, ptr / 2);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
+/**
+ * @param {MessageType} message_type
+ * @param {any} signed_messages
+ * @param {Uint16Array} signer_indices
+ * @returns {any}
+ */
+module.exports.from_signed_messages_and_indices = function(message_type, signed_messages, signer_indices) {
+    const ptr0 = passArray16ToWasm0(signer_indices, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.from_signed_messages_and_indices(message_type, signed_messages, ptr0, len0);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return takeFromExternrefTable0(ret[0]);
+};
+
 /**
  * @param {Uint8Array} signature
  * @param {Uint8Array} public_key
@@ -253,37 +285,6 @@ module.exports.blake2b256 = function(msg) {
     var v2 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
     wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
     return v2;
-};
-
-let cachedUint16ArrayMemory0 = null;
-
-function getUint16ArrayMemory0() {
-    if (cachedUint16ArrayMemory0 === null || cachedUint16ArrayMemory0.byteLength === 0) {
-        cachedUint16ArrayMemory0 = new Uint16Array(wasm.memory.buffer);
-    }
-    return cachedUint16ArrayMemory0;
-}
-
-function passArray16ToWasm0(arg, malloc) {
-    const ptr = malloc(arg.length * 2, 2) >>> 0;
-    getUint16ArrayMemory0().set(arg, ptr / 2);
-    WASM_VECTOR_LEN = arg.length;
-    return ptr;
-}
-/**
- * @param {MessageType} message_type
- * @param {any} signed_messages
- * @param {Uint16Array} signer_indices
- * @returns {any}
- */
-module.exports.from_signed_messages_and_indices = function(message_type, signed_messages, signer_indices) {
-    const ptr0 = passArray16ToWasm0(signer_indices, wasm.__wbindgen_malloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.from_signed_messages_and_indices(message_type, signed_messages, ptr0, len0);
-    if (ret[2]) {
-        throw takeFromExternrefTable0(ret[1]);
-    }
-    return takeFromExternrefTable0(ret[0]);
 };
 
 /**
