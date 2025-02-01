@@ -17,6 +17,8 @@ import { SystemStateInnerV1 } from './contracts/system_state_inner.js';
 import { init as initSystemContract, System } from './contracts/system.js';
 import type {
 	CertifyBlobOptions,
+	DeleteBlobOptions,
+	ExtendBlobOptions,
 	GetSliverOptions,
 	GetStorageConfirmationOptions,
 	RegisterBlobOptions,
@@ -457,6 +459,105 @@ export class WalrusClient {
 		const transaction = await this.certifyBlobTransaction(options);
 
 		const { digest } = await this.#executeTransaction(transaction, signer, 'certify blob');
+
+		return { digest };
+	}
+
+	deleteBlob({ blobObjectId }: DeleteBlobOptions) {
+		return (tx: Transaction) =>
+			tx.moveCall({
+				package: this.packageConfig.systemObjectId,
+				module: 'system',
+				function: 'delete_blob',
+				arguments: [tx.object(this.packageConfig.systemObjectId), tx.object(blobObjectId)],
+			});
+	}
+
+	deleteBlobTransaction({
+		owner,
+		blobObjectId,
+		transaction = new Transaction(),
+	}: DeleteBlobOptions & { transaction?: Transaction; owner: string }) {
+		transaction.transferObjects([this.deleteBlob({ blobObjectId })], owner);
+
+		return transaction;
+	}
+
+	async executeDeleteBlobTransaction({
+		signer,
+		transaction = new Transaction(),
+		blobObjectId,
+	}: DeleteBlobOptions & { signer: Signer; transaction?: Transaction }) {
+		const { digest } = await this.#executeTransaction(
+			this.deleteBlobTransaction({
+				blobObjectId,
+				transaction,
+				owner: transaction.getData().sender ?? signer.toSuiAddress(),
+			}),
+			signer,
+			'delete blob',
+		);
+
+		return { digest };
+	}
+
+	async extendBlob({ blobObjectId, epochs, endEpoch }: ExtendBlobOptions) {
+		const systemState = await this.systemState();
+		const blob = await this.#objectLoader.load(blobObjectId, Blob());
+		const numEpochs = typeof epochs === 'number' ? epochs : endEpoch - blob.storage.end_epoch;
+
+		if (numEpochs <= 0) {
+			return (_tx: Transaction) => {};
+		}
+
+		return (tx: Transaction) => {
+			const coin = tx.add(
+				coinWithBalance({
+					balance:
+						BigInt(storageUnitsFromSize(Number(blob.storage.storage_size))) *
+						BigInt(systemState.storage_price_per_unit_size) *
+						BigInt(numEpochs),
+					type: this.walType,
+				}),
+			);
+
+			tx.add(
+				this.systemContract.extend_blob({
+					arguments: [
+						tx.object(this.packageConfig.systemObjectId),
+						tx.object(blobObjectId),
+						numEpochs,
+						coin,
+					],
+				}),
+			);
+
+			tx.moveCall({
+				target: '0x2::coin::destroy_zero',
+				typeArguments: [this.walType],
+				arguments: [coin],
+			});
+		};
+	}
+
+	async extendBlobTransaction({
+		transaction = new Transaction(),
+		...options
+	}: ExtendBlobOptions & { transaction?: Transaction }) {
+		transaction.add(await this.extendBlob(options));
+
+		return transaction;
+	}
+
+	async executeExtendBlobTransaction({
+		signer,
+		...options
+	}: ExtendBlobOptions & { signer: Signer; transaction?: Transaction }) {
+		const { digest } = await this.#executeTransaction(
+			await this.extendBlobTransaction(options),
+			signer,
+			'extend blob',
+		);
 
 		return { digest };
 	}

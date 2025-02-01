@@ -28,7 +28,7 @@ async function uploadFile() {
 
 	const { blobId } = await walrusClient.writeBlob({
 		blob: file,
-		deletable: false,
+		deletable: true,
 		epochs: 3,
 		signer: keypair,
 	});
