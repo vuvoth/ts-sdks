@@ -1,10 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import * as v from 'valibot';
-
-import { errorResponseSchema } from './schemas.js';
-
 export class StorageNodeError extends Error {}
 
 export class StorageNodeAPIError<
@@ -24,9 +20,12 @@ export class StorageNodeAPIError<
 	}
 
 	static #makeMessage(status: number | undefined, error: unknown, message: string | undefined) {
-		const parsedError = v.safeParse(errorResponseSchema, error);
-		const inferredMessage = parsedError.success ? parsedError.output.error.message : message;
-		const finalMessage = inferredMessage ? inferredMessage : String(parsedError.output);
+		function hasErrorMessage(error: any): error is { error: { message: string } } {
+			return typeof error?.error?.message === 'string';
+		}
+
+		const inferredMessage = hasErrorMessage(error) ? error.error.message : message;
+		const finalMessage = inferredMessage ? inferredMessage : JSON.stringify(error);
 
 		if (status && finalMessage) {
 			return `${status} ${finalMessage}`;
