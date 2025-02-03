@@ -74,7 +74,7 @@ importers:
         version: 3.2.0(@typescript-eslint/eslint-plugin@8.19.0(@typescript-eslint/parser@8.19.0(eslint@8.57.1)(typescript@5.7.2))(eslint@8.57.1)(typescript@5.7.2))(eslint@8.57.1)
       graphql-config:
         specifier: ^5.0.3
-        version: 5.1.3(@types/node@22.10.5)(graphql@16.10.0)(typescript@5.7.2)
+        version: 5.1.3(@types/node@22.10.10)(graphql@16.10.0)(typescript@5.7.2)
       prettier:
         specifier: ^3.3.2
         version: 3.4.2
@@ -399,7 +399,7 @@ importers:
         version: 0.2.3
       ts-node:
         specifier: ^10.9.2
-        version: 10.9.2(@swc/core@1.10.4)(@types/node@22.10.5)(typescript@5.7.2)
+        version: 10.9.2(@swc/core@1.10.4(@swc/helpers@0.5.5))(@types/node@22.10.5)(typescript@5.7.2)
       ts-retry-promise:
         specifier: ^0.8.1
         version: 0.8.1
@@ -436,7 +436,7 @@ importers:
         version: 0.2.3
       ts-node:
         specifier: ^10.9.2
-        version: 10.9.2(@swc/core@1.10.4)(@types/node@22.10.5)(typescript@5.7.2)
+        version: 10.9.2(@swc/core@1.10.4(@swc/helpers@0.5.5))(@types/node@22.10.5)(typescript@5.7.2)
       ts-retry-promise:
         specifier: ^0.8.1
         version: 0.8.1
@@ -712,7 +712,7 @@ importers:
     devDependencies:
       '@hey-api/openapi-ts':
         specifier: ^0.61.2
-        version: 0.61.2(typescript@5.7.2)
+        version: 0.61.3(typescript@5.7.2)
       '@mysten/build-scripts':
         specifier: workspace:*
         version: link:../build-scripts
@@ -805,7 +805,7 @@ importers:
         version: link:../build-scripts
       ts-node:
         specifier: ^10.9.2
-        version: 10.9.2(@swc/core@1.10.4)(@types/node@22.10.10)(typescript@5.7.2)
+        version: 10.9.2(@swc/core@1.10.4(@swc/helpers@0.5.5))(@types/node@22.10.10)(typescript@5.7.2)
       typescript:
         specifier: ^5.7.2
         version: 5.7.2
@@ -939,13 +939,10 @@ importers:
         version: 5.7.2
       typescript-json-schema:
         specifier: ^0.65.1
-        version: 0.65.1(@swc/core@1.10.4)
+        version: 0.65.1(@swc/core@1.10.4(@swc/helpers@0.5.5))
 
   packages/walrus:
     dependencies:
-      '@hey-api/client-fetch':
-        specifier: ^0.6.0
-        version: 0.6.0
       '@mysten/bcs':
         specifier: workspace:*
         version: link:../bcs
@@ -958,10 +955,10 @@ importers:
       dataloader:
         specifier: ^2.2.3
         version: 2.2.3
+      valibot:
+        specifier: ^0.36.0
+        version: 0.36.0
     devDependencies:
-      '@hey-api/openapi-ts':
-        specifier: ^0.61.2
-        version: 0.61.2(typescript@5.7.2)
       '@mysten/build-scripts':
         specifier: workspace:*
         version: link:../build-scripts
@@ -2313,7 +2310,7 @@ packages:
   '@graphql-codegen/add@5.0.3':
     resolution: {integrity: sha512-SxXPmramkth8XtBlAHu4H4jYcYXM/o3p01+psU+0NADQowA8jtYkK6MW5rV6T+CxkEaNZItfSmZRPgIuypcqnA==}
     peerDependencies:
-      graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
+      graphql: 16.8.1
 
   '@graphql-codegen/cli@5.0.3':
     resolution: {integrity: sha512-ULpF6Sbu2d7vNEOgBtE9avQp2oMgcPY/QBYcCqk0Xru5fz+ISjcovQX29V7CS7y5wWBRzNLoXwJQGeEyWbl05g==}
@@ -2347,7 +2344,7 @@ packages:
     resolution: {integrity: sha512-Y7cwEAkprbTKzVIe436TIw4w03jorsMruvCvu0HJkavaKMQbWY+lQ1RIuROgszDbxAyM35twB5/sUvYG5oW+yg==}
     engines: {node: '>=16'}
     peerDependencies:
-      graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
+      graphql: 16.8.1
 
   '@graphql-codegen/schema-ast@4.1.0':
     resolution: {integrity: sha512-kZVn0z+th9SvqxfKYgztA6PM7mhnSZaj4fiuBWvMTqA+QqQ9BBed6Pz41KuD/jr0gJtnlr2A4++/0VlpVbCTmQ==}
@@ -2567,19 +2564,16 @@ packages:
       react: ^16 || ^17 || ^18
       react-dom: ^16 || ^17 || ^18
 
-  '@hey-api/client-fetch@0.6.0':
-    resolution: {integrity: sha512-FlhFsVeH8RxJe/nq8xUzxNbiOpe+GadxlD2pfvDyOyLdCTU4o/LRv46ZVWstaW7DgF4nxhI328chy3+AulwVXw==}
-
   '@hey-api/json-schema-ref-parser@1.0.1':
     resolution: {integrity: sha512-dBt0A7op9kf4BcK++x6HBYDmvCvnJUZEGe5QytghPFHnMXPyKwDKomwL/v5e9ERk6E0e1GzL/e/y6pWUso9zrQ==}
     engines: {node: '>= 16'}
 
-  '@hey-api/openapi-ts@0.61.2':
-    resolution: {integrity: sha512-E0b8PibVqmZd/E/MB0h8Q2VXObZc+nhHHx3quLwNM08QgEtkC29vMcayzmuG+rR4nGvZGvREP1a4rZc0v6Xjgg==}
-    engines: {node: ^18.0.0 || >=20.0.0}
+  '@hey-api/openapi-ts@0.61.3':
+    resolution: {integrity: sha512-Ls9MBRa5+vg7UHw6fIcfdgcCyZ9vKtRw63nWxwF9zjJIPlzVOZO6xKuzGmDc6o0Pb6XCdTz6lPV5hcV0R4b/ag==}
+    engines: {node: ^18.20.5 || ^20.11.1 || >=22.11.0}
     hasBin: true
     peerDependencies:
-      typescript: ^5.x
+      typescript: ^5.5.3
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -6571,6 +6565,7 @@ packages:
 
   lodash.get@4.4.2:
     resolution: {integrity: sha512-z+Uw/vLuy6gQe8cfaFWD7p0wVv8fJl3mbzXh33RS+0oW2wvUqiRXiQ69gLWSLpgB5/6sU+r6BlQR0MBILadqTQ==}
+    deprecated: This package is deprecated. Use the optional chaining (?.) operator instead.
 
   lodash.merge@4.6.2:
     resolution: {integrity: sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==}
@@ -10546,6 +10541,22 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
+  '@graphql-tools/executor-http@1.2.4(@types/node@22.10.10)(graphql@16.10.0)':
+    dependencies:
+      '@graphql-hive/gateway-abort-signal-any': 0.0.3(graphql@16.10.0)
+      '@graphql-tools/executor-common': 0.0.1(graphql@16.10.0)
+      '@graphql-tools/utils': 10.7.1(graphql@16.10.0)
+      '@repeaterjs/repeater': 3.0.6
+      '@whatwg-node/disposablestack': 0.0.5
+      '@whatwg-node/fetch': 0.10.1
+      extract-files: 11.0.0
+      graphql: 16.10.0
+      meros: 1.3.0(@types/node@22.10.10)
+      tslib: 2.8.1
+      value-or-promise: 1.0.12
+    transitivePeerDependencies:
+      - '@types/node'
+
   '@graphql-tools/executor-http@1.2.4(@types/node@22.10.5)(graphql@16.10.0)':
     dependencies:
       '@graphql-hive/gateway-abort-signal-any': 0.0.3(graphql@16.10.0)
@@ -10711,6 +10722,27 @@ snapshots:
       tslib: 2.8.1
       value-or-promise: 1.0.12
 
+  '@graphql-tools/url-loader@8.0.22(@types/node@22.10.10)(graphql@16.10.0)':
+    dependencies:
+      '@ardatan/sync-fetch': 0.0.1
+      '@graphql-tools/executor-graphql-ws': 1.3.7(graphql@16.10.0)
+      '@graphql-tools/executor-http': 1.2.4(@types/node@22.10.10)(graphql@16.10.0)
+      '@graphql-tools/executor-legacy-ws': 1.1.9(graphql@16.10.0)
+      '@graphql-tools/utils': 10.7.1(graphql@16.10.0)
+      '@graphql-tools/wrap': 10.0.27(graphql@16.10.0)
+      '@types/ws': 8.5.13
+      '@whatwg-node/fetch': 0.10.1
+      graphql: 16.10.0
+      isomorphic-ws: 5.0.0(ws@8.18.0)
+      tslib: 2.8.1
+      value-or-promise: 1.0.12
+      ws: 8.18.0
+    transitivePeerDependencies:
+      - '@types/node'
+      - bufferutil
+      - encoding
+      - utf-8-validate
+
   '@graphql-tools/url-loader@8.0.22(@types/node@22.10.5)(graphql@16.10.0)':
     dependencies:
       '@ardatan/sync-fetch': 0.0.1
@@ -10777,15 +10809,13 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  '@hey-api/client-fetch@0.6.0': {}
-
   '@hey-api/json-schema-ref-parser@1.0.1':
     dependencies:
       '@jsdevtools/ono': 7.1.3
       '@types/json-schema': 7.0.15
       js-yaml: 4.1.0
 
-  '@hey-api/openapi-ts@0.61.2(typescript@5.7.2)':
+  '@hey-api/openapi-ts@0.61.3(typescript@5.7.2)':
     dependencies:
       '@hey-api/json-schema-ref-parser': 1.0.1
       c12: 2.0.1
@@ -14907,6 +14937,27 @@ snapshots:
 
   graphemer@1.4.0: {}
 
+  graphql-config@5.1.3(@types/node@22.10.10)(graphql@16.10.0)(typescript@5.7.2):
+    dependencies:
+      '@graphql-tools/graphql-file-loader': 8.0.10(graphql@16.10.0)
+      '@graphql-tools/json-file-loader': 8.0.10(graphql@16.10.0)
+      '@graphql-tools/load': 8.0.11(graphql@16.10.0)
+      '@graphql-tools/merge': 9.0.16(graphql@16.10.0)
+      '@graphql-tools/url-loader': 8.0.22(@types/node@22.10.10)(graphql@16.10.0)
+      '@graphql-tools/utils': 10.7.1(graphql@16.10.0)
+      cosmiconfig: 8.3.6(typescript@5.7.2)
+      graphql: 16.10.0
+      jiti: 2.4.2
+      minimatch: 9.0.5
+      string-env-interpolation: 1.0.1
+      tslib: 2.8.1
+    transitivePeerDependencies:
+      - '@types/node'
+      - bufferutil
+      - encoding
+      - typescript
+      - utf-8-validate
+
   graphql-config@5.1.3(@types/node@22.10.5)(graphql@16.10.0)(typescript@5.7.2):
     dependencies:
       '@graphql-tools/graphql-file-loader': 8.0.10(graphql@16.10.0)
@@ -15897,6 +15948,10 @@ snapshots:
       web-worker: 1.3.0
     transitivePeerDependencies:
       - supports-color
+
+  meros@1.3.0(@types/node@22.10.10):
+    optionalDependencies:
+      '@types/node': 22.10.10
 
   meros@1.3.0(@types/node@22.10.5):
     optionalDependencies:
@@ -17742,7 +17797,7 @@ snapshots:
 
   ts-log@2.2.7: {}
 
-  ts-node@10.9.2(@swc/core@1.10.4)(@types/node@18.19.69)(typescript@5.5.4):
+  ts-node@10.9.2(@swc/core@1.10.4(@swc/helpers@0.5.5))(@types/node@18.19.69)(typescript@5.5.4):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       '@tsconfig/node10': 1.0.11
@@ -17762,7 +17817,7 @@ snapshots:
     optionalDependencies:
       '@swc/core': 1.10.4(@swc/helpers@0.5.5)
 
-  ts-node@10.9.2(@swc/core@1.10.4)(@types/node@22.10.10)(typescript@5.7.2):
+  ts-node@10.9.2(@swc/core@1.10.4(@swc/helpers@0.5.5))(@types/node@22.10.10)(typescript@5.7.2):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       '@tsconfig/node10': 1.0.11
@@ -17782,7 +17837,7 @@ snapshots:
     optionalDependencies:
       '@swc/core': 1.10.4(@swc/helpers@0.5.5)
 
-  ts-node@10.9.2(@swc/core@1.10.4)(@types/node@22.10.5)(typescript@5.7.2):
+  ts-node@10.9.2(@swc/core@1.10.4(@swc/helpers@0.5.5))(@types/node@22.10.5)(typescript@5.7.2):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       '@tsconfig/node10': 1.0.11
@@ -17921,14 +17976,14 @@ snapshots:
       typescript: 5.7.3
       yaml: 2.7.0
 
-  typescript-json-schema@0.65.1(@swc/core@1.10.4):
+  typescript-json-schema@0.65.1(@swc/core@1.10.4(@swc/helpers@0.5.5)):
     dependencies:
       '@types/json-schema': 7.0.15
       '@types/node': 18.19.69
       glob: 7.2.3
       path-equal: 1.2.5
       safe-stable-stringify: 2.5.0
-      ts-node: 10.9.2(@swc/core@1.10.4)(@types/node@18.19.69)(typescript@5.5.4)
+      ts-node: 10.9.2(@swc/core@1.10.4(@swc/helpers@0.5.5))(@types/node@18.19.69)(typescript@5.5.4)
       typescript: 5.5.4
       yargs: 17.7.2
     transitivePeerDependencies:

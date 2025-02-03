@@ -5,8 +5,14 @@ import type { SuiClient } from '@mysten/sui/client';
 import type { Signer } from '@mysten/sui/cryptography';
 
 import type { StorageNodeInfo } from './contracts/storage_node.js';
-import type { SliverType } from './node-api/types.gen.js';
-import type { BlobMetadata, SliverData } from './utils/bcs.js';
+import type { RequestOptions, StorageNodeClientOptions } from './storage-node/client.js';
+import type {
+	StorageConfirmation,
+	StoreBlobMetadataRequestInput,
+	StoreSliverRequestInput,
+	Uploadable,
+} from './storage-node/types.js';
+import type { BlobMetadata } from './utils/bcs.js';
 
 export interface WalrusPackageConfig {
 	packageId: string;
@@ -39,21 +45,19 @@ type WalrusNetworkOrPackageConfig =
 			packageConfig: WalrusPackageConfig;
 	  };
 
-export type WalrusClientConfig = WalrusNetworkOrPackageConfig & SuiClientOrRpcUrl;
+export type WalrusClientConfig = {
+	storageNodeClientOptions?: StorageNodeClientOptions;
+} & WalrusNetworkOrPackageConfig &
+	SuiClientOrRpcUrl;
+
+export type WalrusClientRequestOptions = Pick<RequestOptions, 'signal'>;
 
 export interface StorageNode {
-	networkAddress: string;
+	networkUrl: string;
 	info: ReturnType<typeof StorageNodeInfo>['$inferType'];
 	shardIndices: number[];
 	nodeIndex: number;
 	id: string;
-}
-
-export interface GetSliverOptions {
-	blobId: string;
-	sliverPairIndex: number;
-	sliverType?: SliverType;
-	signal?: AbortSignal;
 }
 
 export interface StorageWithSizeOptions {
@@ -70,30 +74,7 @@ export interface RegisterBlobOptions extends StorageWithSizeOptions {
 export interface CertifyBlobOptions {
 	blobId: string;
 	blobObjectId: string;
-	confirmations: ({
-		serializedMessage: string;
-		signature: string;
-	} | null)[];
-}
-
-export interface WriteSliverOptions {
-	blobId: string;
-	sliverIndex: number;
-	type: SliverType;
-	sliver: typeof SliverData.$inferInput | BodyInit;
-	signal?: AbortSignal;
-}
-
-export interface WriteMetadataOptions {
-	nodeIndex: number;
-	blobId: string;
-	metadata: BodyInit | typeof BlobMetadata.$inferInput;
-	signal?: AbortSignal;
-}
-
-export interface StorageConfirmation {
-	serializedMessage: string;
-	signature: string;
+	confirmations: (StorageConfirmation | null)[];
 }
 
 type DeletableConfirmationOptions =
@@ -103,32 +84,43 @@ type DeletableConfirmationOptions =
 export type GetStorageConfirmationOptions = {
 	blobId: string;
 	nodeIndex: number;
-} & DeletableConfirmationOptions;
+} & DeletableConfirmationOptions &
+	WalrusClientRequestOptions;
+
+export type ReadBlobOptions = {
+	blobId: string;
+} & WalrusClientRequestOptions;
 
 export interface SliversForNode {
 	primary: { sliverIndex: number; shardIndex: number; sliver: Uint8Array }[];
 	secondary: { sliverIndex: number; shardIndex: number; sliver: Uint8Array }[];
 }
 
-export interface WriteSliversToNodeOptions {
+export type WriteSliversToNodeOptions = {
 	blobId: string;
 	nodeIndex: number;
 	slivers: SliversForNode;
-	signal?: AbortSignal;
-}
+} & WalrusClientRequestOptions;
+
+export type WriteSliverOptions = StoreSliverRequestInput & WalrusClientRequestOptions;
+
+export type WriteMetadataOptions = {
+	nodeIndex: number;
+	metadata: Uploadable | typeof BlobMetadata.$inferInput;
+} & StoreBlobMetadataRequestInput &
+	WalrusClientRequestOptions;
 
 export type WriteEncodedBlobOptions = {
 	blobId: string;
 	nodeIndex: number;
-	metadata: BodyInit | typeof BlobMetadata.$inferInput;
+	metadata: Uploadable | typeof BlobMetadata.$inferInput;
 	slivers: SliversForNode;
-	signal?: AbortSignal;
-} & DeletableConfirmationOptions;
+} & DeletableConfirmationOptions &
+	WalrusClientRequestOptions;
 
-export interface WriteBlobOptions {
+export type WriteBlobOptions = {
 	blob: Uint8Array;
 	deletable: boolean;
-	signal?: AbortSignal;
 	epochs: number;
 	signer: Signer;
-}
+} & WalrusClientRequestOptions;
