@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { SuiClient } from '@mysten/sui/client';
+import type { Signer } from '@mysten/sui/cryptography';
 
 import type { StorageNodeInfo } from './contracts/storage_node.js';
 import type { SliverType } from './node-api/types.gen.js';
@@ -44,6 +45,7 @@ export interface StorageNode {
 	networkAddress: string;
 	info: ReturnType<typeof StorageNodeInfo>['$inferType'];
 	shardIndices: number[];
+	nodeIndex: number;
 	id: string;
 }
 
@@ -79,12 +81,14 @@ export interface WriteSliverOptions {
 	sliverIndex: number;
 	type: SliverType;
 	sliver: typeof SliverData.$inferInput | BodyInit;
+	signal?: AbortSignal;
 }
 
 export interface WriteMetadataOptions {
 	nodeIndex: number;
 	blobId: string;
 	metadata: BodyInit | typeof BlobMetadata.$inferInput;
+	signal?: AbortSignal;
 }
 
 export interface StorageConfirmation {
@@ -92,7 +96,39 @@ export interface StorageConfirmation {
 	signature: string;
 }
 
+type DeletableConfirmationOptions =
+	| { deletable: false; objectId?: string }
+	| { deletable: true; objectId: string };
+
 export type GetStorageConfirmationOptions = {
 	blobId: string;
 	nodeIndex: number;
-} & ({ deletable: false; objectId?: string } | { deletable: true; objectId: string });
+} & DeletableConfirmationOptions;
+
+export interface SliversForNode {
+	primary: { sliverIndex: number; shardIndex: number; sliver: Uint8Array }[];
+	secondary: { sliverIndex: number; shardIndex: number; sliver: Uint8Array }[];
+}
+
+export interface WriteSliversToNodeOptions {
+	blobId: string;
+	nodeIndex: number;
+	slivers: SliversForNode;
+	signal?: AbortSignal;
+}
+
+export type WriteEncodedBlobOptions = {
+	blobId: string;
+	nodeIndex: number;
+	metadata: BodyInit | typeof BlobMetadata.$inferInput;
+	slivers: SliversForNode;
+	signal?: AbortSignal;
+} & DeletableConfirmationOptions;
+
+export interface WriteBlobOptions {
+	blob: Uint8Array;
+	deletable: boolean;
+	signal?: AbortSignal;
+	epochs: number;
+	signer: Signer;
+}

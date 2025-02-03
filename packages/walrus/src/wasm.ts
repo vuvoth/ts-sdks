@@ -4,11 +4,12 @@
 import { BlobEncoder, from_signed_messages_and_indices, MessageType } from '@mysten/walrus-wasm';
 
 import { blobIdFromBytes } from './utils/bcs.js';
-import type { BlobMetadataWithId, SliverData, SliverPair } from './utils/bcs.js';
+import type { BlobMetadata, BlobMetadataWithId, SliverData, SliverPair } from './utils/bcs.js';
 
 export interface EncodedBlob {
 	sliverPairs: (typeof SliverPair.$inferInput)[];
-	metadata: Omit<typeof BlobMetadataWithId.$inferInput, 'blob_id'> & { blob_id: string };
+	blobId: string;
+	metadata: typeof BlobMetadata.$inferInput;
 	rootHash: Uint8Array;
 }
 
@@ -19,10 +20,8 @@ export function encodeBlob(nShards: number, bytes: Uint8Array): EncodedBlob {
 
 	return {
 		sliverPairs,
-		metadata: {
-			...metadata,
-			blob_id: blobIdFromBytes(new Uint8Array(metadata.blob_id)),
-		},
+		blobId: blobIdFromBytes(new Uint8Array(metadata.blob_id)),
+		metadata: metadata.metadata,
 		rootHash: new Uint8Array(rootHash.Digest),
 	};
 }
