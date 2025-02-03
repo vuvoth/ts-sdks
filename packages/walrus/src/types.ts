@@ -132,3 +132,20 @@ export interface WriteBlobOptions {
 	epochs: number;
 	signer: Signer;
 }
+
+export interface DeleteBlobOptions {
+	blobObjectId: string;
+}
+
+export type ExtendBlobOptions = {
+	blobObjectId: string;
+} & (
+	| {
+			epochs: number;
+			endEpoch?: never;
+	  }
+	| {
+			endEpoch: number;
+			epochs?: never;
+	  }
+);
