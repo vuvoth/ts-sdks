@@ -18,7 +18,7 @@ export const Ciphertext = bcs.enum('Ciphertext', {
 	}),
 	Plain: bcs.struct('Plain', {}),
 });
-export type CiphertextType = typeof Ciphertext.$inferType;
+export type CiphertextType = typeof Ciphertext.$inferInput;
 
 /**
  * The encrypted object format. Should be aligned with the Rust implementation.

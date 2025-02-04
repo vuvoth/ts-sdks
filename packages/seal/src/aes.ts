@@ -17,9 +17,7 @@ async function generateAesKey(): Promise<Uint8Array> {
 		true,
 		['encrypt', 'decrypt'],
 	);
-	return new Uint8Array(
-		await crypto.subtle.exportKey('raw', key).then((keyData) => new Uint8Array(keyData)),
-	);
+	return await crypto.subtle.exportKey('raw', key).then((keyData) => new Uint8Array(keyData));
 }
 
 export interface EncryptionInput {
@@ -43,31 +41,28 @@ export class AesGcm256 implements EncryptionInput {
 	async encrypt(key: Uint8Array): Promise<CiphertextType> {
 		const aesCryptoKey = await crypto.subtle.importKey('raw', key, 'AES-GCM', false, ['encrypt']);
 
-		const blob = Array.from(
-			new Uint8Array(
-				await crypto.subtle.encrypt(
-					{
-						name: 'AES-GCM',
-						iv,
-						additionalData: this.aad,
-					},
-					aesCryptoKey,
-					this.plaintext,
-				),
+		const blob = new Uint8Array(
+			await crypto.subtle.encrypt(
+				{
+					name: 'AES-GCM',
+					iv,
+					additionalData: this.aad,
+				},
+				aesCryptoKey,
+				this.plaintext,
 			),
 		);
 
 		return {
 			Aes256Gcm: {
 				blob,
-				aad: Array.from(this.aad ?? []),
+				aad: this.aad ?? [],
 			},
-			$kind: 'Aes256Gcm',
 		};
 	}
 
 	static async decrypt(key: Uint8Array, ciphertext: CiphertextType): Promise<Uint8Array> {
-		if (ciphertext.Aes256Gcm === undefined) {
+		if (!('Aes256Gcm' in ciphertext)) {
 			throw new Error('Invalid ciphertext');
 		}
 
@@ -92,7 +87,6 @@ export class Plain implements EncryptionInput {
 	async encrypt(_key: Uint8Array): Promise<CiphertextType> {
 		return {
 			Plain: {},
-			$kind: 'Plain',
 		};
 	}
 

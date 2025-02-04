@@ -36,7 +36,7 @@ export class SessionKey {
 
 	getPersonalMessage(): Uint8Array {
 		// TODO: decide if we want 0x on the server end
-		const message = `Requesting access to keys of package ${toHex(this.packageId)} for ${this.ttlMin} mins\n session key ${toBase64(this.session_key.getPublicKey().toRawBytes())}, created at ${this.creationTime}`;
+		const message = `Requesting access to keys of package ${toHex(this.packageId)} for ${this.ttlMin} mins, session key ${toBase64(this.session_key.getPublicKey().toRawBytes())}, created at ${this.creationTime}`;
 		return new TextEncoder().encode(message);
 	}
 

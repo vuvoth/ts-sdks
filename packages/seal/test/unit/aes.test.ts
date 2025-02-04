@@ -16,10 +16,10 @@ describe('AES encryption', () => {
 			expect(key.length).toBe(32);
 
 			const ciphertext = await aes.encrypt(key);
-			expect(ciphertext.$kind).toBe('Aes256Gcm');
-			expect(ciphertext.Aes256Gcm).toBeDefined();
-
-			const aadArray = ciphertext.Aes256Gcm?.aad ?? [];
+			if (!('Aes256Gcm' in ciphertext)) {
+				throw new Error('Invalid ciphertext');
+			}
+			const aadArray = ciphertext.Aes256Gcm.aad ?? [];
 			expect(new Uint8Array(aadArray)).toEqual(testAad);
 
 			// message length is 2, tag is 16 bytes
@@ -42,7 +42,10 @@ describe('AES encryption', () => {
 			const aes = new AesGcm256(testMessage, testAad);
 			const key = await aes.generateKey();
 			let ciphertext = await aes.encrypt(key);
-			ciphertext.Aes256Gcm?.aad?.fill(1);
+			if (!('Aes256Gcm' in ciphertext)) {
+				throw new Error('Invalid ciphertext');
+			}
+			ciphertext.Aes256Gcm.aad = new Uint8Array([1]);
 
 			await expect(AesGcm256.decrypt(key, ciphertext)).rejects.toThrow();
 		});
