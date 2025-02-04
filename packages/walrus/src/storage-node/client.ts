@@ -34,7 +34,7 @@ export type StorageNodeClientOptions = {
 
 export type RequestOptions = {
 	nodeUrl: string;
-	headers: ReturnType<typeof mergeHeaders>;
+	headers?: ReturnType<typeof mergeHeaders>;
 } & Omit<RequestInit, 'body' | 'headers'>;
 
 export class StorageNodeClient {
