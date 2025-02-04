@@ -58,7 +58,7 @@ const [{ digest: digest1 }, { digest: digest2 }] = await Promise.all([
 
 ## `ParallelTransactionExecutor`
 
-<Callout type="warning">
+<Callout type="warn">
 	`ParallelTransactionExecutor` is experimental and may change rapidly as it is being developed.
 </Callout>
 
@@ -67,7 +67,7 @@ allows for parallel execution of transactions. To make this work, the `ParallelT
 will maintain a pool of gas coins, and automatically execute additional transactions to refill the
 gas pool as needed.
 
-<Callout type="warning">
+<Callout type="warn">
 	Using SuiClient or wallets to execute additional transactions while `ParallelTransactionExecutor`
 	is in use may consume/combine gas coins in the gasPool, causing transactions to fail. This may
 	also result in the coins becoming locked for the remainder of the current epoch, preventing them
