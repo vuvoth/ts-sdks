@@ -124,3 +124,20 @@ export type WriteBlobOptions = {
 	epochs: number;
 	signer: Signer;
 } & WalrusClientRequestOptions;
+
+export interface DeleteBlobOptions {
+	blobObjectId: string;
+}
+
+export type ExtendBlobOptions = {
+	blobObjectId: string;
+} & (
+	| {
+			epochs: number;
+			endEpoch?: never;
+	  }
+	| {
+			endEpoch: number;
+			epochs?: never;
+	  }
+);
