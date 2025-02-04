@@ -5,6 +5,7 @@
 .contentlayer
 .content-collections
 .source
+public/typedoc
 
 # test & build
 /coverage
