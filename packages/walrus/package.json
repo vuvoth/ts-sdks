@@ -40,14 +40,12 @@
 	},
 	"homepage": "https://github.com/mystenlabs/ts-sdks#readme",
 	"devDependencies": {
-		"@hey-api/openapi-ts": "^0.61.2",
 		"@mysten/build-scripts": "workspace:*",
 		"@types/node": "^22.10.5",
 		"typescript": "^5.7.2",
 		"vitest": "^2.1.8"
 	},
 	"dependencies": {
-		"@hey-api/client-fetch": "^0.6.0",
 		"@mysten/bcs": "workspace:*",
 		"@mysten/sui": "workspace:*",
 		"@mysten/walrus-wasm": "workspace:*",

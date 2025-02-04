@@ -15,12 +15,13 @@ import { Staking } from './contracts/staking.js';
 import { Storage } from './contracts/storage_resource.js';
 import { SystemStateInnerV1 } from './contracts/system_state_inner.js';
 import { init as initSystemContract, System } from './contracts/system.js';
+import { StorageNodeClient } from './storage-node/client.js';
 import type {
 	CertifyBlobOptions,
 	DeleteBlobOptions,
 	ExtendBlobOptions,
-	GetSliverOptions,
 	GetStorageConfirmationOptions,
+	ReadBlobOptions,
 	RegisterBlobOptions,
 	SliversForNode,
 	StorageNode,
@@ -33,27 +34,23 @@ import type {
 	WriteSliverOptions,
 	WriteSliversToNodeOptions,
 } from './types.js';
-import {
-	blobIdToInt,
-	BlobMetadata,
-	BlobMetadataWithId,
-	IntentType,
-	SliverData,
-	StorageConfirmation,
-} from './utils/bcs.js';
+import { blobIdToInt, IntentType, SliverData, StorageConfirmation } from './utils/bcs.js';
 import {
 	encodedBlobLength,
 	getPrimarySourceSymbols,
 	getShardIndicesByNodeId,
 	signersToBitmap,
 	storageUnitsFromSize,
+	toPairIndex,
 	toShardIndex,
 } from './utils/index.js';
 import { SuiObjectDataLoader } from './utils/object-loader.js';
-import { TaskPool } from './utils/task-pool.js';
+import { getRandom } from './utils/randomness.js';
 import { combineSignatures, decodePrimarySlivers, encodeBlob } from './wasm.js';
 
 export class WalrusClient {
+	#storageNodeClient: StorageNodeClient;
+
 	packageConfig: WalrusPackageConfig;
 	#suiClient: SuiClient;
 	#objectLoader: SuiObjectDataLoader;
@@ -86,6 +83,8 @@ export class WalrusClient {
 			new SuiClient({
 				url: config.suiRpcUrl,
 			});
+
+		this.#storageNodeClient = new StorageNodeClient(config.storageNodeClientOptions);
 		this.#objectLoader = new SuiObjectDataLoader(this.#suiClient);
 	}
 
@@ -134,67 +133,35 @@ export class WalrusClient {
 		);
 	}
 
-	async getBlobMetadata(blobId: string) {
-		const res = await this.#fetchFromRandomNode(`/v1/blobs/${blobId}/metadata`, {
-			method: 'GET',
-		});
-
-		return BlobMetadataWithId.parse(new Uint8Array(await res.arrayBuffer()));
-	}
-
-	async getSliver({ blobId, sliverPairIndex, sliverType = 'primary', signal }: GetSliverOptions) {
-		const systemState = await this.systemState();
-		const numShards = systemState.committee.n_shards;
-		const shardIndex = toShardIndex(sliverPairIndex, blobId, numShards);
-
-		const response = await this.#fetchFromShard(
-			shardIndex,
-			`/v1/blobs/${blobId}/slivers/${sliverPairIndex}/${sliverType}`,
-			{
-				method: 'GET',
-				signal,
-			},
-		);
-
-		return SliverData.parse(new Uint8Array(await response.arrayBuffer()));
-	}
-
-	async readBlob(blobId: string) {
-		// TODO: calculate this using the unencoded_length and primary source symbols + other data
-		const concurrencyLimit = 20;
-
+	async readBlob({ blobId, signal }: ReadBlobOptions) {
 		const systemState = await this.systemState();
 		const numShards = systemState.committee.n_shards;
 		const minSymbols = getPrimarySourceSymbols(numShards);
 
-		const taskPool = new TaskPool(concurrencyLimit);
-		const slivers: (typeof SliverData.$inferType)[] = [];
-		const blobMetadata = await this.getBlobMetadata(blobId);
+		const storageNodes = await this.#getNodes();
+		const randomStorageNode = getRandom(storageNodes.committee);
 
-		// TODO: implement better shard selection logic
-		const sliverPromises = new Array(numShards).fill(null).map((_, sliverPairIndex) =>
-			taskPool
-				.runTask((signal) => {
-					return this.getSliver({ blobId, sliverPairIndex, signal }).then((response) => {
-						slivers.push(response);
-
-						if (slivers.length === minSymbols) {
-							taskPool.abortPendingTasks();
-						}
-					});
-				})
-				.catch((error) => {
-					// handle abort signal
-					if (error.name === 'AbortError') {
-						return;
-					}
-
-					throw error;
-				}),
+		const blobMetadata = await this.#storageNodeClient.getBlobMetadata(
+			{ blobId },
+			{ nodeUrl: randomStorageNode.networkUrl, signal },
 		);
 
+		// TODO: implement better shard selection logic
+		const sliverPromises = Array.from({ length: minSymbols }).map(async (_, shardIndex) => {
+			const storageNode = await this.#getNodeByShardIndex(shardIndex);
+			const sliverPairIndex = toPairIndex(shardIndex, blobId, numShards);
+
+			return await this.#storageNodeClient.getSliver(
+				{ blobId, sliverPairIndex, sliverType: 'primary' },
+				{ nodeUrl: storageNode.networkUrl, signal },
+			);
+		});
+
 		// TODO: implement retry/scheduling logic
-		await Promise.allSettled(sliverPromises);
+		const sliverResults = await Promise.allSettled(sliverPromises);
+		const slivers = sliverResults
+			.map((result) => (result.status === 'fulfilled' ? result.value : null))
+			.filter((sliver) => !!sliver);
 
 		if (slivers.length < minSymbols) {
 			throw new Error('Not enough slivers to decode');
@@ -562,51 +529,25 @@ export class WalrusClient {
 		return { digest };
 	}
 
-	async writeSliver({ blobId, sliverIndex, type, sliver, signal }: WriteSliverOptions) {
+	async writeSliver({ blobId, sliverPairIndex, sliverType, sliver, signal }: WriteSliverOptions) {
 		const systemState = await this.systemState();
-		const shardIndex = toShardIndex(sliverIndex, blobId, systemState.committee.n_shards);
+		const shardIndex = toShardIndex(sliverPairIndex, blobId, systemState.committee.n_shards);
+		const node = await this.#getNodeByShardIndex(shardIndex);
 
-		const response = await this.#fetchFromShard(
-			shardIndex,
-			`/v1/blobs/${blobId}/slivers/${sliverIndex}/${type}`,
-			{
-				body:
-					typeof sliver === 'object' && 'symbols' in sliver
-						? SliverData.serialize(sliver).toBytes()
-						: sliver,
-				method: 'PUT',
-				headers: {
-					'Content-Type': 'application/octet-stream',
-				},
-				signal,
-			},
+		return await this.#storageNodeClient.storeSliver(
+			{ blobId, sliverPairIndex, sliverType, sliver },
+			{ nodeUrl: node.networkUrl, signal },
 		);
-
-		if (!response.ok) {
-			throw new Error(`Failed to upload sliver: ${response.statusText}`);
-		}
-
-		await response.body?.cancel();
 	}
 
 	async writeMetadataToNode({ nodeIndex, blobId, metadata, signal }: WriteMetadataOptions) {
-		const response = await this.#fetchFromNode(nodeIndex, `/v1/blobs/${blobId}/metadata`, {
-			body:
-				typeof metadata === 'object' && 'V1' in metadata
-					? BlobMetadata.serialize(metadata).toBytes()
-					: metadata,
-			method: 'PUT',
-			headers: {
-				'Content-Type': 'application/octet-stream',
-			},
-			signal,
-		});
+		const nodes = await this.#getNodes();
+		const node = nodes.committee[nodeIndex];
 
-		if (!response.ok) {
-			throw new Error(`Failed to upload metadata: ${response.statusText}`);
-		}
-
-		await response.body?.cancel();
+		return await this.#storageNodeClient.storeBlobMetadata(
+			{ blobId, metadata },
+			{ nodeUrl: node.networkUrl, signal },
+		);
 	}
 
 	async getStorageConfirmationFromNode({
@@ -614,36 +555,22 @@ export class WalrusClient {
 		blobId,
 		deletable,
 		objectId,
+		signal,
 	}: GetStorageConfirmationOptions) {
 		const nodes = await this.#getNodes();
 		const node = nodes.committee[nodeIndex];
-		const res = await fetch(
-			deletable
-				? `https://${node.networkAddress}/v1/blobs/${blobId}/confirmation/deletable/${objectId}`
-				: `https://${node.networkAddress}/v1/blobs/${blobId}/confirmation/permanent`,
-			{
-				method: 'GET',
-			},
-		);
 
-		if (!res.ok) {
-			throw new Error(
-				`Failed to get storage confirmation from node ${node.networkAddress}: ${res.statusText}`,
-			);
-		}
+		const result = deletable
+			? await this.#storageNodeClient.getDeletableBlobConfirmation(
+					{ blobId, objectId },
+					{ nodeUrl: node.networkUrl, signal },
+				)
+			: await this.#storageNodeClient.getPermanentBlobConfirmation(
+					{ blobId },
+					{ nodeUrl: node.networkUrl, signal },
+				);
 
-		const json = (await res.json()) as {
-			success: {
-				data: {
-					signed: {
-						serializedMessage: string;
-						signature: string;
-					};
-				};
-			};
-		};
-
-		return json.success.data.signed;
+		return result;
 	}
 
 	async encodeBlob(blob: Uint8Array) {
@@ -710,8 +637,8 @@ export class WalrusClient {
 			slivers.primary.map((sliver) =>
 				this.writeSliver({
 					blobId,
-					sliverIndex: sliver.sliverIndex,
-					type: 'primary',
+					sliverPairIndex: sliver.sliverIndex,
+					sliverType: 'primary',
 					sliver: sliver.sliver,
 					signal: controller.signal,
 				}),
@@ -772,8 +699,8 @@ export class WalrusClient {
 		let failures = 0;
 
 		const confirmations = await Promise.all(
-			sliversByNode.map((slivers, nodeIndex) =>
-				this.writeEncodedBlobToNode({
+			sliversByNode.map((slivers, nodeIndex) => {
+				return this.writeEncodedBlobToNode({
 					blobId,
 					nodeIndex,
 					metadata,
@@ -790,8 +717,8 @@ export class WalrusClient {
 					}
 
 					return null;
-				}),
-			),
+				});
+			}),
 		);
 
 		await this.executeCertifyBlobTransaction({
@@ -833,7 +760,7 @@ export class WalrusClient {
 			const node: StorageNode = {
 				id: node_info.node_id,
 				info: node_info,
-				networkAddress: node_info.network_address,
+				networkUrl: `https://${node_info.network_address}`,
 				shardIndices,
 				nodeIndex,
 			};
@@ -867,18 +794,6 @@ export class WalrusClient {
 		);
 	}
 
-	async #fetchFromNode(index: number, path: string, init: RequestInit) {
-		const node = (await this.#getNodes()).committee[index];
-
-		const response = await fetch(`https://${node.networkAddress}${path}`, init);
-
-		if (!response.ok) {
-			throw new Error(`Failed to fetch from node ${node.networkAddress}: ${response.statusText}`);
-		}
-
-		return response;
-	}
-
 	async #getNodeByShardIndex(index: number) {
 		const nodes = await this.#getNodes();
 		const node = nodes.byShardIndex.get(index);
@@ -888,25 +803,5 @@ export class WalrusClient {
 		}
 
 		return node;
-	}
-
-	async #fetchFromShard(index: number, path: string, init: RequestInit) {
-		const node = await this.#getNodeByShardIndex(index);
-
-		const response = await fetch(`https://${node.networkAddress}${path}`, init);
-
-		if (!response.ok) {
-			throw new Error(`Failed to fetch from node ${node.networkAddress}: ${response.statusText}`);
-		}
-
-		return response;
-	}
-
-	async #fetchFromRandomNode(path: string, init: RequestInit) {
-		const nodes = await this.#getNodes();
-
-		const nodeIndex = Math.floor(Math.random() * nodes.committee.length);
-
-		return this.#fetchFromNode(nodeIndex, path, init);
 	}
 }

@@ -20,7 +20,7 @@ const walrusClient = new WalrusClient({
 
 export async function retrieveBlob(blobId: string) {
 	const systemState = await walrusClient.systemState();
-	const blobBytes = await walrusClient.readBlob(blobId);
+	const blobBytes = await walrusClient.readBlob({ blobId });
 
 	const reconstructedBlobMetadata = computeMetadata(systemState.committee.n_shards, blobBytes);
 	if (reconstructedBlobMetadata.blob_id !== blobId) {
