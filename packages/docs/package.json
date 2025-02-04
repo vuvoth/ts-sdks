@@ -1,14 +1,12 @@
 {
 	"name": "@mysten/sdk-docs",
-	"version": "1.0.9",
+	"version": "0.0.0",
 	"private": true,
-	"description": "Docs for @mysten npm packages",
-	"main": "index.js",
 	"scripts": {
+		"build": "typedoc && next build",
 		"dev": "next dev",
-		"#build": "next cache causes issues in vercel: https://github.com/orgs/vercel/discussions/2079",
-		"build": "typedoc && next build && rm -rf .next/cache",
 		"start": "next start",
+		"postinstall": "fumadocs-mdx",
 		"prettier:check": "prettier -c --ignore-unknown .",
 		"prettier:fix": "prettier -w --ignore-unknown .",
 		"eslint:check": "eslint --max-warnings=0 .",
@@ -16,12 +14,6 @@
 		"lint": "pnpm run eslint:check && pnpm run prettier:check",
 		"lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix"
 	},
-	"publishConfig": {
-		"access": "restricted"
-	},
-	"keywords": [],
-	"author": "Mysten Labs <build@mystenlabs.com>",
-	"license": "Apache-2.0",
 	"dependencies": {
 		"@mysten/bcs": "workspace:*",
 		"@mysten/dapp-kit": "workspace:*",
@@ -33,16 +25,24 @@
 		"@mysten/wallet-standard": "workspace:*",
 		"@mysten/zksend": "workspace:*",
 		"@tanstack/react-query": "^5.50.1",
-		"@types/node": "^22.10.5",
-		"next": "^14.2.10",
-		"nextra": "^2.13.4",
-		"nextra-theme-docs": "^2.13.4",
+		"fumadocs-core": "15.0.0",
+		"fumadocs-mdx": "11.3.2",
+		"fumadocs-typescript": "^3.0.3",
+		"fumadocs-ui": "15.0.0",
+		"next": "15.1.6",
 		"react": "^18.3.1",
-		"react-dom": "^18.3.1",
-		"typedoc-plugin-mermaid": "^1.12.0"
+		"react-dom": "^18.3.1"
 	},
 	"devDependencies": {
+		"@tailwindcss/postcss": "^4.0.0",
+		"@types/mdx": "^2.0.13",
+		"@types/node": "^22.10.5",
 		"@types/react": "^18.3.3",
-		"typedoc": "^0.27.6"
+		"@types/react-dom": "^18.3.0",
+		"postcss": "^8.5.1",
+		"tailwindcss": "^4.0.0",
+		"typedoc": "^0.27.6",
+		"typedoc-plugin-mermaid": "^1.12.0",
+		"typescript": "^5.7.2"
 	}
 }

@@ -1,6 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+'use client';
+
 import {
 	ConnectButton,
 	SuiClientProvider,
@@ -21,7 +23,7 @@ import { getFullnodeUrl } from '@mysten/sui/client';
 import { Transaction } from '@mysten/sui/transactions';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import '@mysten/dapp-kit/dist/index.css';
 
@@ -311,15 +313,6 @@ function withProviders(
 	};
 
 	return () => {
-		const [shouldRender, setShouldRender] = useState(false);
-		useEffect(() => {
-			setShouldRender(true);
-		}, [setShouldRender]);
-
-		if (!shouldRender) {
-			return null;
-		}
-
 		return (
 			<QueryClientProvider client={queryClient}>
 				<SuiClientProvider networks={networks}>

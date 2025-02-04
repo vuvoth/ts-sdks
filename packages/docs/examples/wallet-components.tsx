@@ -1,6 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+'use client';
+
 import {
 	ConnectButton,
 	ConnectModal,
@@ -10,7 +12,7 @@ import {
 } from '@mysten/dapp-kit';
 import { getFullnodeUrl } from '@mysten/sui/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import '@mysten/dapp-kit/dist/index.css';
 
@@ -46,22 +48,12 @@ export const UncontrolledConnectModalExample = withProviders(() => {
 });
 
 function withProviders(Component: React.FunctionComponent<object>) {
-	// Work around server-side pre-rendering
 	const queryClient = new QueryClient();
 	const networks = {
 		mainnet: { url: getFullnodeUrl('mainnet') },
 	};
 
 	return () => {
-		const [shouldRender, setShouldRender] = useState(false);
-		useEffect(() => {
-			setShouldRender(true);
-		}, [setShouldRender]);
-
-		if (!shouldRender) {
-			return null;
-		}
-
 		return (
 			<QueryClientProvider client={queryClient}>
 				<SuiClientProvider networks={networks}>
