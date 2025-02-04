@@ -92,8 +92,18 @@ export type ReadBlobOptions = {
 } & WalrusClientRequestOptions;
 
 export interface SliversForNode {
-	primary: { sliverIndex: number; shardIndex: number; sliver: Uint8Array }[];
-	secondary: { sliverIndex: number; shardIndex: number; sliver: Uint8Array }[];
+	primary: {
+		sliverIndex: number;
+		sliverPairIndex: number;
+		shardIndex: number;
+		sliver: Uint8Array;
+	}[];
+	secondary: {
+		sliverIndex: number;
+		sliverPairIndex: number;
+		shardIndex: number;
+		sliver: Uint8Array;
+	}[];
 }
 
 export type WriteSliversToNodeOptions = {
