@@ -575,44 +575,30 @@ export class WalrusClient {
 
 	async encodeBlob(blob: Uint8Array) {
 		const systemState = await this.systemState();
-		const { blobId, metadata, sliverPairs, rootHash } = encodeBlob(
-			systemState.committee.n_shards,
-			blob,
-		);
+		const numShards = systemState.committee.n_shards;
+		const { blobId, metadata, sliverPairs, rootHash } = encodeBlob(numShards, blob);
 
 		const sliversByNodeMap = new Map<number, SliversForNode>();
 
 		while (sliverPairs.length > 0) {
 			// remove from list so we don't preserve references to the original data
 			const { primary, secondary } = sliverPairs.pop()!;
+			const shardIndex = toShardIndex(primary.index, blobId, numShards);
+			const node = await this.#getNodeByShardIndex(shardIndex);
 
-			const primaryShardIndex = toShardIndex(primary.index, blobId, systemState.committee.n_shards);
-			const secondaryShardIndex = toShardIndex(
-				secondary.index,
-				blobId,
-				systemState.committee.n_shards,
-			);
-
-			const primaryNode = await this.#getNodeByShardIndex(primaryShardIndex);
-			const secondaryNode = await this.#getNodeByShardIndex(secondaryShardIndex);
-
-			if (!sliversByNodeMap.has(primaryNode.nodeIndex)) {
-				sliversByNodeMap.set(primaryNode.nodeIndex, { primary: [], secondary: [] });
+			if (!sliversByNodeMap.has(node.nodeIndex)) {
+				sliversByNodeMap.set(node.nodeIndex, { primary: [], secondary: [] });
 			}
 
-			if (!sliversByNodeMap.has(secondaryNode.nodeIndex)) {
-				sliversByNodeMap.set(secondaryNode.nodeIndex, { primary: [], secondary: [] });
-			}
-
-			sliversByNodeMap.get(primaryNode.nodeIndex)!.primary.push({
+			sliversByNodeMap.get(node.nodeIndex)!.primary.push({
 				sliverIndex: primary.index,
-				shardIndex: primaryShardIndex,
+				shardIndex,
 				sliver: SliverData.serialize(primary).toBytes(),
 			});
 
-			sliversByNodeMap.get(secondaryNode.nodeIndex)!.secondary.push({
+			sliversByNodeMap.get(node.nodeIndex)!.secondary.push({
 				sliverIndex: secondary.index,
-				shardIndex: secondaryShardIndex,
+				shardIndex,
 				sliver: SliverData.serialize(secondary).toBytes(),
 			});
 		}
@@ -627,23 +613,37 @@ export class WalrusClient {
 	}
 
 	async writeSliversToNode({ blobId, slivers, signal }: WriteSliversToNodeOptions) {
+		const systemState = await this.systemState();
+		const numShards = systemState.committee.n_shards;
 		const controller = new AbortController();
 
 		signal?.addEventListener('abort', () => {
 			controller.abort();
 		});
 
-		await Promise.all(
-			slivers.primary.map((sliver) =>
-				this.writeSliver({
-					blobId,
-					sliverPairIndex: sliver.sliverIndex,
-					sliverType: 'primary',
-					sliver: sliver.sliver,
-					signal: controller.signal,
-				}),
-			),
-		).catch((error) => {
+		const primarySliverWrites = slivers.primary.map((sliver) => {
+			const sliverPairIndex = toPairIndex(sliver.shardIndex, blobId, numShards);
+			return this.writeSliver({
+				blobId,
+				sliverPairIndex,
+				sliverType: 'primary',
+				sliver: sliver.sliver,
+				signal: controller.signal,
+			});
+		});
+
+		const secondarySliverWrites = slivers.secondary.map((sliver) => {
+			const sliverPairIndex = toPairIndex(sliver.shardIndex, blobId, numShards);
+			return this.writeSliver({
+				blobId,
+				sliverPairIndex,
+				sliverType: 'secondary',
+				sliver: sliver.sliver,
+				signal: controller.signal,
+			});
+		});
+
+		await Promise.all([...primarySliverWrites, ...secondarySliverWrites]).catch((error) => {
 			controller.abort();
 			throw error;
 		});

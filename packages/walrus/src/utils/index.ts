@@ -58,14 +58,14 @@ function rotationOffset(bytes: Uint8Array, modulus: number): number {
 	return bytes.reduce((acc, byte) => (acc * 256 + byte) % modulus, 0);
 }
 
-export function toShardIndex(index: number, blobId: string, numShards: number): number {
-	return (index + rotationOffset(BlobId.serialize(blobId).toBytes(), numShards)) % numShards;
+export function toShardIndex(sliverPairIndex: number, blobId: string, numShards: number): number {
+	const offset = rotationOffset(BlobId.serialize(blobId).toBytes(), numShards);
+	return (sliverPairIndex + offset) % numShards;
 }
 
-export function toPairIndex(index: number, blobId: string, numShards: number): number {
-	return (
-		(numShards + index - rotationOffset(BlobId.serialize(blobId).toBytes(), numShards)) % numShards
-	);
+export function toPairIndex(shardIndex: number, blobId: string, numShards: number): number {
+	const offset = rotationOffset(BlobId.serialize(blobId).toBytes(), numShards);
+	return (numShards + shardIndex - offset) % numShards;
 }
 
 export function signersToBitmap(signers: number[], committeeSize: number): Uint8Array {
