@@ -583,7 +583,9 @@ export class WalrusClient {
 		while (sliverPairs.length > 0) {
 			// remove from list so we don't preserve references to the original data
 			const { primary, secondary } = sliverPairs.pop()!;
-			const shardIndex = toShardIndex(primary.index, blobId, numShards);
+			const sliverPairIndex = primary.index;
+
+			const shardIndex = toShardIndex(sliverPairIndex, blobId, numShards);
 			const node = await this.#getNodeByShardIndex(shardIndex);
 
 			if (!sliversByNodeMap.has(node.nodeIndex)) {
@@ -592,12 +594,14 @@ export class WalrusClient {
 
 			sliversByNodeMap.get(node.nodeIndex)!.primary.push({
 				sliverIndex: primary.index,
+				sliverPairIndex,
 				shardIndex,
 				sliver: SliverData.serialize(primary).toBytes(),
 			});
 
 			sliversByNodeMap.get(node.nodeIndex)!.secondary.push({
 				sliverIndex: secondary.index,
+				sliverPairIndex,
 				shardIndex,
 				sliver: SliverData.serialize(secondary).toBytes(),
 			});
@@ -613,32 +617,28 @@ export class WalrusClient {
 	}
 
 	async writeSliversToNode({ blobId, slivers, signal }: WriteSliversToNodeOptions) {
-		const systemState = await this.systemState();
-		const numShards = systemState.committee.n_shards;
 		const controller = new AbortController();
 
 		signal?.addEventListener('abort', () => {
 			controller.abort();
 		});
 
-		const primarySliverWrites = slivers.primary.map((sliver) => {
-			const sliverPairIndex = toPairIndex(sliver.shardIndex, blobId, numShards);
+		const primarySliverWrites = slivers.primary.map(({ sliverPairIndex, sliver }) => {
 			return this.writeSliver({
 				blobId,
 				sliverPairIndex,
 				sliverType: 'primary',
-				sliver: sliver.sliver,
+				sliver,
 				signal: controller.signal,
 			});
 		});
 
-		const secondarySliverWrites = slivers.secondary.map((sliver) => {
-			const sliverPairIndex = toPairIndex(sliver.shardIndex, blobId, numShards);
+		const secondarySliverWrites = slivers.secondary.map(({ sliverPairIndex, sliver }) => {
 			return this.writeSliver({
 				blobId,
 				sliverPairIndex,
 				sliverType: 'secondary',
-				sliver: sliver.sliver,
+				sliver,
 				signal: controller.signal,
 			});
 		});
