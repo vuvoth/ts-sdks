@@ -9,6 +9,7 @@ npm-debug.log*
 package-lock.json
 yarn-debug.log*
 .next/
+.source/
 .swc/
 build/
 coverage/

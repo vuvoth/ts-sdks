@@ -2,10 +2,5 @@
 	"root": true,
 	"title": "Kiosk",
 	"description": "Interact with on-chain commerce applications",
-	"pages": [
-		"index",
-		"kiosk-client",
-		"advanced-examples",
-		"from-v1"
-	]
+	"pages": ["index", "kiosk-client", "advanced-examples", "from-v1"]
 }

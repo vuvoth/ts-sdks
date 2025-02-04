@@ -1,6 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+'use client';
+
 import {
 	ConnectButton,
 	SuiClientProvider,
@@ -313,7 +315,7 @@ function withProviders(
 	return () => {
 		const [shouldRender, setShouldRender] = useState(false);
 		useEffect(() => {
-			setShouldRender(true);
+			// setShouldRender(true);
 		}, [setShouldRender]);
 
 		if (!shouldRender) {
