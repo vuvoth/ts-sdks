@@ -17,6 +17,7 @@ import type {
 	StoreSliverRequestInput,
 	StoreSliverResponse,
 } from './types.js';
+import { mergeHeaders } from './utils.js';
 
 export type Fetch = (url: RequestInfo, init?: RequestInit) => Promise<Response>;
 
@@ -33,7 +34,8 @@ export type StorageNodeClientOptions = {
 
 export type RequestOptions = {
 	nodeUrl: string;
-} & Pick<RequestInit, 'signal'>;
+	headers: ReturnType<typeof mergeHeaders>;
+} & Omit<RequestInit, 'body' | 'headers'>;
 
 export class StorageNodeClient {
 	#fetch: Fetch;
@@ -51,7 +53,7 @@ export class StorageNodeClient {
 	): Promise<GetBlobMetadataResponse> {
 		const response = await this.#request(`${nodeUrl}/v1/blobs/${blobId}/metadata`, {
 			...options,
-			headers: { Accept: 'application/octet-stream' },
+			headers: mergeHeaders({ Accept: 'application/octet-stream' }, options.headers),
 		});
 
 		const bcsBytes = await response.arrayBuffer();
@@ -74,12 +76,15 @@ export class StorageNodeClient {
 		const isBcsInput = typeof metadata === 'object' && 'V1' in metadata;
 		const body = isBcsInput ? BlobMetadata.serialize(metadata).toBytes() : metadata;
 
-		await this.#request(`${nodeUrl}/v1/blobs/${blobId}/metadata`, {
+		const response = await this.#request(`${nodeUrl}/v1/blobs/${blobId}/metadata`, {
 			...options,
 			method: 'PUT',
 			body,
-			headers: { 'Content-Type': 'application/octet-stream' },
+			headers: mergeHeaders({ 'Content-Type': 'application/octet-stream' }, options.headers),
 		});
+
+		const json = await response.json();
+		return json;
 	}
 
 	/**
@@ -95,7 +100,7 @@ export class StorageNodeClient {
 			`${nodeUrl}/v1/blobs/${blobId}/slivers/${sliverPairIndex}/${sliverType}`,
 			{
 				...options,
-				headers: { Accept: 'application/octet-stream' },
+				headers: mergeHeaders({ Accept: 'application/octet-stream' }, options.headers),
 			},
 		);
 
@@ -113,12 +118,18 @@ export class StorageNodeClient {
 		const isBcsInput = typeof sliver === 'object' && 'symbols' in sliver;
 		const body = isBcsInput ? SliverData.serialize(sliver).toBytes() : sliver;
 
-		await this.#request(`${nodeUrl}/v1/blobs/${blobId}/slivers/${sliverPairIndex}/${sliverType}`, {
-			...options,
-			method: 'PUT',
-			body,
-			headers: { 'Content-Type': 'application/octet-stream' },
-		});
+		const response = await this.#request(
+			`${nodeUrl}/v1/blobs/${blobId}/slivers/${sliverPairIndex}/${sliverType}`,
+			{
+				...options,
+				method: 'PUT',
+				body,
+				headers: mergeHeaders({ 'Content-Type': 'application/octet-stream' }, options.headers),
+			},
+		);
+
+		const json = await response.json();
+		return json;
 	}
 
 	/**

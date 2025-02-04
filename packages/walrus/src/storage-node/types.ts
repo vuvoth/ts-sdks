@@ -27,7 +27,12 @@ export type StoreBlobMetadataRequestInput = {
 	metadata: Uploadable | typeof BlobMetadata.$inferInput;
 };
 
-export type StoreBlobMetadataResponse = void;
+export type StoreBlobMetadataResponse = {
+	success: {
+		code: number;
+		data: string;
+	};
+};
 
 export type GetSliverRequestInput = {
 	blobId: string;
@@ -42,7 +47,12 @@ export type StoreSliverRequestInput = {
 	sliverType: SliverType;
 	sliverPairIndex: number;
 };
-export type StoreSliverResponse = void;
+export type StoreSliverResponse = {
+	success: {
+		code: number;
+		data: string;
+	};
+};
 
 export type GetDeletableBlobConfirmationRequestInput = {
 	blobId: string;
