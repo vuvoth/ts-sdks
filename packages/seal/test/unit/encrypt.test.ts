@@ -170,8 +170,8 @@ describe('Seal encryption tests', () => {
 		const objectId2 = fromHex('0000000000000000000000000000000000000000000000000000000000000002');
 		const objectId3 = fromHex('0000000000000000000000000000000000000000000000000000000000000003');
 
-		const encryption = await encrypt(
-			[
+		const encryption = await encrypt({
+			keyServers: [
 				{
 					objectId: objectId1,
 					pk: pk1.toBytes(),
@@ -194,11 +194,11 @@ describe('Seal encryption tests', () => {
 					keyType: 0,
 				},
 			],
-			2,
-			fromHex('0000000000000000000000000000000000000000000000000000000000000000'),
-			fromHex('01020304'),
-			new Plain(),
-		);
+			threshold: 2,
+			packageId: fromHex('0000000000000000000000000000000000000000000000000000000000000000'),
+			id: fromHex('01020304'),
+			encryptionInput: new Plain(),
+		});
 
 		const parsed = EncryptedObject.parse(encryption);
 
