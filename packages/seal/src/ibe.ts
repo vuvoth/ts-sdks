@@ -28,14 +28,27 @@ export abstract class IBEServers {
 		this.object_ids = object_ids;
 	}
 
+	/**
+	 * The object IDs of the key servers.
+	 */
 	getObjectIds(): Uint8Array[] {
 		return this.object_ids;
 	}
 
+	/**
+	 * The number of key servers.
+	 */
 	size(): number {
 		return this.object_ids.length;
 	}
 
+	/**
+	 * Encrypt a batch of messages for the given identity.
+	 *
+	 * @param id The identity.
+	 * @param msg_and_infos The messages and an additional info parameter which will be included in the KDF.
+	 * @returns The encrypted messages.
+	 */
 	abstract encryptBatched(
 		id: Uint8Array,
 		msg_and_infos: { msg: Uint8Array; info: Uint8Array }[],

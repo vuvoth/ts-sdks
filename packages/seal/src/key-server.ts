@@ -49,6 +49,7 @@ export function getAllowlistedKeyServers(network: 'testnet' | 'mainnet'): Uint8A
  * from onchain state containing name, objectId, URL and pk.
  *
  * @param objectIds - The key server object IDs.
+ * @param client - The SuiClient to use.
  * @returns - An array of SealKeyServer.
  */
 export async function retrieveKeyServers({
@@ -111,8 +112,5 @@ export async function verifyKeyServer(server: KeyServer): Promise<boolean> {
 		return false;
 	}
 	const fullMsg = new Uint8Array([...DST_POP, ...server.pk, ...server.objectId]);
-	if (!bls12_381.verifyShortSignature(fromBase64(serviceResponse.pop), fullMsg, server.pk)) {
-		return false;
-	}
-	return true;
+	return bls12_381.verifyShortSignature(fromBase64(serviceResponse.pop), fullMsg, server.pk);
 }
