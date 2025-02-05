@@ -22,13 +22,19 @@ export const MAX_U8 = 255;
  * @param threshold - The threshold for the TSS encryption.
  * @returns The bcs bytes of the encrypted object containing all metadata.
  */
-export async function encrypt<Input extends EncryptionInput>(
-	keyServers: KeyServer[],
-	threshold: number,
-	packageId: Uint8Array,
-	id: Uint8Array,
-	encryptionInput: Input,
-): Promise<Uint8Array> {
+export async function encrypt<Input extends EncryptionInput>({
+	keyServers,
+	threshold,
+	packageId,
+	id,
+	encryptionInput,
+}: {
+	keyServers: KeyServer[];
+	threshold: number;
+	packageId: Uint8Array;
+	id: Uint8Array;
+	encryptionInput: Input;
+}): Promise<Uint8Array> {
 	// Check inputs
 	if (
 		keyServers.length < threshold ||
