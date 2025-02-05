@@ -62,8 +62,11 @@ export async function encrypt<Input extends EncryptionInput>({
 	const fullId = createFullId(DST, packageId, id);
 	const encrypted_shares = ibeServers.encryptBatched(
 		fullId,
-		shares.map((share) => share.subarray(0, 32)),
-		shares.map((share) => share.subarray(32)),
+		shares.map((share) => ({
+			msg: share.subarray(0, 32),
+			// split() returns the share index in the last byte
+			info: share.subarray(32),
+		})),
 	);
 
 	// Services and indices of their shares are stored as a tuple

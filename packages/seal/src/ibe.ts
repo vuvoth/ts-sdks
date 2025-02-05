@@ -38,8 +38,7 @@ export abstract class IBEServers {
 
 	abstract encryptBatched(
 		id: Uint8Array,
-		msgs: Uint8Array[],
-		infos: Uint8Array[],
+		msg_and_infos: { msg: Uint8Array; info: Uint8Array }[],
 	): IBEEncryptionsType;
 }
 
@@ -55,21 +54,22 @@ export class BonehFranklinBLS12381Services extends IBEServers {
 		this.public_keys = services.map((service) => G2Element.fromBytes(service.pk));
 	}
 
-	encryptBatched(id: Uint8Array, msgs: Uint8Array[], infos: Uint8Array[]): IBEEncryptionsType {
-		if (
-			this.public_keys.length === 0 ||
-			this.public_keys.length !== msgs.length ||
-			this.public_keys.length !== infos.length
-		) {
+	encryptBatched(
+		id: Uint8Array,
+		msg_and_infos: { msg: Uint8Array; info: Uint8Array }[],
+	): IBEEncryptionsType {
+		if (this.public_keys.length === 0 || this.public_keys.length !== msg_and_infos.length) {
 			throw new Error('Invalid input');
 		}
 		const [nonce, keys] = encapBatched(this.public_keys, id);
-		keys.map((key, i) => (msgs[i] = xor(msgs[i], kdf(key, infos[i]))));
+		const encrypted_msgs = msg_and_infos.map((msg_and_info, i) =>
+			xor(msg_and_info.msg, kdf(keys[i], msg_and_info.info)),
+		);
 
 		return {
 			BonehFranklinBLS12381: {
 				encapsulation: nonce.toBytes(),
-				shares: msgs,
+				shares: encrypted_msgs,
 			},
 			$kind: 'BonehFranklinBLS12381',
 		};
