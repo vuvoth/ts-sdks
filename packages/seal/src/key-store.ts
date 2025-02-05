@@ -87,7 +87,7 @@ export class KeyStore {
 
 				const key = G1Element.fromBytes(res.key);
 				if (
-					!BonehFranklinBLS12381Services.verify_user_secret_key(
+					!BonehFranklinBLS12381Services.verifyUserSecretKey(
 						key,
 						fullId,
 						G2Element.fromBytes(server.pk),
