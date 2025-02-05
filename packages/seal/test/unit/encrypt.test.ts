@@ -137,15 +137,15 @@ describe('Seal encryption tests', () => {
 		).toBeFalsy();
 
 		const key_store = new KeyStore();
-		key_store.addKey(toHex(id), objectId1, usk1.toBytes());
-		key_store.addKey(toHex(id), objectId2, usk2.toBytes());
-		key_store.addKey(toHex(id), objectId3, usk3.toBytes());
+		key_store.addKey(id, objectId1, usk1);
+		key_store.addKey(id, objectId2, usk2);
+		key_store.addKey(id, objectId3, usk3);
 
 		await expect(key_store.decrypt(parsed)).resolves.toEqual(msg);
 
 		const key_store_23 = new KeyStore();
-		key_store_23.addKey(toHex(id), objectId2, usk2.toBytes());
-		key_store_23.addKey(toHex(id), objectId3, usk3.toBytes());
+		key_store_23.addKey(id, objectId2, usk2);
+		key_store_23.addKey(id, objectId3, usk3);
 		const modified_parsed_23 = parsed;
 		modified_parsed_23.services = parsed.services.slice(1);
 		modified_parsed_23.encrypted_shares.BonehFranklinBLS12381.shares =
@@ -153,7 +153,7 @@ describe('Seal encryption tests', () => {
 		await expect(key_store_23.decrypt(modified_parsed_23)).resolves.toEqual(msg);
 
 		const key_store_1 = new KeyStore();
-		key_store_1.addKey(toHex(id), objectId1, usk1.toBytes());
+		key_store_1.addKey(id, objectId1, usk1);
 		const modified_parsed_1 = parsed;
 		modified_parsed_1.services = parsed.services.slice(0, 1);
 		modified_parsed_1.encrypted_shares.BonehFranklinBLS12381.shares =
@@ -208,15 +208,15 @@ describe('Seal encryption tests', () => {
 		const usk2 = extractUserSecretKey(sk2, id);
 		const usk3 = extractUserSecretKey(sk3, id);
 		const key_store = new KeyStore();
-		key_store.addKey(toHex(id), objectId1, usk1.toBytes());
-		key_store.addKey(toHex(id), objectId2, usk2.toBytes());
-		key_store.addKey(toHex(id), objectId3, usk3.toBytes());
+		key_store.addKey(id, objectId1, usk1);
+		key_store.addKey(id, objectId2, usk2);
+		key_store.addKey(id, objectId3, usk3);
 
 		const key = await key_store.decrypt(parsed);
 
 		const key_store_23 = new KeyStore();
-		key_store_23.addKey(toHex(id), objectId2, usk2.toBytes());
-		key_store_23.addKey(toHex(id), objectId3, usk3.toBytes());
+		key_store_23.addKey(id, objectId2, usk2);
+		key_store_23.addKey(id, objectId3, usk3);
 		const modified_parsed_23 = parsed;
 		modified_parsed_23.services = parsed.services.slice(1);
 		modified_parsed_23.encrypted_shares.BonehFranklinBLS12381.shares =
@@ -224,7 +224,7 @@ describe('Seal encryption tests', () => {
 		await expect(key_store_23.decrypt(modified_parsed_23)).resolves.toEqual(key);
 
 		const key_store_1 = new KeyStore();
-		key_store_1.addKey(toHex(id), objectId1, usk1.toBytes());
+		key_store_1.addKey(id, objectId1, usk1);
 		const modified_parsed_1 = parsed;
 		modified_parsed_1.services = parsed.services.slice(0, 1);
 		modified_parsed_1.encrypted_shares.BonehFranklinBLS12381.shares =
