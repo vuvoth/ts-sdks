@@ -170,21 +170,34 @@ export class WalrusClient {
 		return decodePrimarySlivers(numShards, blobMetadata.metadata.V1.unencoded_length, slivers);
 	}
 
-	async createStorage({ size, epochs }: StorageWithSizeOptions) {
+	async storageCost(size: number, epochs: number) {
+		const systemState = await this.systemState();
+		const encodedSize = encodedBlobLength(size, systemState.committee.n_shards);
+		const storageUnits = storageUnitsFromSize(encodedSize);
+		const storageCost =
+			BigInt(storageUnits) * BigInt(systemState.storage_price_per_unit_size) * BigInt(epochs);
+		BigInt(epochs);
+
+		const writeCost = BigInt(storageUnits) * BigInt(systemState.write_price_per_unit_size);
+
+		return { storageCost, writeCost, totalCost: storageCost + writeCost };
+	}
+
+	async createStorage({ size, epochs, walCoin }: StorageWithSizeOptions) {
 		const systemObject = await this.systemObject();
 		const systemState = await this.systemState();
 		const encodedSize = encodedBlobLength(size, systemState.committee.n_shards);
+		const { storageCost } = await this.storageCost(size, epochs);
 
 		return (tx: Transaction) => {
-			const coin = tx.add(
-				coinWithBalance({
-					balance:
-						BigInt(storageUnitsFromSize(encodedSize)) *
-						BigInt(systemState.storage_price_per_unit_size) *
-						BigInt(epochs),
-					type: this.walType,
-				}),
-			);
+			const coin = walCoin
+				? tx.splitCoins(walCoin, [storageCost])[0]
+				: tx.add(
+						coinWithBalance({
+							balance: storageCost,
+							type: this.walType,
+						}),
+					);
 
 			const storage = tx.add(
 				this.systemContract.reserve_space({
@@ -249,21 +262,19 @@ export class WalrusClient {
 		};
 	}
 
-	async registerBlob({ size, epochs, blobId, rootHash, deletable }: RegisterBlobOptions) {
-		const systemState = await this.systemState();
-		const storage = await this.createStorage({ size, epochs });
+	async registerBlob({ size, epochs, blobId, rootHash, deletable, walCoin }: RegisterBlobOptions) {
+		const storage = await this.createStorage({ size, epochs, walCoin });
+		const { writeCost } = await this.storageCost(size, epochs);
 
 		return (tx: Transaction) => {
-			const encodedLength = encodedBlobLength(size, systemState.committee.n_shards);
-
-			const writeCoin = tx.add(
-				coinWithBalance({
-					balance:
-						BigInt(storageUnitsFromSize(encodedLength)) *
-						BigInt(systemState.write_price_per_unit_size),
-					type: this.walType,
-				}),
-			);
+			const writeCoin = walCoin
+				? tx.splitCoins(walCoin, [writeCost])[0]
+				: tx.add(
+						coinWithBalance({
+							balance: writeCost,
+							type: this.walType,
+						}),
+					);
 
 			const blob = tx.add(
 				this.systemContract.register_blob({
@@ -305,13 +316,13 @@ export class WalrusClient {
 	async executeRegisterBlobTransaction({
 		signer,
 		...options
-	}: RegisterBlobOptions & { transaction?: Transaction; signer: Signer }): Promise<{
+	}: RegisterBlobOptions & { transaction?: Transaction; signer: Signer; owner?: string }): Promise<{
 		blob: ReturnType<typeof Blob>['$inferType'];
 		digest: string;
 	}> {
 		const transaction = await this.registerBlobTransaction({
 			...options,
-			owner: options.transaction?.getData().sender ?? signer.toSuiAddress(),
+			owner: options.owner ?? options.transaction?.getData().sender ?? signer.toSuiAddress(),
 		});
 
 		const { digest, effects } = await this.#executeTransaction(
@@ -468,8 +479,7 @@ export class WalrusClient {
 		return { digest };
 	}
 
-	async extendBlob({ blobObjectId, epochs, endEpoch }: ExtendBlobOptions) {
-		const systemState = await this.systemState();
+	async extendBlob({ blobObjectId, epochs, endEpoch, walCoin }: ExtendBlobOptions) {
 		const blob = await this.#objectLoader.load(blobObjectId, Blob());
 		const numEpochs = typeof epochs === 'number' ? epochs : endEpoch - blob.storage.end_epoch;
 
@@ -477,16 +487,18 @@ export class WalrusClient {
 			return (_tx: Transaction) => {};
 		}
 
+		const { storageCost } = await this.storageCost(Number(blob.storage.storage_size), numEpochs);
+
 		return (tx: Transaction) => {
-			const coin = tx.add(
-				coinWithBalance({
-					balance:
-						BigInt(storageUnitsFromSize(Number(blob.storage.storage_size))) *
-						BigInt(systemState.storage_price_per_unit_size) *
-						BigInt(numEpochs),
-					type: this.walType,
-				}),
-			);
+			const coin = walCoin
+				? tx.splitCoins(walCoin, [storageCost])[0]
+				: tx.add(
+						coinWithBalance({
+							balance: storageCost,
+
+							type: this.walType,
+						}),
+					);
 
 			tx.add(
 				this.systemContract.extend_blob({
@@ -673,7 +685,7 @@ export class WalrusClient {
 		});
 	}
 
-	async writeBlob({ blob, deletable, epochs, signer, signal }: WriteBlobOptions) {
+	async writeBlob({ blob, deletable, epochs, signer, signal, owner }: WriteBlobOptions) {
 		const systemState = await this.systemState();
 		const nodes = await this.#getNodes();
 		const controller = new AbortController();
@@ -691,6 +703,7 @@ export class WalrusClient {
 			blobId,
 			rootHash,
 			deletable,
+			owner,
 		});
 
 		const blobObjectId = suiBlobObject.blob.id.id;
@@ -728,7 +741,10 @@ export class WalrusClient {
 			confirmations,
 		});
 
-		return { blobId, blobObjectId };
+		return {
+			blobId,
+			blobObject: await this.#objectLoader.load(blobObjectId, Blob()),
+		};
 	}
 
 	async #executeTransaction(transaction: Transaction, signer: Signer, action: string) {
