@@ -64,6 +64,7 @@ describe('Integration test', () => {
 			if (!verifyKeyServer(service)) {
 				throw new Error(`Service not verified ${service.name}`);
 			}
+			return service;
 		});
 		const encryptedBytes = await encrypt(
 			keyServers,
