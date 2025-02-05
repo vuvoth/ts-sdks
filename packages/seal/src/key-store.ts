@@ -134,7 +134,7 @@ export class KeyStore {
 		const fullId = createFullId(
 			DST,
 			encryptedObject.package_id,
-			new Uint8Array(encryptedObject.inner_id),
+			new Uint8Array(encryptedObject.id),
 		);
 
 		// Get the indices of the service whose keys are in the keystore.

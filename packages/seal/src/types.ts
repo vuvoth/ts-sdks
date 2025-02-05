@@ -26,7 +26,7 @@ export type CiphertextType = typeof Ciphertext.$inferInput;
 export const EncryptedObject = bcs.struct('EncryptedObject', {
 	version: bcs.U8,
 	package_id: bcs.bytes(32),
-	inner_id: bcs.vector(bcs.U8),
+	id: bcs.vector(bcs.U8),
 	services: bcs.vector(bcs.tuple([bcs.bytes(32), bcs.U8])),
 	threshold: bcs.U8,
 	encrypted_shares: IBEEncryptions,

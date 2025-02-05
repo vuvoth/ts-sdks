@@ -64,7 +64,7 @@ describe('Seal encryption tests', () => {
 		const parsed = EncryptedObject.parse(encryptedObject);
 
 		expect(parsed.version).toEqual(0);
-		expect(parsed.inner_id).toEqual([1, 2, 3, 4]);
+		expect(parsed.id).toEqual([1, 2, 3, 4]);
 		expect(parsed.package_id).toEqual(
 			fromHex('0000000000000000000000000000000000000000000000000000000000000000'),
 		);
@@ -116,7 +116,7 @@ describe('Seal encryption tests', () => {
 
 		const parsed = EncryptedObject.parse(encryptedObject);
 
-		const id = createFullId(DST, parsed.package_id, new Uint8Array(parsed.inner_id));
+		const id = createFullId(DST, parsed.package_id, new Uint8Array(parsed.id));
 
 		const usk1 = extractUserSecretKey(sk1, id);
 		const usk2 = extractUserSecretKey(sk2, id);
@@ -194,7 +194,7 @@ describe('Seal encryption tests', () => {
 
 		const parsed = EncryptedObject.parse(encryptedObject);
 
-		const id = createFullId(DST, parsed.package_id, new Uint8Array(parsed.inner_id));
+		const id = createFullId(DST, parsed.package_id, new Uint8Array(parsed.id));
 
 		const usk1 = extractUserSecretKey(sk1, id);
 		const usk2 = extractUserSecretKey(sk2, id);

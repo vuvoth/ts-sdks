@@ -82,7 +82,7 @@ export async function encrypt<Input extends EncryptionInput>({
 		encryptedObject: EncryptedObject.serialize({
 			version: 0,
 			package_id: packageId,
-			inner_id: id,
+			id,
 			services: service_oids_and_indices,
 			threshold,
 			encrypted_shares,
