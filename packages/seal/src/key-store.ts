@@ -54,7 +54,8 @@ export class KeyStore {
 		return this.keys_map.has(this.createMapKey(fullId, objectId));
 	}
 
-	/** Look up URLs of key servers and fetch key from servers with request signature,
+	/** 
+	 * Look up URLs of key servers and fetch key from servers with request signature,
 	 * cert and ephPk, then updates the caching keys_map.
 	 */
 	async fetchKeys({
