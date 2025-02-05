@@ -18,7 +18,7 @@ import { createFullId } from './utils.js';
  * A class to cache user secret keys after they have been fetched from key servers.
  */
 export class KeyStore {
-	// A caching map for: fullId -> a list of keys from different servers.
+	// A caching map for: fullId:object_id -> partial key.
 	private readonly keys_map: Map<string, G1Element>;
 
 	constructor() {
@@ -29,8 +29,8 @@ export class KeyStore {
 		return toHex(fullId) + ':' + toHex(objectId);
 	}
 
-	// TODO: This is only used for tests
-	public addKey(fullId: Uint8Array, objectId: Uint8Array, key: G1Element) {
+	/** @internal */
+	addKey(fullId: Uint8Array, objectId: Uint8Array, key: G1Element) {
 		this.keys_map.set(this.createMapKey(fullId, objectId), key);
 	}
 
@@ -40,7 +40,7 @@ export class KeyStore {
 	 * @param fullId The full ID used to derive the key.
 	 * @param objectId The object ID of the key server holding the key.
 	 */
-	public getKey(fullId: Uint8Array, objectId: Uint8Array): G1Element | undefined {
+	private getKey(fullId: Uint8Array, objectId: Uint8Array): G1Element | undefined {
 		return this.keys_map.get(this.createMapKey(fullId, objectId));
 	}
 
@@ -50,7 +50,7 @@ export class KeyStore {
 	 * @param fullId The full ID used to derive the key.
 	 * @param objectId The object ID of the key server holding the key.
 	 */
-	public hasKey(fullId: Uint8Array, objectId: Uint8Array): boolean {
+	private hasKey(fullId: Uint8Array, objectId: Uint8Array): boolean {
 		return this.keys_map.has(this.createMapKey(fullId, objectId));
 	}
 
@@ -85,7 +85,8 @@ export class KeyStore {
 		const cert = sessionKey.getCertificate();
 		const signedRequest = await sessionKey.createRequestParams(txBytes);
 
-		// TODO: wait for t completed promises (not failures).
+		// TODO: wait for t valid keys, either from completed promises (not failures) or from the cache.
+		// TODO: detect an expired session key and raise an error.
 		await Promise.all(
 			remainingKeyServers.map(async (server) => {
 				if (server.keyType !== KeyServerType.BonehFranklinBLS12381) {
@@ -203,9 +204,9 @@ async function fetchKey(
 ): Promise<{ fullId: Uint8Array; key: Uint8Array }> {
 	const enc_key_pk = toPublicKey(enc_key);
 	const body = {
-		ptb: toBase64(txBytes.slice(1)),
+		ptb: toBase64(txBytes.slice(1)), // removes the byte of the transaction type version
 		enc_key: toBase64(enc_key_pk),
-		request_signature: requestSig,
+		request_signature: requestSig, // already b64
 		certificate,
 	};
 	const response = await fetch(url + '/v1/fetch_key', {
@@ -216,6 +217,7 @@ async function fetchKey(
 		body: JSON.stringify(body),
 	});
 	const resp = await response.json();
+	// TODO: handle the different error responses.
 	// TODO: handle multiple decryption keys.
 	const key = elgamalDecrypt(enc_key, resp.decryption_keys[0].encrypted_key.map(fromBase64));
 	return {
