@@ -32,8 +32,8 @@ describe('sdk tests', () => {
 		const msg = new TextEncoder().encode('My super secret message');
 		const aad = new Uint8Array([1, 2, 3, 4]);
 
-		const encryption = await encrypt(
-			[
+		const encryption = await encrypt({
+			keyServers: [
 				{
 					objectId: fromHex('0000000000000000000000000000000000000000000000000000000000000001'),
 					pk: pk1.toBytes(),
@@ -56,11 +56,11 @@ describe('sdk tests', () => {
 					keyType: 0,
 				},
 			],
-			2,
-			fromHex('0000000000000000000000000000000000000000000000000000000000000000'),
-			new Uint8Array([1, 2, 3, 4]),
-			new AesGcm256(msg, aad),
-		);
+			threshold: 2,
+			packageId: fromHex('0000000000000000000000000000000000000000000000000000000000000000'),
+			id: new Uint8Array([1, 2, 3, 4]),
+			encryptionInput: new AesGcm256(msg, aad),
+		});
 		const parsed = EncryptedObject.parse(encryption);
 
 		expect(parsed.version).toEqual(0);
@@ -84,8 +84,8 @@ describe('sdk tests', () => {
 		const objectId2 = fromHex('0000000000000000000000000000000000000000000000000000000000000002');
 		const objectId3 = fromHex('0000000000000000000000000000000000000000000000000000000000000003');
 
-		const encryption = await encrypt(
-			[
+		const encryption = await encrypt({
+			keyServers: [
 				{
 					objectId: objectId1,
 					pk: pk1.toBytes(),
@@ -108,11 +108,11 @@ describe('sdk tests', () => {
 					keyType: 0,
 				},
 			],
-			2,
-			fromHex('0000000000000000000000000000000000000000000000000000000000000000'),
-			fromHex('01020304'),
-			new AesGcm256(msg, aad),
-		);
+			threshold: 2,
+			packageId: fromHex('0000000000000000000000000000000000000000000000000000000000000000'),
+			id: fromHex('01020304'),
+			encryptionInput: new AesGcm256(msg, aad),
+		});
 
 		const parsed = EncryptedObject.parse(encryption);
 

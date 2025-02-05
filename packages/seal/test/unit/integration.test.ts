@@ -66,13 +66,13 @@ describe('Integration test', () => {
 			}
 			return service;
 		});
-		const encryptedBytes = await encrypt(
+		const encryptedBytes = await encrypt({
 			keyServers,
-			keyServers.length,
-			fromHex(TESTNET_PACKAGE_ID),
-			fromHex(whitelistId),
-			new AesGcm256(data, new Uint8Array()),
-		);
+			threshold: keyServers.length,
+			packageId: fromHex(TESTNET_PACKAGE_ID),
+			id: fromHex(whitelistId),
+			encryptionInput: new AesGcm256(data, new Uint8Array()),
+		});
 		const encryptedObject = EncryptedObject.parse(encryptedBytes);
 
 		const keypair = Ed25519Keypair.fromSecretKey(
