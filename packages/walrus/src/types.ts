@@ -3,6 +3,7 @@
 
 import type { SuiClient } from '@mysten/sui/client';
 import type { Signer } from '@mysten/sui/cryptography';
+import type { TransactionObjectArgument } from '@mysten/sui/transactions';
 
 import type { StorageNodeInfo } from './contracts/storage_node.js';
 import type { RequestOptions, StorageNodeClientOptions } from './storage-node/client.js';
@@ -63,12 +64,14 @@ export interface StorageNode {
 export interface StorageWithSizeOptions {
 	size: number;
 	epochs: number;
+	walCoin?: TransactionObjectArgument;
 }
 
 export interface RegisterBlobOptions extends StorageWithSizeOptions {
 	blobId: string;
 	rootHash: Uint8Array;
 	deletable: boolean;
+	walCoin?: TransactionObjectArgument;
 }
 
 export interface CertifyBlobOptions {
@@ -123,6 +126,7 @@ export type WriteBlobOptions = {
 	deletable: boolean;
 	epochs: number;
 	signer: Signer;
+	owner?: string;
 } & WalrusClientRequestOptions;
 
 export interface DeleteBlobOptions {
@@ -131,6 +135,7 @@ export interface DeleteBlobOptions {
 
 export type ExtendBlobOptions = {
 	blobObjectId: string;
+	walCoin?: TransactionObjectArgument;
 } & (
 	| {
 			epochs: number;
