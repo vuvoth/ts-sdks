@@ -48,7 +48,7 @@ export abstract class IBEServers {
  * This object represents a set of key servers that can be used to encrypt messages for a given identity.
  */
 export class BonehFranklinBLS12381Services extends IBEServers {
-	public readonly public_keys: G2Element[];
+	readonly public_keys: G2Element[];
 
 	constructor(services: KeyServer[]) {
 		super(services.map((service) => service.objectId));
