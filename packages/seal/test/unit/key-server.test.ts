@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { fromBase64, fromHex } from '@mysten/bcs';
+import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -55,7 +56,10 @@ describe('key-server tests', () => {
 	});
 
 	it('test retrieveKeyServers (mocked)', async () => {
-		const keyServers = await retrieveKeyServers({ objectIds: [fromHex(id)] });
+		const keyServers = await retrieveKeyServers({
+			objectIds: [fromHex(id)],
+			client: new SuiClient({ url: getFullnodeUrl('testnet') }),
+		});
 		expect(keyServers.length).toEqual(1);
 		expect(keyServers[0].objectId).toEqual(fromHex(id));
 		expect(keyServers[0].name).toEqual(name);
@@ -66,7 +70,10 @@ describe('key-server tests', () => {
 
 	it('test verifyKeyServerInfo (mocked)', async () => {
 		// Mock fetch with exact response from the real service
-		const keyServers = await retrieveKeyServers({ objectIds: [fromHex(id)] });
+		const keyServers = await retrieveKeyServers({
+			objectIds: [fromHex(id)],
+			client: new SuiClient({ url: getFullnodeUrl('testnet') }),
+		});
 		vi.clearAllMocks();
 		global.fetch = vi.fn().mockImplementation(() => {
 			return Promise.resolve({

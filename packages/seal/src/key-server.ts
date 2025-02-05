@@ -1,7 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 import { fromBase64, fromHex, toHex } from '@mysten/bcs';
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
+import { bcs } from '@mysten/sui/bcs';
+import type { SuiClient } from '@mysten/sui/client';
 import { bls12_381 } from '@noble/curves/bls12-381';
 
 import { DST_POP } from './ibe.js';
@@ -17,6 +18,15 @@ export type KeyServer = {
 export enum KeyServerType {
 	BonehFranklinBLS12381 = 0,
 }
+
+// The Move struct for the KeyServer object.
+const KeyServerMove = bcs.struct('KeyServer', {
+	id: bcs.Address,
+	name: bcs.string(),
+	url: bcs.string(),
+	key_type: bcs.u8(),
+	pk: bcs.vector(bcs.u8()),
+});
 
 /**
  * Returns a static list of Seal key server object ids that the dapp can choose to use.
@@ -43,34 +53,38 @@ export function getAllowlistedKeyServers(network: 'testnet' | 'mainnet'): Uint8A
  */
 export async function retrieveKeyServers({
 	objectIds,
-	client = new SuiClient({ url: getFullnodeUrl('testnet') }),
+	client,
 }: {
 	objectIds: Uint8Array[];
-	client?: SuiClient;
+	client: SuiClient;
 }): Promise<KeyServer[]> {
 	return await Promise.all(
 		objectIds.map(async (objectId) => {
 			const res = await client.getObject({
 				id: toHex(objectId),
 				options: {
-					showContent: true,
+					showBcs: true,
 				},
 			});
-			if (!res?.data) throw new Error('No data returned from client');
-			const fields = (res?.data?.content as { fields: { [k: string]: any } })?.fields;
-
-			if (fields.key_type !== 0) {
-				throw new Error('Key type is not supported');
+			if (!res || res.error || !res.data) {
+				throw new Error(`KeyServer ${objectId} not found; ${res.error}`);
 			}
-			const keyType = KeyServerType.BonehFranklinBLS12381;
-			const pk = new Uint8Array(fields.pk);
+
+			if (!res.data.bcs || !('bcsBytes' in res.data.bcs)) {
+				throw new Error(`Invalid KeyServer query: ${objectId}, expected object, got package`);
+			}
+
+			let ks = KeyServerMove.parse(fromBase64(res.data.bcs!.bcsBytes));
+			if (ks.key_type !== 0) {
+				throw new Error('Unsupported key type');
+			}
 
 			return {
 				objectId,
-				name: fields.name,
-				url: fields.url,
-				keyType,
-				pk,
+				name: ks.name,
+				url: ks.url,
+				keyType: KeyServerType.BonehFranklinBLS12381,
+				pk: new Uint8Array(ks.pk),
 			};
 		}),
 	);
