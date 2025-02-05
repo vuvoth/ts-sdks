@@ -143,23 +143,22 @@ describe('sdk tests', () => {
 
 		await expect(key_store.decrypt(parsed)).resolves.toEqual(msg);
 
-		// const modified_parsed_23 = parsed;
-		// modified_parsed_23.services = parsed.services.slice(1);
-		// modified_parsed_23.encrypted_shares.BonehFranklinBLS12381.shares = parsed.encrypted_shares.BonehFranklinBLS12381.shares.slice(1);
-		// await expect(decrypt(
-		//   modified_parsed_23,
-		//   [usk2.toBytes(), usk3.toBytes()],
-		// )).resolves.toEqual(msg);
-		//
-		// const modified_parsed_1 = parsed;
-		// modified_parsed_1.services = parsed.services.slice(0, 1);
-		// modified_parsed_1.encrypted_shares.BonehFranklinBLS12381.shares = parsed.encrypted_shares.BonehFranklinBLS12381.shares.slice(0, 1);
-		// await expect(
-		//   decrypt(
-		//     modified_parsed_1,
-		//     [usk2.toBytes()],
-		//   ),
-		// ).rejects.toThrow();
+		const key_store_23 = new KeyStore();
+		key_store_23.addKey(toHex(id), objectId2, usk2.toBytes());
+		key_store_23.addKey(toHex(id), objectId3, usk3.toBytes());
+		const modified_parsed_23 = parsed;
+		modified_parsed_23.services = parsed.services.slice(1);
+		modified_parsed_23.encrypted_shares.BonehFranklinBLS12381.shares =
+			parsed.encrypted_shares.BonehFranklinBLS12381.shares.slice(1);
+		await expect(key_store_23.decrypt(modified_parsed_23)).resolves.toEqual(msg);
+
+		const key_store_1 = new KeyStore();
+		key_store_1.addKey(toHex(id), objectId1, usk1.toBytes());
+		const modified_parsed_1 = parsed;
+		modified_parsed_1.services = parsed.services.slice(0, 1);
+		modified_parsed_1.encrypted_shares.BonehFranklinBLS12381.shares =
+			parsed.encrypted_shares.BonehFranklinBLS12381.shares.slice(0, 1);
+		await expect(key_store_1.decrypt(modified_parsed_1)).rejects.toThrow();
 	});
 	//
 	// it("encryption e2e plain", async () => {
