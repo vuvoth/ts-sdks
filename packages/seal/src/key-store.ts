@@ -14,8 +14,6 @@ import type { Certificate, SessionKey } from './session-key.js';
 import type { EncryptedObject } from './types.js';
 import { createFullId } from './utils.js';
 
-// Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
 /**
  * A class to cache user secret keys after they have been fetched from key servers.
  */
