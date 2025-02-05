@@ -21,23 +21,11 @@ export const DST_POP: Uint8Array = new TextEncoder().encode('SUI-SEAL-IBE-BLS123
 /**
  * The interface for the key servers.
  */
-export interface IBEServers {
-	getObjectIds(): Uint8Array[];
-	encryptBatched(id: Uint8Array, msgs: Uint8Array[], infos: Uint8Array[]): IBEEncryptionsType;
-	size(): number;
-}
+export abstract class IBEServers {
+	protected readonly object_ids: Uint8Array[];
 
-/**
- * Identity-based encryption based on the Boneh-Franklin IBE scheme.
- * This object represents a set of key servers that can be used to encrypt messages for a given identity.
- */
-export class BonehFranklinBLS12381Services implements IBEServers {
-	public readonly public_keys: G2Element[];
-	private readonly object_ids: Uint8Array[];
-
-	constructor(services: KeyServer[]) {
-		this.public_keys = services.map((service) => G2Element.fromBytes(service.pk));
-		this.object_ids = services.map((service) => service.objectId);
+	protected constructor(object_ids: Uint8Array[]) {
+		this.object_ids = object_ids;
 	}
 
 	getObjectIds(): Uint8Array[] {
@@ -45,7 +33,26 @@ export class BonehFranklinBLS12381Services implements IBEServers {
 	}
 
 	size(): number {
-		return this.public_keys.length;
+		return this.object_ids.length;
+	}
+
+	abstract encryptBatched(
+		id: Uint8Array,
+		msgs: Uint8Array[],
+		infos: Uint8Array[],
+	): IBEEncryptionsType;
+}
+
+/**
+ * Identity-based encryption based on the Boneh-Franklin IBE scheme.
+ * This object represents a set of key servers that can be used to encrypt messages for a given identity.
+ */
+export class BonehFranklinBLS12381Services extends IBEServers {
+	public readonly public_keys: G2Element[];
+
+	constructor(services: KeyServer[]) {
+		super(services.map((service) => service.objectId));
+		this.public_keys = services.map((service) => G2Element.fromBytes(service.pk));
 	}
 
 	encryptBatched(id: Uint8Array, msgs: Uint8Array[], infos: Uint8Array[]): IBEEncryptionsType {
