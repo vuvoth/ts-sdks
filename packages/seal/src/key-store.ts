@@ -9,29 +9,34 @@ import { G1Element, G2Element } from './bls12381.js';
 import { elgamalDecrypt, toPublicKey } from './elgamal.js';
 import { BonehFranklinBLS12381Services, DST } from './ibe.js';
 import type { KeyServer } from './key-server.js';
+import { KeyServerType } from './key-server.js';
 import type { Certificate, SessionKey } from './session-key.js';
 import type { EncryptedObject } from './types.js';
 import { createFullId } from './utils.js';
 
 export class KeyStore {
 	// A caching map for: fullId -> a list of keys from different servers.
-	private readonly keys_map: Map<string, Uint8Array>;
+	private readonly keys_map: Map<string, G1Element>;
 
 	constructor() {
 		this.keys_map = new Map();
 	}
 
+	private createMapKey(fullId: Uint8Array, objectId: Uint8Array): string {
+		return toHex(fullId) + ':' + toHex(objectId);
+	}
+
 	// TODO: This is only used for tests
-	public addKey(fullId: string, objectId: Uint8Array, key: Uint8Array) {
-		this.keys_map.set(fullId + ':' + toHex(objectId), key);
+	public addKey(fullId: Uint8Array, objectId: Uint8Array, key: G1Element) {
+		this.keys_map.set(this.createMapKey(fullId, objectId), key);
 	}
 
-	public getKey(fullId: string, objectId: Uint8Array): Uint8Array | undefined {
-		return this.keys_map.get(fullId + ':' + toHex(objectId));
+	public getKey(fullId: Uint8Array, objectId: Uint8Array): G1Element | undefined {
+		return this.keys_map.get(this.createMapKey(fullId, objectId));
 	}
 
-	public hasKey(fullId: string, objectId: Uint8Array): boolean {
-		return this.keys_map.has(fullId + ':' + toHex(objectId));
+	public hasKey(fullId: Uint8Array, objectId: Uint8Array): boolean {
+		return this.keys_map.has(this.createMapKey(fullId, objectId));
 	}
 
 	/** Look up URLs of key servers and fetch key from servers with request signature,
@@ -39,7 +44,7 @@ export class KeyStore {
 	 */
 	async fetchKeys({
 		keyServers,
-		threshold,
+		threshold: _threshold,
 		packageId,
 		ids,
 		txBytes,
@@ -56,8 +61,8 @@ export class KeyStore {
 		if (ids.length !== 1) {
 			throw new Error('Only one ID is supported');
 		}
-		const fullIdHex = toHex(createFullId(DST, packageId, ids[0]));
-		const remainingKeyServers = keyServers.filter((ks) => !this.hasKey(fullIdHex, ks.objectId));
+		const fullId = createFullId(DST, packageId, ids[0]);
+		const remainingKeyServers = keyServers.filter((ks) => !this.hasKey(fullId, ks.objectId));
 		if (remainingKeyServers.length === 0) {
 			return;
 		}
@@ -66,9 +71,12 @@ export class KeyStore {
 		const signedRequest = await sessionKey.createRequestParams(txBytes);
 
 		// TODO: wait for t completed promises (not failures).
-		console.log('threshold', threshold);
 		await Promise.all(
 			remainingKeyServers.map(async (server) => {
+				if (server.keyType !== KeyServerType.BonehFranklinBLS12381) {
+					console.warn('Server has invalid key type: ' + server.keyType);
+					return;
+				}
 				const res = await fetchKey(
 					server.url,
 					signedRequest.request_signature,
@@ -76,23 +84,37 @@ export class KeyStore {
 					signedRequest.decryption_key,
 					cert,
 				);
-				// TODO: verify the response (BLS verify)
-				// TODO check that the id is consistent with the fullId
-				this.addKey(fullIdHex, server.objectId, res.key);
+
+				const key = G1Element.fromBytes(res.key);
+				if (
+					!BonehFranklinBLS12381Services.verify_user_secret_key(
+						key,
+						fullId,
+						G2Element.fromBytes(server.pk),
+					)
+				) {
+					console.warn('Received invalid key from key server ' + server.objectId);
+					return;
+				}
+
+				this.addKey(fullId, server.objectId, key);
 			}),
 		);
 	}
 
 	/**
 	 * Decrypt the given encrypted bytes with the given cached secret keys for the full ID.
+	 * It's assumed that fetchKeys has been called to fetch the secret keys for enough key servers
+	 * otherwise, this will throw an error.
 	 *
 	 * @param encryptedObject - EncryptedObject.
-	 * @param sks - The secret keys. It's assumed that these keys are validated. Otherwise the KEM may give a wrong result.
 	 * @returns - The decrypted plaintext corresponding to ciphertext.
 	 */
 	async decrypt(encryptedObject: typeof EncryptedObject.$inferType): Promise<Uint8Array> {
-		const fullId = toHex(
-			createFullId(DST, encryptedObject.package_id, new Uint8Array(encryptedObject.inner_id)),
+		const fullId = createFullId(
+			DST,
+			encryptedObject.package_id,
+			new Uint8Array(encryptedObject.inner_id),
 		);
 		// Get secret keys for the fullId/services map.
 		const services = encryptedObject.services.map((service: [Uint8Array, number]) => service[0]);
@@ -101,8 +123,8 @@ export class KeyStore {
 		if (services_in_key_store.length < encryptedObject.threshold) {
 			throw new Error('Not enough shares. Please fetch more keys.');
 		}
-		const user_secret_keys = services_in_key_store.map((serviceId) =>
-			G1Element.fromBytes(this.getKey(fullId, serviceId)!),
+		const user_secret_keys = services_in_key_store.map(
+			(serviceId) => this.getKey(fullId, serviceId)!,
 		);
 
 		const nonce = G2Element.fromBytes(
