@@ -7,8 +7,8 @@ import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 
 import { generateSecretKey, toPublicKey, toVerificationKey } from './elgamal.js';
 
-const RequestFormat = bcs.struct('RequestFormat', {
-	ptb: bcs.string(),
+export const RequestFormat = bcs.struct('RequestFormat', {
+	ptb: bcs.vector(bcs.U8),
 	enc_key: bcs.vector(bcs.U8),
 	enc_verification_key: bcs.vector(bcs.U8),
 });
@@ -37,7 +37,7 @@ export class SessionKey {
 
 	getPersonalMessage(): Uint8Array {
 		// TODO: decide if we want 0x on the server end
-		const message = `Requesting access to keys of package ${toHex(this.packageId)} for ${this.ttlMin} mins\n session key ${toBase64(this.session_key.getPublicKey().toRawBytes())}, created at ${this.creationTime}`;
+		const message = `Requesting access to keys of package ${toHex(this.packageId)} for ${this.ttlMin} mins, session key ${toBase64(this.session_key.getPublicKey().toRawBytes())}, created at ${this.creationTime}`;
 		return new TextEncoder().encode(message);
 	}
 
@@ -62,7 +62,7 @@ export class SessionKey {
 	): Promise<{ decryption_key: Uint8Array; request_signature: string }> {
 		let eg_sk = generateSecretKey();
 		const msgToSign = RequestFormat.serialize({
-			ptb: toBase64(txBytes.slice(1)),
+			ptb: txBytes.slice(1),
 			enc_key: toPublicKey(eg_sk),
 			enc_verification_key: toVerificationKey(eg_sk),
 		}).toBytes();

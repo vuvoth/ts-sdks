@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { assert } from 'console';
-import { fromHex, toHex } from '@mysten/bcs';
+import { fromBase64, fromHex, toBase64, toHex } from '@mysten/bcs';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { Transaction } from '@mysten/sui/transactions';
@@ -16,7 +16,7 @@ import {
 	verifyKeyServer,
 } from '../../src/key-server';
 import { KeyStore } from '../../src/key-store';
-import { SessionKey } from '../../src/session-key';
+import { RequestFormat, SessionKey } from '../../src/session-key';
 import { EncryptedObject } from '../../src/types';
 
 /**
@@ -107,5 +107,23 @@ describe('Integration test', () => {
 
 		const decryptedBytes = await keyStore.decrypt(encryptedObject);
 		expect(decryptedBytes).toEqual(data);
+	});
+
+	it('request format consistency', async () => {
+		const ptb = fromBase64(
+			'AwAgc6azwz4tYzg95cZ4bLrKIx/3ifTIU69tVMuIPYeArcAAISDe5uvO0j2U0BiVWEGtjdvQnUC72Sq201YSNqRReUMvBQEB3ubrztI9lNAYlVhBrY3b0J1Au9kqttNWEjakUXlDLwUDAAAAAAAAAAABALHxZ0ncLwzAjQNFRWiOb7wXhst+Zg+aiJfb/iAC64pLCXdoaXRlbGlzdAxzZWFsX2FwcHJvdmUAAwEAAAEBAAECAA==',
+		);
+		const eg_pk = fromBase64('kYnVekxioRVbLVBBuxK0AkRI5cOqrpsfYF9+MM7U/5mes7Ihn/FPv0alcf2r/W5v');
+		const eg_vk = fromBase64(
+			'meFzamsJjgsVK0aOOoEZvFgMyRG+bHLHQ3PkTA+FwdiXxivxFpnR0g7nYBo6g8nLCgIHwb+N4UY9A4Vt4yFuRdZIUveHqwqH4n4yGdCOj3nmOAGxQGC7cBR6sQ+0znbm',
+		);
+		const requestFormat = RequestFormat.serialize({
+			ptb: ptb,
+			enc_key: eg_pk,
+			enc_verification_key: eg_vk,
+		}).toBytes();
+		expect(toBase64(requestFormat)).toEqual(
+			'tQEDACBzprPDPi1jOD3lxnhsusojH/eJ9MhTr21Uy4g9h4CtwAAhIN7m687SPZTQGJVYQa2N29CdQLvZKrbTVhI2pFF5Qy8FAQHe5uvO0j2U0BiVWEGtjdvQnUC72Sq201YSNqRReUMvBQMAAAAAAAAAAAEAsfFnSdwvDMCNA0VFaI5vvBeGy35mD5qIl9v+IALriksJd2hpdGVsaXN0DHNlYWxfYXBwcm92ZQADAQAAAQEAAQIAMJGJ1XpMYqEVWy1QQbsStAJESOXDqq6bH2BffjDO1P+ZnrOyIZ/xT79GpXH9q/1ub2CZ4XNqawmOCxUrRo46gRm8WAzJEb5scsdDc+RMD4XB2JfGK/EWmdHSDudgGjqDycsKAgfBv43hRj0DhW3jIW5F1khS94erCofifjIZ0I6PeeY4AbFAYLtwFHqxD7TOduY=',
+		);
 	});
 });
