@@ -146,19 +146,11 @@ describe('Seal encryption tests', () => {
 		const key_store_23 = new KeyStore();
 		key_store_23.addKey(id, objectId2, usk2);
 		key_store_23.addKey(id, objectId3, usk3);
-		const modified_parsed_23 = parsed;
-		modified_parsed_23.services = parsed.services.slice(1);
-		modified_parsed_23.encrypted_shares.BonehFranklinBLS12381.shares =
-			parsed.encrypted_shares.BonehFranklinBLS12381.shares.slice(1);
-		await expect(key_store_23.decrypt(modified_parsed_23)).resolves.toEqual(msg);
+		await expect(key_store_23.decrypt(parsed)).resolves.toEqual(msg);
 
 		const key_store_1 = new KeyStore();
 		key_store_1.addKey(id, objectId1, usk1);
-		const modified_parsed_1 = parsed;
-		modified_parsed_1.services = parsed.services.slice(0, 1);
-		modified_parsed_1.encrypted_shares.BonehFranklinBLS12381.shares =
-			parsed.encrypted_shares.BonehFranklinBLS12381.shares.slice(0, 1);
-		await expect(key_store_1.decrypt(modified_parsed_1)).rejects.toThrow();
+		await expect(key_store_1.decrypt(parsed)).rejects.toThrow();
 	});
 
 	it('test encryption roundtrip with Plain-mode', async () => {
@@ -217,19 +209,10 @@ describe('Seal encryption tests', () => {
 		const key_store_23 = new KeyStore();
 		key_store_23.addKey(id, objectId2, usk2);
 		key_store_23.addKey(id, objectId3, usk3);
-		const modified_parsed_23 = parsed;
-		modified_parsed_23.services = parsed.services.slice(1);
-		modified_parsed_23.encrypted_shares.BonehFranklinBLS12381.shares =
-			parsed.encrypted_shares.BonehFranklinBLS12381.shares.slice(1);
-		await expect(key_store_23.decrypt(modified_parsed_23)).resolves.toEqual(key);
+		await expect(key_store_23.decrypt(parsed)).resolves.toEqual(key);
 
 		const key_store_1 = new KeyStore();
-		key_store_1.addKey(id, objectId1, usk1);
-		const modified_parsed_1 = parsed;
-		modified_parsed_1.services = parsed.services.slice(0, 1);
-		modified_parsed_1.encrypted_shares.BonehFranklinBLS12381.shares =
-			parsed.encrypted_shares.BonehFranklinBLS12381.shares.slice(0, 1);
-		await expect(key_store_1.decrypt(modified_parsed_1)).rejects.toThrow();
+		await expect(key_store_1.decrypt(parsed)).rejects.toThrow();
 	});
 
 	it('G1 hash-to-curve regression test', async () => {

@@ -14,6 +14,8 @@ import type { Certificate, SessionKey } from './session-key.js';
 import type { EncryptedObject } from './types.js';
 import { createFullId } from './utils.js';
 
+// Copyright (c) Mysten Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
 /**
  * A class to cache user secret keys after they have been fetched from key servers.
  */
@@ -126,56 +128,48 @@ export class KeyStore {
 	 * @returns - The decrypted plaintext corresponding to ciphertext.
 	 */
 	async decrypt(encryptedObject: typeof EncryptedObject.$inferType): Promise<Uint8Array> {
+		if (!encryptedObject.encrypted_shares.BonehFranklinBLS12381) {
+			throw new Error('Encryption mode not supported');
+		}
+
 		const fullId = createFullId(
 			DST,
 			encryptedObject.package_id,
 			new Uint8Array(encryptedObject.inner_id),
 		);
-		// Get secret keys for the fullId/services map.
-		const services = encryptedObject.services.map((service: [Uint8Array, number]) => service[0]);
-		const services_in_key_store = services.filter((serviceId) => this.hasKey(fullId, serviceId));
 
-		if (services_in_key_store.length < encryptedObject.threshold) {
+		// Get the indices of the service whose keys are in the keystore.
+		const in_keystore = encryptedObject.services
+			.map((_, i) => i)
+			.filter((i) => this.hasKey(fullId, encryptedObject.services[i][0]));
+		if (in_keystore.length < encryptedObject.threshold) {
 			throw new Error('Not enough shares. Please fetch more keys.');
 		}
-		const user_secret_keys = services_in_key_store.map(
-			(serviceId) => this.getKey(fullId, serviceId)!,
-		);
+
+		const encryptedShares = encryptedObject.encrypted_shares.BonehFranklinBLS12381.shares;
+		if (encryptedShares.length !== encryptedObject.services.length) {
+			throw new Error('Invalid input');
+		}
 
 		const nonce = G2Element.fromBytes(
 			encryptedObject.encrypted_shares.BonehFranklinBLS12381.encapsulation,
 		);
-		const encrypted_shares = encryptedObject.encrypted_shares.BonehFranklinBLS12381.shares;
-
-		if (
-			encrypted_shares.length === 0 ||
-			encrypted_shares.length !== user_secret_keys.length ||
-			encrypted_shares.length < encryptedObject.threshold
-		) {
-			throw new Error('Invalid input');
-		}
 
 		// Decrypt each share.
-		const shares = encrypted_shares.map((encrypted_share: Uint8Array, i: number) => {
-			const index = encryptedObject.services[i][1];
-			let decrypted_share;
-			if (encryptedObject.encrypted_shares.BonehFranklinBLS12381) {
-				// Use the index as the unique info parameter to allow for multiple shares per key server.
-				const info = new Uint8Array([index]);
-				decrypted_share = BonehFranklinBLS12381Services.decrypt(
-					nonce,
-					user_secret_keys[i],
-					encrypted_share,
-					info,
-				);
-			} else {
-				throw new Error('Invalid encrypted object');
-			}
-			const share = new Uint8Array(decrypted_share.length + 1);
-			share.set(decrypted_share, 0);
-
+		const shares = in_keystore.map((i: number) => {
+			const [objectId, shareIndex] = encryptedObject.services[i];
+			// Use the index as the unique info parameter to allow for multiple shares per key server.
+			const info = new Uint8Array([shareIndex]);
+			let decryptedShare = BonehFranklinBLS12381Services.decrypt(
+				nonce,
+				this.getKey(fullId, objectId)!,
+				encryptedShares[i],
+				info,
+			);
 			// The Shamir secret sharing library expects the index/x-coordinate to be at the end of the share.
-			share[decrypted_share.length] = index;
+			const share = new Uint8Array(decryptedShare.length + 1);
+			share.set(decryptedShare, 0);
+			share[decryptedShare.length] = shareIndex;
 			return share;
 		});
 
