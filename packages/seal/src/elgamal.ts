@@ -7,7 +7,7 @@ import { G1Element, Scalar } from './bls12381.js';
  * Decrypt a ciphertext with a given secret key. The secret key must be a 32-byte scalar.
  * The ciphertext is a pair of G1Elements (48 bytes).
  */
-export function elgamal_decrypt(sk: Uint8Array, ciphertext: [Uint8Array, Uint8Array]): Uint8Array {
+export function elgamalDecrypt(sk: Uint8Array, ciphertext: [Uint8Array, Uint8Array]): Uint8Array {
 	return decrypt(Scalar.fromBytes(sk), [
 		G1Element.fromBytes(ciphertext[0]),
 		G1Element.fromBytes(ciphertext[1]),

@@ -22,8 +22,8 @@ export const DST_POP: Uint8Array = new TextEncoder().encode('SUI-SEAL-IBE-BLS123
  * The interface for the key servers.
  */
 export interface IBEServers {
-	get_object_ids(): Uint8Array[];
-	encrypt_batched(id: Uint8Array, msgs: Uint8Array[], infos: Uint8Array[]): IBEEncryptionsType;
+	getObjectIds(): Uint8Array[];
+	encryptBatched(id: Uint8Array, msgs: Uint8Array[], infos: Uint8Array[]): IBEEncryptionsType;
 	size(): number;
 }
 
@@ -40,7 +40,7 @@ export class BonehFranklinBLS12381Services implements IBEServers {
 		this.object_ids = services.map((service) => service.objectId);
 	}
 
-	get_object_ids(): Uint8Array[] {
+	getObjectIds(): Uint8Array[] {
 		return this.object_ids;
 	}
 
@@ -48,7 +48,7 @@ export class BonehFranklinBLS12381Services implements IBEServers {
 		return this.public_keys.length;
 	}
 
-	encrypt_batched(id: Uint8Array, msgs: Uint8Array[], infos: Uint8Array[]): IBEEncryptionsType {
+	encryptBatched(id: Uint8Array, msgs: Uint8Array[], infos: Uint8Array[]): IBEEncryptionsType {
 		if (
 			this.public_keys.length === 0 ||
 			this.public_keys.length !== msgs.length ||
@@ -56,7 +56,7 @@ export class BonehFranklinBLS12381Services implements IBEServers {
 		) {
 			throw new Error('Invalid input');
 		}
-		const [nonce, keys] = encap_batched(this.public_keys, id);
+		const [nonce, keys] = encapBatched(this.public_keys, id);
 		keys.map((key, i) => (msgs[i] = xor(msgs[i], kdf(key, infos[i]))));
 
 		return {
@@ -75,7 +75,7 @@ export class BonehFranklinBLS12381Services implements IBEServers {
 	 * @param public_key - The public key.
 	 * @returns True if the user secret key is valid for the given public key and id.
 	 */
-	static verify_user_secret_key(
+	static verifyUserSecretKey(
 		user_secret_key: G1Element,
 		id: Uint8Array,
 		public_key: G2Element,
@@ -111,7 +111,7 @@ export class BonehFranklinBLS12381Services implements IBEServers {
  * @param id The identity used to encapsulate the keys.
  * @returns A common nonce of the keys and a list of keys, 32 bytes each.
  */
-function encap_batched(public_keys: G2Element[], id: Uint8Array): [G2Element, GTElement[]] {
+function encapBatched(public_keys: G2Element[], id: Uint8Array): [G2Element, GTElement[]] {
 	if (public_keys.length === 0) {
 		throw new Error('Invalid input');
 	}

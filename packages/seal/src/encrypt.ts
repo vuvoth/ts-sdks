@@ -60,7 +60,7 @@ export async function encrypt<Input extends EncryptionInput>({
 
 	// Encrypt the shares with the public keys of the key servers.
 	const fullId = createFullId(DST, packageId, id);
-	const encrypted_shares = ibeServers.encrypt_batched(
+	const encrypted_shares = ibeServers.encryptBatched(
 		fullId,
 		shares.map((share) => share.subarray(0, 32)),
 		shares.map((share) => share.subarray(32)),
@@ -68,7 +68,7 @@ export async function encrypt<Input extends EncryptionInput>({
 
 	// Services and indices of their shares are stored as a tuple
 	const service_oids_and_indices: [Uint8Array, number][] = ibeServers
-		.get_object_ids()
+		.getObjectIds()
 		.map((id, i) => [id, shares[i][32]]);
 
 	return EncryptedObject.serialize({

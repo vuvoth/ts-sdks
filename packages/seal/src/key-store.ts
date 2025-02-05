@@ -6,7 +6,7 @@ import { combine } from 'shamir-secret-sharing';
 
 import { AesGcm256 } from './aes.js';
 import { G1Element, G2Element } from './bls12381.js';
-import { elgamal_decrypt, toPublicKey } from './elgamal.js';
+import { elgamalDecrypt, toPublicKey } from './elgamal.js';
 import { BonehFranklinBLS12381Services, DST } from './ibe.js';
 import type { KeyServer } from './key-server.js';
 import type { Certificate, SessionKey } from './session-key.js';
@@ -188,7 +188,7 @@ async function fetchKey(
 	});
 	const resp = await response.json();
 	// TODO: handle multiple decryption keys.
-	const key = elgamal_decrypt(
+	const key = elgamalDecrypt(
 		enc_key,
 		resp.decryption_keys[0].encrypted_key.map((k: string) => fromBase64(k)),
 	);

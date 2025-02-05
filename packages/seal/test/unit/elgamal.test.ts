@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { G1Element, Scalar } from '../../src/bls12381';
-import { elgamal_decrypt, generateSecretKey, toPublicKey } from '../../src/elgamal';
+import { elgamalDecrypt, generateSecretKey, toPublicKey } from '../../src/elgamal';
 
 describe('ElGamal encryption', () => {
 	it('should generate valid key pair', () => {
@@ -29,12 +29,12 @@ describe('ElGamal encryption', () => {
 		const c2 = G1Element.fromBytes(pk).multiply(r).add(message);
 		const ciphertext: [Uint8Array, Uint8Array] = [c1.toBytes(), c2.toBytes()];
 
-		const decrypted = elgamal_decrypt(sk, ciphertext);
+		const decrypted = elgamalDecrypt(sk, ciphertext);
 		expect(decrypted).toEqual(messageBytes);
 
 		// try with a different key
 		const sk2 = generateSecretKey();
-		const decrypted2 = elgamal_decrypt(sk2, ciphertext);
+		const decrypted2 = elgamalDecrypt(sk2, ciphertext);
 		expect(decrypted2).not.toEqual(message.toBytes());
 	});
 
@@ -52,7 +52,7 @@ describe('ElGamal encryption', () => {
 			new Uint8Array(47), // Wrong length for G1 point
 		];
 
-		expect(() => elgamal_decrypt(sk, invalidCiphertext1)).toThrow();
-		expect(() => elgamal_decrypt(sk, invalidCiphertext2)).toThrow();
+		expect(() => elgamalDecrypt(sk, invalidCiphertext1)).toThrow();
+		expect(() => elgamalDecrypt(sk, invalidCiphertext2)).toThrow();
 	});
 });

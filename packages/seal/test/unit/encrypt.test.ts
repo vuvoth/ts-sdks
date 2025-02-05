@@ -123,17 +123,17 @@ describe('Seal encryption tests', () => {
 		const usk3 = extractUserSecretKey(sk3, id);
 
 		// Sanity checks for verify_user_secret_key
-		expect(BonehFranklinBLS12381Services.verify_user_secret_key(usk1, id, pk1)).toBeTruthy();
-		expect(BonehFranklinBLS12381Services.verify_user_secret_key(usk2, id, pk2)).toBeTruthy();
-		expect(BonehFranklinBLS12381Services.verify_user_secret_key(usk3, id, pk3)).toBeTruthy();
+		expect(BonehFranklinBLS12381Services.verifyUserSecretKey(usk1, id, pk1)).toBeTruthy();
+		expect(BonehFranklinBLS12381Services.verifyUserSecretKey(usk2, id, pk2)).toBeTruthy();
+		expect(BonehFranklinBLS12381Services.verifyUserSecretKey(usk3, id, pk3)).toBeTruthy();
 		expect(
-			BonehFranklinBLS12381Services.verify_user_secret_key(usk1, new Uint8Array([1, 2]), pk1),
+			BonehFranklinBLS12381Services.verifyUserSecretKey(usk1, new Uint8Array([1, 2]), pk1),
 		).toBeFalsy();
 		expect(
-			BonehFranklinBLS12381Services.verify_user_secret_key(G1Element.generator(), id, pk1),
+			BonehFranklinBLS12381Services.verifyUserSecretKey(G1Element.generator(), id, pk1),
 		).toBeFalsy();
 		expect(
-			BonehFranklinBLS12381Services.verify_user_secret_key(usk1, id, G2Element.generator()),
+			BonehFranklinBLS12381Services.verifyUserSecretKey(usk1, id, G2Element.generator()),
 		).toBeFalsy();
 
 		const key_store = new KeyStore();
