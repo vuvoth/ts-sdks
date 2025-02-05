@@ -6,7 +6,7 @@ import { combine } from 'shamir-secret-sharing';
 
 import { AesGcm256 } from './aes.js';
 import { G1Element, G2Element } from './bls12381.js';
-import { elgamalDecrypt, toPublicKey } from './elgamal.js';
+import { elgamalDecrypt, toPublicKey, toVerificationKey } from './elgamal.js';
 import { BonehFranklinBLS12381Services, DST } from './ibe.js';
 import type { KeyServer } from './key-server.js';
 import { KeyServerType } from './key-server.js';
@@ -54,7 +54,7 @@ export class KeyStore {
 		return this.keys_map.has(this.createMapKey(fullId, objectId));
 	}
 
-	/** 
+	/**
 	 * Look up URLs of key servers and fetch key from servers with request signature,
 	 * cert and ephPk, then updates the caching keys_map.
 	 */
@@ -204,9 +204,13 @@ async function fetchKey(
 	certificate: Certificate,
 ): Promise<{ fullId: Uint8Array; key: Uint8Array }> {
 	const enc_key_pk = toPublicKey(enc_key);
+	console.log(enc_key_pk);
+	const enc_verification_key = toVerificationKey(enc_key);
+	console.log(enc_verification_key);
 	const body = {
 		ptb: toBase64(txBytes.slice(1)), // removes the byte of the transaction type version
 		enc_key: toBase64(enc_key_pk),
+		enc_verification_key: toBase64(enc_verification_key),
 		request_signature: requestSig, // already b64
 		certificate,
 	};
@@ -217,6 +221,7 @@ async function fetchKey(
 		},
 		body: JSON.stringify(body),
 	});
+	console.log(response);
 	const resp = await response.json();
 	// TODO: handle the different error responses.
 	// TODO: handle multiple decryption keys.

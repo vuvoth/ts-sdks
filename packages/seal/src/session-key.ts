@@ -5,11 +5,12 @@ import { toBase64, toHex } from '@mysten/bcs';
 import { bcs } from '@mysten/sui/bcs';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 
-import { generateSecretKey, toPublicKey } from './elgamal.js';
+import { generateSecretKey, toPublicKey, toVerificationKey } from './elgamal.js';
 
 const RequestFormat = bcs.struct('RequestFormat', {
 	ptb: bcs.string(),
 	enc_key: bcs.vector(bcs.U8),
+	enc_verification_key: bcs.vector(bcs.U8),
 });
 
 export type Certificate = {
@@ -63,6 +64,7 @@ export class SessionKey {
 		const msgToSign = RequestFormat.serialize({
 			ptb: toBase64(txBytes.slice(1)),
 			enc_key: toPublicKey(eg_sk),
+			enc_verification_key: toVerificationKey(eg_sk),
 		}).toBytes();
 		return {
 			decryption_key: eg_sk,
