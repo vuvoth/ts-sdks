@@ -204,9 +204,7 @@ async function fetchKey(
 	certificate: Certificate,
 ): Promise<{ fullId: Uint8Array; key: Uint8Array }> {
 	const enc_key_pk = toPublicKey(enc_key);
-	console.log(enc_key_pk);
 	const enc_verification_key = toVerificationKey(enc_key);
-	console.log(enc_verification_key);
 	const body = {
 		ptb: toBase64(txBytes.slice(1)), // removes the byte of the transaction type version
 		enc_key: toBase64(enc_key_pk),
@@ -221,7 +219,6 @@ async function fetchKey(
 		},
 		body: JSON.stringify(body),
 	});
-	console.log(response);
 	const resp = await response.json();
 	// TODO: handle the different error responses.
 	// TODO: handle multiple decryption keys.
