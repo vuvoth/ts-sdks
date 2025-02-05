@@ -100,7 +100,7 @@ describe('Integration test', () => {
 			keyServers,
 			threshold: encryptedObject.threshold,
 			packageId: new Uint8Array(encryptedObject.package_id),
-			ids: [new Uint8Array(encryptedObject.id)],
+			ids: [new Uint8Array(encryptedObject.inner_id)],
 			txBytes,
 			sessionKey,
 		});
