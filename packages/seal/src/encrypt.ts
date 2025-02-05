@@ -20,7 +20,7 @@ export const MAX_U8 = 255;
  * @param id - id
  * @param encryptionInput - Input to the encryption. Should be one of the EncryptionInput types, AesGcmEncryptionInput or Plain.
  * @param threshold - The threshold for the TSS encryption.
- * @returns The bcs bytes of the encrypted object containing all metadata.
+ * @returns The bcs bytes of the encrypted object containing all metadata and the 256-bit symmetric key that was used to encrypt the object.
  */
 export async function encrypt<Input extends EncryptionInput>({
 	keyServers,
@@ -34,7 +34,10 @@ export async function encrypt<Input extends EncryptionInput>({
 	packageId: Uint8Array;
 	id: Uint8Array;
 	encryptionInput: Input;
-}): Promise<Uint8Array> {
+}): Promise<{
+	encryptedObject: Uint8Array;
+	key: Uint8Array;
+}> {
 	// Check inputs
 	if (
 		keyServers.length < threshold ||
@@ -52,11 +55,11 @@ export async function encrypt<Input extends EncryptionInput>({
 	const ibeServers = new BonehFranklinBLS12381Services(keyServers);
 
 	// Generate a random symmetric key and encrypt the encryption input using this key.
-	const keyBytes = await encryptionInput.generateKey();
-	const ciphertext = await encryptionInput.encrypt(keyBytes);
+	const key = await encryptionInput.generateKey();
+	const ciphertext = await encryptionInput.encrypt(key);
 
 	// Split the symmetric key into shares and encrypt each share with the public keys of the key servers.
-	const shares = await split(keyBytes, ibeServers.size(), threshold);
+	const shares = await split(key, ibeServers.size(), threshold);
 
 	// Encrypt the shares with the public keys of the key servers.
 	const fullId = createFullId(DST, packageId, id);
@@ -74,13 +77,16 @@ export async function encrypt<Input extends EncryptionInput>({
 		.getObjectIds()
 		.map((id, i) => [id, shares[i][32]]);
 
-	return EncryptedObject.serialize({
-		version: 0,
-		package_id: packageId,
-		inner_id: id,
-		services: service_oids_and_indices,
-		threshold,
-		encrypted_shares,
-		ciphertext,
-	}).toBytes();
+	return {
+		encryptedObject: EncryptedObject.serialize({
+			version: 0,
+			package_id: packageId,
+			inner_id: id,
+			services: service_oids_and_indices,
+			threshold,
+			encrypted_shares,
+			ciphertext,
+		}).toBytes(),
+		key,
+	};
 }

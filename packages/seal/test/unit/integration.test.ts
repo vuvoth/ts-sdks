@@ -66,7 +66,7 @@ describe('Integration test', () => {
 			}
 			return service;
 		});
-		const encryptedBytes = await encrypt({
+		const { encryptedObject: encryptedBytes } = await encrypt({
 			keyServers,
 			threshold: keyServers.length,
 			packageId: fromHex(TESTNET_PACKAGE_ID),

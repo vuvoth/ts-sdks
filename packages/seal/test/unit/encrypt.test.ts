@@ -32,7 +32,7 @@ describe('Seal encryption tests', () => {
 		const msg = new TextEncoder().encode('My super secret message');
 		const aad = new Uint8Array([1, 2, 3, 4]);
 
-		const encryption = await encrypt({
+		const { encryptedObject } = await encrypt({
 			keyServers: [
 				{
 					objectId: fromHex('0000000000000000000000000000000000000000000000000000000000000001'),
@@ -61,7 +61,7 @@ describe('Seal encryption tests', () => {
 			id: new Uint8Array([1, 2, 3, 4]),
 			encryptionInput: new AesGcm256(msg, aad),
 		});
-		const parsed = EncryptedObject.parse(encryption);
+		const parsed = EncryptedObject.parse(encryptedObject);
 
 		expect(parsed.version).toEqual(0);
 		expect(parsed.inner_id).toEqual([1, 2, 3, 4]);
@@ -84,7 +84,7 @@ describe('Seal encryption tests', () => {
 		const objectId2 = fromHex('0000000000000000000000000000000000000000000000000000000000000002');
 		const objectId3 = fromHex('0000000000000000000000000000000000000000000000000000000000000003');
 
-		const encryption = await encrypt({
+		const { encryptedObject } = await encrypt({
 			keyServers: [
 				{
 					objectId: objectId1,
@@ -114,7 +114,7 @@ describe('Seal encryption tests', () => {
 			encryptionInput: new AesGcm256(msg, aad),
 		});
 
-		const parsed = EncryptedObject.parse(encryption);
+		const parsed = EncryptedObject.parse(encryptedObject);
 
 		const id = createFullId(DST, parsed.package_id, new Uint8Array(parsed.inner_id));
 
@@ -170,7 +170,7 @@ describe('Seal encryption tests', () => {
 		const objectId2 = fromHex('0000000000000000000000000000000000000000000000000000000000000002');
 		const objectId3 = fromHex('0000000000000000000000000000000000000000000000000000000000000003');
 
-		const encryption = await encrypt({
+		const { encryptedObject, key } = await encrypt({
 			keyServers: [
 				{
 					objectId: objectId1,
@@ -200,7 +200,7 @@ describe('Seal encryption tests', () => {
 			encryptionInput: new Plain(),
 		});
 
-		const parsed = EncryptedObject.parse(encryption);
+		const parsed = EncryptedObject.parse(encryptedObject);
 
 		const id = createFullId(DST, parsed.package_id, new Uint8Array(parsed.inner_id));
 
@@ -212,7 +212,7 @@ describe('Seal encryption tests', () => {
 		key_store.addKey(id, objectId2, usk2);
 		key_store.addKey(id, objectId3, usk3);
 
-		const key = await key_store.decrypt(parsed);
+		expect(await key_store.decrypt(parsed)).toEqual(key);
 
 		const key_store_23 = new KeyStore();
 		key_store_23.addKey(id, objectId2, usk2);
