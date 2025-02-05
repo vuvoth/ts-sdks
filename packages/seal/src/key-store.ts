@@ -14,6 +14,9 @@ import type { Certificate, SessionKey } from './session-key.js';
 import type { EncryptedObject } from './types.js';
 import { createFullId } from './utils.js';
 
+/**
+ * A class to cache user secret keys after they have been fetched from key servers.
+ */
 export class KeyStore {
 	// A caching map for: fullId -> a list of keys from different servers.
 	private readonly keys_map: Map<string, G1Element>;
@@ -31,10 +34,22 @@ export class KeyStore {
 		this.keys_map.set(this.createMapKey(fullId, objectId), key);
 	}
 
+	/**
+	 * Get a key from this KeyStore or undefined if the key is not found.
+	 *
+	 * @param fullId The full ID used to derive the key.
+	 * @param objectId The object ID of the key server holding the key.
+	 */
 	public getKey(fullId: Uint8Array, objectId: Uint8Array): G1Element | undefined {
 		return this.keys_map.get(this.createMapKey(fullId, objectId));
 	}
 
+	/**
+	 * Check if the key store has a key for the given full ID and object ID.
+	 *
+	 * @param fullId The full ID used to derive the key.
+	 * @param objectId The object ID of the key server holding the key.
+	 */
 	public hasKey(fullId: Uint8Array, objectId: Uint8Array): boolean {
 		return this.keys_map.has(this.createMapKey(fullId, objectId));
 	}
@@ -210,10 +225,7 @@ async function fetchKey(
 	});
 	const resp = await response.json();
 	// TODO: handle multiple decryption keys.
-	const key = elgamalDecrypt(
-		enc_key,
-		resp.decryption_keys[0].encrypted_key.map((k: string) => fromBase64(k)),
-	);
+	const key = elgamalDecrypt(enc_key, resp.decryption_keys[0].encrypted_key.map(fromBase64));
 	return {
 		fullId: resp.decryption_keys[0].fullId,
 		key,
