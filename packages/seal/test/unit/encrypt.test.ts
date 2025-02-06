@@ -233,4 +233,101 @@ describe('Seal encryption tests', () => {
 			fromHex('7ce8116a76d7d0f5a89c0dbb547c6321f584b647a0d375a266ae05e9f14997e9'),
 		);
 	});
+
+	it('test single key server', async () => {
+		const [sk1, pk1] = generateKeyPair();
+
+		const msg = new TextEncoder().encode('My super secret message');
+		const aad = new Uint8Array([1, 2, 3, 4]);
+
+		const objectId1 = fromHex('0000000000000000000000000000000000000000000000000000000000000001');
+
+		const { encryptedObject } = await encrypt({
+			keyServers: [
+				{
+					objectId: objectId1,
+					pk: pk1.toBytes(),
+					name: 'test',
+					url: 'https://test.com',
+					keyType: 0,
+				},
+			],
+			threshold: 1,
+			packageId: fromHex('0000000000000000000000000000000000000000000000000000000000000000'),
+			id: fromHex('01020304'),
+			encryptionInput: new AesGcm256(msg, aad),
+		});
+
+		const parsed = EncryptedObject.parse(encryptedObject);
+		const id = createFullId(DST, parsed.package_id, new Uint8Array(parsed.id));
+		const usk1 = extractUserSecretKey(sk1, id);
+
+		const key_store = new KeyStore();
+		key_store.addKey(id, objectId1, usk1);
+		await expect(key_store.decrypt(parsed)).resolves.toEqual(msg);
+
+		const key_store_empty = new KeyStore();
+		await expect(key_store_empty.decrypt(parsed)).rejects.toThrow();
+	});
+
+	it('test threshold = 1', async () => {
+		const [sk1, pk1] = generateKeyPair();
+		const [sk2, pk2] = generateKeyPair();
+		const [, pk3] = generateKeyPair();
+
+		const msg = new TextEncoder().encode('My super secret message');
+		const aad = new Uint8Array([1, 2, 3, 4]);
+
+		const objectId1 = fromHex('0000000000000000000000000000000000000000000000000000000000000001');
+		const objectId2 = fromHex('0000000000000000000000000000000000000000000000000000000000000002');
+		const objectId3 = fromHex('0000000000000000000000000000000000000000000000000000000000000003');
+
+		const { encryptedObject } = await encrypt({
+			keyServers: [
+				{
+					objectId: objectId1,
+					pk: pk1.toBytes(),
+					name: 'test',
+					url: 'https://test.com',
+					keyType: 0,
+				},
+				{
+					objectId: objectId2,
+					pk: pk2.toBytes(),
+					name: 'test2',
+					url: 'https://test2.com',
+					keyType: 0,
+				},
+				{
+					objectId: objectId3,
+					pk: pk3.toBytes(),
+					name: 'test3',
+					url: 'https://test3.com',
+					keyType: 0,
+				},
+			],
+			threshold: 1,
+			packageId: fromHex('0000000000000000000000000000000000000000000000000000000000000000'),
+			id: fromHex('01020304'),
+			encryptionInput: new AesGcm256(msg, aad),
+		});
+
+		const parsed = EncryptedObject.parse(encryptedObject);
+
+		const id = createFullId(DST, parsed.package_id, new Uint8Array(parsed.id));
+
+		const usk1 = extractUserSecretKey(sk1, id);
+		const usk2 = extractUserSecretKey(sk2, id);
+
+		const key_store = new KeyStore();
+		key_store.addKey(id, objectId1, usk1);
+		await expect(key_store.decrypt(parsed)).resolves.toEqual(msg);
+
+		const key_store_2 = new KeyStore();
+		key_store_2.addKey(id, objectId2, usk2);
+		await expect(key_store_2.decrypt(parsed)).resolves.toEqual(msg);
+
+		const empty_key_store = new KeyStore();
+		await expect(empty_key_store.decrypt(parsed)).rejects.toThrow();
+	});
 });

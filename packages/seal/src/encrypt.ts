@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { split } from 'shamir-secret-sharing';
+import { split as externalSplit } from 'shamir-secret-sharing';
 
 import type { EncryptionInput } from './aes.js';
 import { BonehFranklinBLS12381Services, DST } from './ibe.js';
@@ -90,4 +90,23 @@ export async function encrypt<Input extends EncryptionInput>({
 		}).toBytes(),
 		key,
 	};
+}
+
+function split(secret: Uint8Array, n: number, threshold: number): Promise<Uint8Array[]> {
+	// The externalSplit function is from the 'shamir-secret-sharing' package and requires t > 1 and n >= 2.
+	// So we handle the special cases here.
+	if (n === 0 || threshold === 0 || threshold > n) {
+		throw new Error('Invalid input');
+	} else if (threshold === 1) {
+		// If the threshold is 1, the secret is not split.
+		const result: Uint8Array[] = [];
+		for (let i = 0; i < n; i++) {
+			const share = new Uint8Array(secret.length + 1);
+			share.set(secret, 0);
+			share[secret.length] = i;
+			result.push(share);
+		}
+		return Promise.resolve(result);
+	}
+	return externalSplit(secret, n, threshold);
 }

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { fromBase64, toBase64, toHex } from '@mysten/bcs';
-import { combine } from 'shamir-secret-sharing';
+import { combine as externalCombine } from 'shamir-secret-sharing';
 
 import { AesGcm256 } from './aes.js';
 import { G1Element, G2Element } from './bls12381.js';
@@ -227,4 +227,15 @@ async function fetchKey(
 		fullId: resp.decryption_keys[0].fullId,
 		key,
 	};
+}
+
+async function combine(shares: Uint8Array[]): Promise<Uint8Array> {
+	if (shares.length === 0) {
+		throw new Error('Invalid input');
+	} else if (shares.length === 1) {
+		// The Shamir secret sharing library expects at least two shares.
+		// If there is only one and the threshold is 1, the reconstructed secret is the same as the share.
+		return shares[0].subarray(0, 32);
+	}
+	return externalCombine(shares);
 }
