@@ -1,7 +1,6 @@
 {
 	"name": "@mysten/seal",
 	"version": "0.0.0",
-	"private": true,
 	"description": "Seal SDK",
 	"license": "Apache-2.0",
 	"author": "Mysten Labs <build@mystenlabs.com>",
@@ -23,6 +22,10 @@
 	"scripts": {
 		"clean": "rm -rf tsconfig.tsbuildinfo ./dist",
 		"build": "build-package",
+		"vitest": "vitest",
+		"test": "pnpm test:typecheck && pnpm test:unit",
+		"test:typecheck": "tsc -p ./test",
+		"test:unit": "vitest run unit __tests__",
 		"prepublishOnly": "pnpm build",
 		"prettier:check": "prettier -c --ignore-unknown .",
 		"prettier:fix": "prettier -w --ignore-unknown .",
