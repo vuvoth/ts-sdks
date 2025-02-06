@@ -167,14 +167,14 @@ export class KeyStore {
 				info,
 			);
 			// The Shamir secret sharing library expects the index/x-coordinate to be at the end of the share.
-			const share = new Uint8Array(decryptedShare.length + 1);
-			share.set(decryptedShare, 0);
-			share[decryptedShare.length] = shareIndex;
-			return share;
+			return {
+				index: shareIndex,
+				share: decryptedShare,
+			};
 		});
 
 		// Combine the decrypted shares into the key.
-		const key = shares.length === 1 ? shares[0].subarray(0, 32) : await combine(shares);
+		const key = await combine(shares);
 
 		if (encryptedObject.ciphertext.Aes256Gcm) {
 			try {
@@ -229,13 +229,22 @@ async function fetchKey(
 	};
 }
 
-async function combine(shares: Uint8Array[]): Promise<Uint8Array> {
+async function combine(shares: { index: number; share: Uint8Array }[]): Promise<Uint8Array> {
 	if (shares.length === 0) {
 		throw new Error('Invalid input');
 	} else if (shares.length === 1) {
 		// The Shamir secret sharing library expects at least two shares.
 		// If there is only one and the threshold is 1, the reconstructed secret is the same as the share.
-		return shares[0].subarray(0, 32);
+		return Promise.resolve(shares[0].share);
 	}
-	return externalCombine(shares);
+
+	// The Shamir secret sharing library expects the index/x-coordinate to be at the end of the share
+	return externalCombine(
+		shares.map(({ index, share }) => {
+			const packedShare = new Uint8Array(share.length + 1);
+			packedShare.set(share, 0);
+			packedShare[share.length] = index;
+			return packedShare;
+		}),
+	);
 }

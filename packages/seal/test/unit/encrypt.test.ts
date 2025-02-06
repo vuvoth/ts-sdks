@@ -153,7 +153,7 @@ describe('Seal encryption tests', () => {
 		await expect(key_store_1.decrypt(parsed)).rejects.toThrow();
 	});
 
-	it('test encryption roundtrip with Plain-mode', async () => {
+	it('test encryption round-trip with Plain-mode', async () => {
 		const [sk1, pk1] = generateKeyPair();
 		const [sk2, pk2] = generateKeyPair();
 		const [sk3, pk3] = generateKeyPair();

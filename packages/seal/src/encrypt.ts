@@ -10,6 +10,8 @@ import { KeyServerType } from './key-server.js';
 import { EncryptedObject } from './types.js';
 import { createFullId } from './utils.js';
 
+// Copyright (c) Mysten Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
 export const MAX_U8 = 255;
 
 /**
@@ -66,17 +68,16 @@ export async function encrypt<Input extends EncryptionInput>({
 	const fullId = createFullId(DST, packageId, id);
 	const encrypted_shares = ibeServers.encryptBatched(
 		fullId,
-		shares.map((share) => ({
-			msg: share.subarray(0, 32),
-			// split() returns the share index in the last byte
-			info: share.subarray(32),
+		shares.map(({ share, index }) => ({
+			msg: share,
+			info: new Uint8Array([index]),
 		})),
 	);
 
 	// Services and indices of their shares are stored as a tuple
 	const service_oids_and_indices: [Uint8Array, number][] = ibeServers
 		.getObjectIds()
-		.map((id, i) => [id, shares[i][32]]);
+		.map((id, i) => [id, shares[i].index]);
 
 	return {
 		encryptedObject: EncryptedObject.serialize({
@@ -92,21 +93,31 @@ export async function encrypt<Input extends EncryptionInput>({
 	};
 }
 
-function split(secret: Uint8Array, n: number, threshold: number): Promise<Uint8Array[]> {
+async function split(
+	secret: Uint8Array,
+	n: number,
+	threshold: number,
+): Promise<{ index: number; share: Uint8Array }[]> {
 	// The externalSplit function is from the 'shamir-secret-sharing' package and requires t > 1 and n >= 2.
 	// So we handle the special cases here.
 	if (n === 0 || threshold === 0 || threshold > n) {
 		throw new Error('Invalid input');
 	} else if (threshold === 1) {
 		// If the threshold is 1, the secret is not split.
-		const result: Uint8Array[] = [];
+		const result = [];
 		for (let i = 0; i < n; i++) {
-			const share = new Uint8Array(secret.length + 1);
-			share.set(secret, 0);
-			share[secret.length] = i;
-			result.push(share);
+			// The shared polynomial is a constant in this case, so the index doesn't matter.
+			// To make sure they are unique, we use a counter.
+			result.push({ share: secret, index: i });
 		}
 		return Promise.resolve(result);
 	}
-	return externalSplit(secret, n, threshold);
+
+	return externalSplit(secret, n, threshold).then((share) =>
+		share.map((s) => ({
+			share: s.subarray(0, s.length - 1),
+			// split() returns the share index in the last byte
+			index: s[s.length - 1],
+		})),
+	);
 }
