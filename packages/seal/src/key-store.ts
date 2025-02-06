@@ -157,20 +157,17 @@ export class KeyStore {
 
 		// Decrypt each share.
 		const shares = in_keystore.map((i: number) => {
-			const [objectId, shareIndex] = encryptedObject.services[i];
+			const [objectId, index] = encryptedObject.services[i];
 			// Use the index as the unique info parameter to allow for multiple shares per key server.
-			const info = new Uint8Array([shareIndex]);
-			let decryptedShare = BonehFranklinBLS12381Services.decrypt(
+			const info = new Uint8Array([index]);
+			let share = BonehFranklinBLS12381Services.decrypt(
 				nonce,
 				this.getKey(fullId, objectId)!,
 				encryptedShares[i],
 				info,
 			);
 			// The Shamir secret sharing library expects the index/x-coordinate to be at the end of the share.
-			return {
-				index: shareIndex,
-				share: decryptedShare,
-			};
+			return { index, share };
 		});
 
 		// Combine the decrypted shares into the key.

@@ -10,8 +10,6 @@ import { KeyServerType } from './key-server.js';
 import { EncryptedObject } from './types.js';
 import { createFullId } from './utils.js';
 
-// Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
 export const MAX_U8 = 255;
 
 /**
@@ -54,7 +52,6 @@ export async function encrypt<Input extends EncryptionInput>({
 	if (keyServers.some((server) => server.keyType !== KeyServerType.BonehFranklinBLS12381)) {
 		throw new Error('Key type is not supported');
 	}
-
 	const ibeServers = new BonehFranklinBLS12381Services(keyServers);
 
 	// Generate a random symmetric key and encrypt the encryption input using this key.
@@ -75,7 +72,7 @@ export async function encrypt<Input extends EncryptionInput>({
 	);
 
 	// Services and indices of their shares are stored as a tuple
-	const service_oids_and_indices: [Uint8Array, number][] = ibeServers
+	const services: [Uint8Array, number][] = ibeServers
 		.getObjectIds()
 		.map((id, i) => [id, shares[i].index]);
 
@@ -84,7 +81,7 @@ export async function encrypt<Input extends EncryptionInput>({
 			version: 0,
 			package_id: packageId,
 			id,
-			services: service_oids_and_indices,
+			services,
 			threshold,
 			encrypted_shares,
 			ciphertext,
