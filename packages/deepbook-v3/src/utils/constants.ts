@@ -107,6 +107,12 @@ export const mainnetCoins: CoinMap = {
 		type: `0x294de7579d55c110a00a7c4946e09a1b5cbeca2592fbb83fd7bfacba3cfeaf0e::drf::DRF`,
 		scalar: 1000000,
 	},
+	// This coin is experimental
+	WGIGA: {
+		address: `0xec32640add6d02a1d5f0425d72705eb76d9de7edfd4f34e0dba68e62ecceb05b`,
+		type: `0xec32640add6d02a1d5f0425d72705eb76d9de7edfd4f34e0dba68e62ecceb05b::coin::COIN`,
+		scalar: 100000,
+	},
 };
 
 export const testnetPools: PoolMap = {
