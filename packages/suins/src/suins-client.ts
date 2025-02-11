@@ -4,7 +4,6 @@ import type { SuiClient } from '@mysten/sui/client';
 import type { Transaction } from '@mysten/sui/transactions';
 import { isValidSuiNSName, normalizeSuiNSName } from '@mysten/sui/utils';
 
-import { SuiPriceServiceConnection, SuiPythClient } from '../src/pyth/pyth.js';
 import { mainPackage } from './constants.js';
 import {
 	getCoinDiscountConfigType,
@@ -15,6 +14,7 @@ import {
 	isSubName,
 	validateYears,
 } from './helpers.js';
+import { SuiPriceServiceConnection, SuiPythClient } from './pyth/pyth.js';
 import type {
 	CoinTypeDiscount,
 	NameRecord,
