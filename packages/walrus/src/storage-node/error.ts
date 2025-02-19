@@ -98,6 +98,12 @@ export class ConnectionError extends StorageNodeAPIError<undefined, undefined> {
 	}
 }
 
+export class ConnectionTimeoutError extends StorageNodeAPIError<undefined, undefined> {
+	constructor({ message }: { message?: string } = {}) {
+		super(undefined, undefined, message ?? 'Request timed out.');
+	}
+}
+
 export class BadRequestError extends StorageNodeAPIError<400> {}
 
 export class AuthenticationError extends StorageNodeAPIError<401> {}

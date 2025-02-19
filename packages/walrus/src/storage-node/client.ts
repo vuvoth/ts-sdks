@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { BlobMetadata, BlobMetadataWithId, SliverData } from '../utils/bcs.js';
-import { StorageNodeAPIError, UserAbortError } from './error.js';
+import { ConnectionTimeoutError, StorageNodeAPIError, UserAbortError } from './error.js';
 import type {
 	GetBlobMetadataRequestInput,
 	GetBlobMetadataResponse,
@@ -30,18 +30,27 @@ export type StorageNodeClientOptions = {
 	 * @default globalThis.fetch
 	 */
 	fetch?: Fetch;
+
+	/**
+	 * An optional timeout for requests.
+	 * @default 30_000ms (30 seconds)
+	 */
+	timeout?: number;
 };
 
 export type RequestOptions = {
 	nodeUrl: string;
+	timeout?: number;
 	headers?: ReturnType<typeof mergeHeaders>;
-} & Omit<RequestInit, 'body' | 'headers'>;
+} & Omit<RequestInit, 'headers'>;
 
 export class StorageNodeClient {
 	#fetch: Fetch;
+	#timeout: number;
 
-	constructor({ fetch: overriddenFetch }: StorageNodeClientOptions = {}) {
+	constructor({ fetch: overriddenFetch, timeout }: StorageNodeClientOptions = {}) {
 		this.#fetch = overriddenFetch ?? globalThis.fetch;
+		this.#timeout = timeout ?? 30_000;
 	}
 
 	/**
@@ -49,9 +58,9 @@ export class StorageNodeClient {
 	 */
 	async getBlobMetadata(
 		{ blobId }: GetBlobMetadataRequestInput,
-		{ nodeUrl, ...options }: RequestOptions,
+		options: RequestOptions,
 	): Promise<GetBlobMetadataResponse> {
-		const response = await this.#request(`${nodeUrl}/v1/blobs/${blobId}/metadata`, {
+		const response = await this.#request(`/v1/blobs/${blobId}/metadata`, {
 			...options,
 			headers: mergeHeaders({ Accept: 'application/octet-stream' }, options.headers),
 		});
@@ -71,12 +80,12 @@ export class StorageNodeClient {
 	 */
 	async storeBlobMetadata(
 		{ blobId, metadata }: StoreBlobMetadataRequestInput,
-		{ nodeUrl, ...options }: RequestOptions,
+		options: RequestOptions,
 	): Promise<StoreBlobMetadataResponse> {
 		const isBcsInput = typeof metadata === 'object' && 'V1' in metadata;
 		const body = isBcsInput ? BlobMetadata.serialize(metadata).toBytes() : metadata;
 
-		const response = await this.#request(`${nodeUrl}/v1/blobs/${blobId}/metadata`, {
+		const response = await this.#request(`/v1/blobs/${blobId}/metadata`, {
 			...options,
 			method: 'PUT',
 			body,
@@ -94,10 +103,10 @@ export class StorageNodeClient {
 	 */
 	async getSliver(
 		{ blobId, sliverPairIndex, sliverType }: GetSliverRequestInput,
-		{ nodeUrl, ...options }: RequestOptions,
+		options: RequestOptions,
 	): Promise<GetSliverResponse> {
 		const response = await this.#request(
-			`${nodeUrl}/v1/blobs/${blobId}/slivers/${sliverPairIndex}/${sliverType}`,
+			`/v1/blobs/${blobId}/slivers/${sliverPairIndex}/${sliverType}`,
 			{
 				...options,
 				headers: mergeHeaders({ Accept: 'application/octet-stream' }, options.headers),
@@ -113,13 +122,13 @@ export class StorageNodeClient {
 	 */
 	async storeSliver(
 		{ blobId, sliverPairIndex, sliverType, sliver }: StoreSliverRequestInput,
-		{ nodeUrl, ...options }: RequestOptions,
+		options: RequestOptions,
 	): Promise<StoreSliverResponse> {
 		const isBcsInput = typeof sliver === 'object' && 'symbols' in sliver;
 		const body = isBcsInput ? SliverData.serialize(sliver).toBytes() : sliver;
 
 		const response = await this.#request(
-			`${nodeUrl}/v1/blobs/${blobId}/slivers/${sliverPairIndex}/${sliverType}`,
+			`/v1/blobs/${blobId}/slivers/${sliverPairIndex}/${sliverType}`,
 			{
 				...options,
 				method: 'PUT',
@@ -138,10 +147,10 @@ export class StorageNodeClient {
 	 */
 	async getDeletableBlobConfirmation(
 		{ blobId, objectId }: GetDeletableBlobConfirmationRequestInput,
-		{ nodeUrl, ...options }: RequestOptions,
+		options: RequestOptions,
 	): Promise<GetDeletableBlobConfirmationResponse> {
 		const response = await this.#request(
-			`${nodeUrl}/v1/blobs/${blobId}/confirmation/deletable/${objectId}`,
+			`/v1/blobs/${blobId}/confirmation/deletable/${objectId}`,
 			options,
 		);
 
@@ -155,24 +164,50 @@ export class StorageNodeClient {
 	 */
 	async getPermanentBlobConfirmation(
 		{ blobId }: GetPermanentBlobConfirmationRequestInput,
-		{ nodeUrl, ...options }: RequestOptions,
+		options: RequestOptions,
 	): Promise<GetPermanentBlobConfirmationResponse> {
-		const response = await this.#request(
-			`${nodeUrl}/v1/blobs/${blobId}/confirmation/permanent`,
-			options,
-		);
+		const response = await this.#request(`/v1/blobs/${blobId}/confirmation/permanent`, options);
 
 		const json = await response.json();
 		return json;
 	}
 
-	async #request(url: string, init: RequestInit) {
-		const response = await this.#fetch(url, init).catch((error) => {
-			if (init.signal?.aborted) {
+	async #request(path: string, options: RequestOptions) {
+		const { nodeUrl, signal, timeout, ...init } = options;
+		const controller = new AbortController();
+
+		if (signal?.aborted) {
+			throw new UserAbortError();
+		}
+
+		signal?.addEventListener('abort', () => {
+			controller.abort();
+		});
+
+		const abortTimerId = setTimeout(() => {
+			controller.abort();
+		}, timeout ?? this.#timeout);
+
+		let response: Response | undefined;
+
+		try {
+			response = await this.#fetch(`${nodeUrl}${path}`, {
+				...init,
+				signal: controller.signal,
+			});
+		} catch (error) {
+			if (signal?.aborted) {
 				throw new UserAbortError();
 			}
+
+			if (error instanceof Error && error.name === 'AbortError') {
+				throw new ConnectionTimeoutError();
+			}
+
 			throw error;
-		});
+		} finally {
+			clearTimeout(abortTimerId);
+		}
 
 		if (!response.ok) {
 			const errorText = await response.text().catch((reason) => reason);
