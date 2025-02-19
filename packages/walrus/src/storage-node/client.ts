@@ -2,16 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { BlobMetadata, BlobMetadataWithId, SliverData } from '../utils/bcs.js';
-import { ConnectionTimeoutError, StorageNodeAPIError, UserAbortError } from './error.js';
+import {
+	ConnectionTimeoutError,
+	StorageNodeAPIError,
+	StorageNodeError,
+	UserAbortError,
+} from './error.js';
 import type {
 	GetBlobMetadataRequestInput,
 	GetBlobMetadataResponse,
+	GetBlobStatusRequestInput,
+	GetBlobStatusResponse,
 	GetDeletableBlobConfirmationRequestInput,
 	GetDeletableBlobConfirmationResponse,
 	GetPermanentBlobConfirmationRequestInput,
 	GetPermanentBlobConfirmationResponse,
 	GetSliverRequestInput,
 	GetSliverResponse,
+	RawGetBlobStatusResponse,
 	StoreBlobMetadataRequestInput,
 	StoreBlobMetadataResponse,
 	StoreSliverRequestInput,
@@ -70,6 +78,46 @@ export class StorageNodeClient {
 	}
 
 	/**
+	 * Gets the status associated with a Walrus blob.
+	 */
+	async getBlobStatus(
+		{ blobId }: GetBlobStatusRequestInput,
+		options: RequestOptions,
+	): Promise<GetBlobStatusResponse> {
+		const response = await this.#request(`/v1/blobs/${blobId}/status`, options);
+
+		const json: RawGetBlobStatusResponse = await response.json();
+		const blobStatus = json.success.data;
+
+		if (blobStatus === 'nonexistent') {
+			return { type: 'nonexistent' };
+		}
+
+		if ('invalid' in blobStatus) {
+			return {
+				type: 'invalid',
+				...blobStatus.invalid,
+			};
+		}
+
+		if ('permanent' in blobStatus) {
+			return {
+				type: 'permanent',
+				...blobStatus.permanent,
+			};
+		}
+
+		if ('deletable' in blobStatus) {
+			return {
+				type: 'deletable',
+				...blobStatus.deletable,
+			};
+		}
+
+		throw new StorageNodeError(`Unknown blob status received: ${blobStatus}`);
+	}
+
+	/**
 	 * Stores the metadata associated with a registered Walrus blob at this storage
 	 * node. This is a pre-requisite for storing the encoded slivers of the blob. The
 	 * ID of the blob must first be registered on Sui, after which storing the metadata
@@ -92,7 +140,7 @@ export class StorageNodeClient {
 			headers: mergeHeaders({ 'Content-Type': 'application/octet-stream' }, options.headers),
 		});
 
-		const json = await response.json();
+		const json: StoreBlobMetadataResponse = await response.json();
 		return json;
 	}
 
@@ -137,7 +185,7 @@ export class StorageNodeClient {
 			},
 		);
 
-		const json = await response.json();
+		const json: StoreSliverResponse = await response.json();
 		return json;
 	}
 
@@ -154,7 +202,7 @@ export class StorageNodeClient {
 			options,
 		);
 
-		const json = await response.json();
+		const json: GetDeletableBlobConfirmationResponse = await response.json();
 		return json;
 	}
 
@@ -168,7 +216,7 @@ export class StorageNodeClient {
 	): Promise<GetPermanentBlobConfirmationResponse> {
 		const response = await this.#request(`/v1/blobs/${blobId}/confirmation/permanent`, options);
 
-		const json = await response.json();
+		const json: GetPermanentBlobConfirmationResponse = await response.json();
 		return json;
 	}
 
