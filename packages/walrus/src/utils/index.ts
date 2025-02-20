@@ -11,7 +11,7 @@ const BLOB_ID_LEN = 32;
 
 export function encodedBlobLength(unencodedLength: number, nShards: number): number {
 	const safetyLimit = decodingSafetyLimit(nShards);
-	const maxFaulty = Math.floor((nShards - 1) / 3);
+	const maxFaulty = getMaxFaultyNodes(nShards);
 	const minCorrect = nShards - maxFaulty;
 	const primary = minCorrect - maxFaulty - safetyLimit;
 	const secondary = minCorrect - safetyLimit;
@@ -25,10 +25,24 @@ export function encodedBlobLength(unencodedLength: number, nShards: number): num
 
 export function getPrimarySourceSymbols(nShards: number): number {
 	const safetyLimit = decodingSafetyLimit(nShards);
-	const maxFaulty = Math.floor((nShards - 1) / 3);
+	const maxFaulty = getMaxFaultyNodes(nShards);
 	const minCorrect = nShards - maxFaulty;
 	const primary = minCorrect - maxFaulty - safetyLimit;
 	return primary;
+}
+
+export function isQuorum(size: number, nShards: number): boolean {
+	const maxFaulty = getMaxFaultyNodes(nShards);
+	return size > 2 * maxFaulty;
+}
+
+export function isAboveValidity(size: number, nShards: number): boolean {
+	const maxFaulty = getMaxFaultyNodes(nShards);
+	return size > maxFaulty;
+}
+
+export function getMaxFaultyNodes(nShards: number): number {
+	return Math.floor((nShards - 1) / 3);
 }
 
 function decodingSafetyLimit(nShards: number): number {
