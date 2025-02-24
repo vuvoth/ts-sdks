@@ -31,7 +31,7 @@ import {
 } from './error.js';
 import { StorageNodeClient } from './storage-node/client.js';
 import { LegallyUnavailableError, NotFoundError, UserAbortError } from './storage-node/error.js';
-import type { BlobMetadataWithId, BlobStatus } from './storage-node/types.js';
+import type { BlobMetadataWithId, BlobStatus, GetSliverResponse } from './storage-node/types.js';
 import type {
 	CertifyBlobOptions,
 	CommitteeInfo,
@@ -39,6 +39,7 @@ import type {
 	ExtendBlobOptions,
 	GetBlobMetadataOptions,
 	GetCertificationEpochOptions,
+	GetSliversOptions,
 	GetStorageConfirmationOptions,
 	GetVerifiedBlobStatusOptions,
 	ReadBlobOptions,
@@ -68,7 +69,7 @@ import {
 	toShardIndex,
 } from './utils/index.js';
 import { SuiObjectDataLoader } from './utils/object-loader.js';
-import { shuffle } from './utils/randomness.js';
+import { shuffle, weightedShuffle } from './utils/randomness.js';
 import { combineSignatures, decodePrimarySlivers, encodeBlob } from './wasm.js';
 
 export class WalrusClient {
@@ -156,31 +157,9 @@ export class WalrusClient {
 	async #internalReadBlob({ blobId, signal }: ReadBlobOptions) {
 		const systemState = await this.systemState();
 		const numShards = systemState.committee.n_shards;
-		const minSymbols = getPrimarySourceSymbols(numShards);
 
 		const blobMetadata = await this.getBlobMetadata({ blobId, signal });
-		const committee = await this.#getReadCommittee({ blobId, signal });
-
-		// TODO: implement better shard selection logic
-		const sliverPromises = Array.from({ length: minSymbols }).map(async (_, shardIndex) => {
-			const storageNode = await this.#getNodeByShardIndex(committee, shardIndex);
-			const sliverPairIndex = toPairIndex(shardIndex, blobId, numShards);
-
-			return await this.#storageNodeClient.getSliver(
-				{ blobId, sliverPairIndex, sliverType: 'primary' },
-				{ nodeUrl: storageNode.networkUrl, signal },
-			);
-		});
-
-		// TODO: implement retry/scheduling logic
-		const sliverResults = await Promise.allSettled(sliverPromises);
-		const slivers = sliverResults
-			.map((result) => (result.status === 'fulfilled' ? result.value : null))
-			.filter((sliver) => !!sliver);
-
-		if (slivers.length < minSymbols) {
-			throw new NotEnoughSliversReceivedError('Not enough slivers to decode');
-		}
+		const slivers = await this.getSlivers({ blobId, signal });
 
 		return decodePrimarySlivers(numShards, blobMetadata.metadata.V1.unencoded_length, slivers);
 	}
@@ -260,6 +239,103 @@ export class WalrusClient {
 				});
 			});
 		}
+	}
+
+	async getSlivers({ blobId, signal }: GetSliversOptions) {
+		const controller = new AbortController();
+		signal?.addEventListener('abort', () => {
+			controller.abort(signal.reason);
+		});
+
+		const committee = await this.#getReadCommittee({ blobId, signal });
+		const randomizedNodes = weightedShuffle(
+			committee.nodes.map((node) => ({
+				value: node,
+				weight: node.shardIndices.length,
+			})),
+		);
+
+		const stakingState = await this.stakingState();
+		const numShards = stakingState.n_shards;
+		const minSymbols = getPrimarySourceSymbols(numShards);
+
+		const sliverPairIndices = randomizedNodes.flatMap((node) =>
+			node.shardIndices.map((shardIndex) => ({
+				url: node.networkUrl,
+				sliverPairIndex: toPairIndex(shardIndex, blobId, numShards),
+			})),
+		);
+
+		const chunkedSliverPairIndices = chunk(sliverPairIndices, minSymbols);
+		const slivers: GetSliverResponse[] = [];
+		const failedNodes = new Set<string>();
+		let numNotFoundWeight = 0;
+		let numBlockedWeight = 0;
+		let totalErrorCount = 0;
+
+		return new Promise<GetSliverResponse[]>((resolve, reject) => {
+			chunkedSliverPairIndices[0].forEach(async (_, colIndex) => {
+				for (let rowIndex = 0; rowIndex < chunkedSliverPairIndices.length; rowIndex += 1) {
+					const value = chunkedSliverPairIndices.at(rowIndex)?.at(colIndex);
+					if (!value) break;
+
+					const { url, sliverPairIndex } = value;
+
+					try {
+						if (failedNodes.has(url)) {
+							throw new Error(`Skipping node at ${url} due to previous failure.`);
+						}
+
+						const sliver = await this.#storageNodeClient.getSliver(
+							{ blobId, sliverPairIndex, sliverType: 'primary' },
+							{ nodeUrl: url, signal: controller.signal },
+						);
+
+						if (slivers.length === minSymbols) {
+							controller.abort('Enough slivers successfully retrieved.');
+							resolve(slivers);
+							return;
+						}
+
+						slivers.push(sliver);
+					} catch (error) {
+						if (error instanceof NotFoundError) {
+							numNotFoundWeight += 1;
+						} else if (error instanceof LegallyUnavailableError) {
+							numBlockedWeight += 1;
+						} else if (error instanceof UserAbortError) {
+							reject(error);
+							return;
+						}
+
+						if (isQuorum(numBlockedWeight + numNotFoundWeight, numShards)) {
+							const abortError =
+								numNotFoundWeight > numBlockedWeight
+									? new BlobNotCertifiedError(`The specified blob ${blobId} is not certified.`)
+									: new BlobBlockedError(`The specified blob ${blobId} is blocked.`);
+
+							controller.abort(abortError);
+							reject(abortError);
+							return;
+						}
+
+						failedNodes.add(url);
+						totalErrorCount += 1;
+
+						const remainingTasks = sliverPairIndices.length - (slivers.length + totalErrorCount);
+						const tooManyFailures = slivers.length + remainingTasks < minSymbols;
+
+						if (tooManyFailures) {
+							const abortError = new NotEnoughSliversReceivedError(
+								`Unable to retrieve enough slivers to decode blob ${blobId}.`,
+							);
+							controller.abort(abortError);
+							reject(abortError);
+						}
+					}
+				}
+			});
+		});
 	}
 
 	/**
