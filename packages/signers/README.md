@@ -75,7 +75,7 @@ const signer = await AwsKmsSigner.fromKeyId('your-kms-key-id', {
 ```
 
 Returns
-**[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;[AwsKmsSigner](./src/aws/aws-kms-signer.ts)>**
+**[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;[AwsKmsSigner](https://github.com/MystenLabs/ts-sdks/blob/main/packages/signers/src/aws/aws-kms-signer.ts)>**
 An instance of AwsKmsSigner.
 
 **Notice**: AWS Signer requires Node >=20 due to dependency on `crypto`

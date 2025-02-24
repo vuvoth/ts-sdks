@@ -229,7 +229,7 @@ export class StorageNodeClient {
 		}
 
 		signal?.addEventListener('abort', () => {
-			controller.abort();
+			controller.abort(signal.reason);
 		});
 
 		const abortTimerId = setTimeout(() => {
