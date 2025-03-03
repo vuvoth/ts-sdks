@@ -59,5 +59,20 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	return { _new, insert_or_update, remove };
+	function remove_if_exists(options: {
+		arguments: [RawTransactionArgument<string>, RawTransactionArgument<string>];
+	}) {
+		const argumentsTypes = [
+			`${packageAddress}::metadata::Metadata`,
+			'0x0000000000000000000000000000000000000000000000000000000000000001::string::String',
+		];
+		return (tx: Transaction) =>
+			tx.moveCall({
+				package: packageAddress,
+				module: 'metadata',
+				function: 'remove_if_exists',
+				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
+			});
+	}
+	return { _new, insert_or_update, remove, remove_if_exists };
 }

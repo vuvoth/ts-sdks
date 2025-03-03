@@ -3,8 +3,8 @@
 
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 
-import { WalrusClient } from '../src/client.js';
-import { computeMetadata } from '../src/wasm.js';
+import { WalrusClient } from '../../src/client.js';
+import { computeMetadata } from '../../src/wasm.js';
 
 /** @ts-ignore */
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
@@ -38,5 +38,5 @@ export async function retrieveBlob(blobId: string) {
 	const textDecoder = new TextDecoder('utf-8'); // Specify encoding, e.g., "utf-8"
 	const resultString = textDecoder.decode(await blob?.arrayBuffer());
 
-	console.log('res', resultString);
+	console.log(resultString);
 })();

@@ -11,7 +11,7 @@ import type { RawTransactionArgument } from './utils/index.js';
 export function FutureAccounting() {
 	return bcs.struct('FutureAccounting', {
 		epoch: bcs.u32(),
-		storage_to_reclaim: bcs.u64(),
+		used_capacity: bcs.u64(),
 		rewards_to_distribute: balance.Balance(),
 	});
 }
@@ -53,17 +53,17 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function storage_to_reclaim(options: { arguments: [RawTransactionArgument<string>] }) {
+	function used_capacity(options: { arguments: [RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::storage_accounting::FutureAccounting`];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
 				module: 'storage_accounting',
-				function: 'storage_to_reclaim',
+				function: 'used_capacity',
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function increase_storage_to_reclaim(options: {
+	function increase_used_capacity(options: {
 		arguments: [RawTransactionArgument<string>, RawTransactionArgument<number | bigint>];
 	}) {
 		const argumentsTypes = [`${packageAddress}::storage_accounting::FutureAccounting`, 'u64'];
@@ -71,19 +71,7 @@ export function init(packageAddress: string) {
 			tx.moveCall({
 				package: packageAddress,
 				module: 'storage_accounting',
-				function: 'increase_storage_to_reclaim',
-				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
-			});
-	}
-	function decrease_storage_to_reclaim(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<number | bigint>];
-	}) {
-		const argumentsTypes = [`${packageAddress}::storage_accounting::FutureAccounting`, 'u64'];
-		return (tx: Transaction) =>
-			tx.moveCall({
-				package: packageAddress,
-				module: 'storage_accounting',
-				function: 'decrease_storage_to_reclaim',
+				function: 'increase_used_capacity',
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
@@ -167,9 +155,8 @@ export function init(packageAddress: string) {
 	return {
 		new_future_accounting,
 		epoch,
-		storage_to_reclaim,
-		increase_storage_to_reclaim,
-		decrease_storage_to_reclaim,
+		used_capacity,
+		increase_used_capacity,
 		rewards_balance,
 		delete_empty_future_accounting,
 		unwrap_balance,

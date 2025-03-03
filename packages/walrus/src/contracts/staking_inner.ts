@@ -93,21 +93,6 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function withdraw_node(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<string>];
-	}) {
-		const argumentsTypes = [
-			`${packageAddress}::staking_inner::StakingInnerV1`,
-			`${packageAddress}::storage_node::StorageNodeCap`,
-		];
-		return (tx: Transaction) =>
-			tx.moveCall({
-				package: packageAddress,
-				module: 'staking_inner',
-				function: 'withdraw_node',
-				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
-			});
-	}
 	function set_commission_receiver(options: {
 		arguments: [
 			RawTransactionArgument<string>,
@@ -165,13 +150,15 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function calculate_votes(options: { arguments: [RawTransactionArgument<string>] }) {
+	function select_committee_and_calculate_votes(options: {
+		arguments: [RawTransactionArgument<string>];
+	}) {
 		const argumentsTypes = [`${packageAddress}::staking_inner::StakingInnerV1`];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
 				module: 'staking_inner',
-				function: 'calculate_votes',
+				function: 'select_committee_and_calculate_votes',
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
@@ -202,21 +189,6 @@ export function init(packageAddress: string) {
 				package: packageAddress,
 				module: 'staking_inner',
 				function: 'quorum_below',
-				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
-			});
-	}
-	function take_threshold_value(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<number | bigint>];
-	}) {
-		const argumentsTypes = [
-			'0x0000000000000000000000000000000000000000000000000000000000000002::priority_queue::PriorityQueue<u64>',
-			'u64',
-		];
-		return (tx: Transaction) =>
-			tx.moveCall({
-				package: packageAddress,
-				module: 'staking_inner',
-				function: 'take_threshold_value',
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
@@ -459,21 +431,6 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function set_withdrawing(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<string>];
-	}) {
-		const argumentsTypes = [
-			`${packageAddress}::staking_inner::StakingInnerV1`,
-			'0x0000000000000000000000000000000000000000000000000000000000000002::object::ID',
-		];
-		return (tx: Transaction) =>
-			tx.moveCall({
-				package: packageAddress,
-				module: 'staking_inner',
-				function: 'set_withdrawing',
-				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
-			});
-	}
 	function destroy_empty_pool(options: {
 		arguments: [RawTransactionArgument<string>, RawTransactionArgument<string>];
 	}) {
@@ -539,6 +496,21 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	function try_join_active_set(options: {
+		arguments: [RawTransactionArgument<string>, RawTransactionArgument<string>];
+	}) {
+		const argumentsTypes = [
+			`${packageAddress}::staking_inner::StakingInnerV1`,
+			`${packageAddress}::storage_node::StorageNodeCap`,
+		];
+		return (tx: Transaction) =>
+			tx.moveCall({
+				package: packageAddress,
+				module: 'staking_inner',
+				function: 'try_join_active_set',
+				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
+			});
+	}
 	function compute_next_committee(options: { arguments: [RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::staking_inner::StakingInnerV1`];
 		return (tx: Transaction) =>
@@ -546,16 +518,6 @@ export function init(packageAddress: string) {
 				package: packageAddress,
 				module: 'staking_inner',
 				function: 'compute_next_committee',
-				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
-			});
-	}
-	function select_committee(options: { arguments: [RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::staking_inner::StakingInnerV1`];
-		return (tx: Transaction) =>
-			tx.moveCall({
-				package: packageAddress,
-				module: 'staking_inner',
-				function: 'select_committee',
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
@@ -651,28 +613,6 @@ export function init(packageAddress: string) {
 				package: packageAddress,
 				module: 'staking_inner',
 				function: 'epoch_sync_done',
-				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
-			});
-	}
-	function shard_transfer_failed(options: {
-		arguments: [
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
-			RawTransactionArgument<number[]>,
-		];
-	}) {
-		const argumentsTypes = [
-			`${packageAddress}::staking_inner::StakingInnerV1`,
-			`${packageAddress}::storage_node::StorageNodeCap`,
-			'0x0000000000000000000000000000000000000000000000000000000000000002::object::ID',
-			'vector<u16>',
-		];
-		return (tx: Transaction) =>
-			tx.moveCall({
-				package: packageAddress,
-				module: 'staking_inner',
-				function: 'shard_transfer_failed',
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
@@ -822,17 +762,27 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	function is_quorum_for_n_shards(options: {
+		arguments: [RawTransactionArgument<number | bigint>, RawTransactionArgument<number | bigint>];
+	}) {
+		const argumentsTypes = ['u64', 'u64'];
+		return (tx: Transaction) =>
+			tx.moveCall({
+				package: packageAddress,
+				module: 'staking_inner',
+				function: 'is_quorum_for_n_shards',
+				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
+			});
+	}
 	return {
 		_new,
 		create_pool,
-		withdraw_node,
 		set_commission_receiver,
 		collect_commission,
 		voting_end,
-		calculate_votes,
+		select_committee_and_calculate_votes,
 		quorum_above,
 		quorum_below,
-		take_threshold_value,
 		set_governance_authorized,
 		check_governance_authorization,
 		get_current_node_weight,
@@ -845,20 +795,18 @@ export function init(packageAddress: string) {
 		set_network_address,
 		set_network_public_key,
 		set_node_metadata,
-		set_withdrawing,
 		destroy_empty_pool,
 		stake_with_pool,
 		request_withdraw_stake,
 		withdraw_stake,
+		try_join_active_set,
 		compute_next_committee,
-		select_committee,
 		apportionment,
 		dhondt,
 		max_shards_per_node,
 		initiate_epoch_change,
 		advance_epoch,
 		epoch_sync_done,
-		shard_transfer_failed,
 		node_metadata,
 		next_committee,
 		next_epoch_params,
@@ -871,5 +819,6 @@ export function init(packageAddress: string) {
 		calculate_rewards,
 		new_walrus_context,
 		is_quorum,
+		is_quorum_for_n_shards,
 	};
 }

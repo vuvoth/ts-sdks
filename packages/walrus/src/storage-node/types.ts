@@ -117,10 +117,24 @@ export type GetDeletableBlobConfirmationRequestInput = {
 	objectId: string;
 };
 
-export type GetDeletableBlobConfirmationResponse = StorageConfirmation;
+export type GetDeletableBlobConfirmationResponse = {
+	success: {
+		code: number;
+		data: {
+			signed: StorageConfirmation;
+		};
+	};
+};
 
 export type GetPermanentBlobConfirmationRequestInput = {
 	blobId: string;
 };
 
-export type GetPermanentBlobConfirmationResponse = StorageConfirmation;
+export type GetPermanentBlobConfirmationResponse = {
+	success: {
+		code: number;
+		data: {
+			signed: StorageConfirmation;
+		};
+	};
+};

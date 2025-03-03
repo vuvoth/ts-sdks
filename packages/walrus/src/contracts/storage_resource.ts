@@ -37,13 +37,13 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function storage_size(options: { arguments: [RawTransactionArgument<string>] }) {
+	function size(options: { arguments: [RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::storage_resource::Storage`];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
 				module: 'storage_resource',
-				function: 'storage_size',
+				function: 'size',
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
@@ -157,7 +157,7 @@ export function init(packageAddress: string) {
 	return {
 		start_epoch,
 		end_epoch,
-		storage_size,
+		size,
 		create_storage,
 		extend_end_epoch,
 		split_by_epoch,

@@ -222,16 +222,12 @@ export class StorageNodeClient {
 
 	async #request(path: string, options: RequestOptions) {
 		const { nodeUrl, signal, timeout, ...init } = options;
-		const controller = new AbortController();
 
 		if (signal?.aborted) {
 			throw new UserAbortError();
 		}
 
-		signal?.addEventListener('abort', () => {
-			controller.abort(signal.reason);
-		});
-
+		const controller = new AbortController();
 		const abortTimerId = setTimeout(() => {
 			controller.abort();
 		}, timeout ?? this.#timeout);
@@ -241,7 +237,7 @@ export class StorageNodeClient {
 		try {
 			response = await this.#fetch(`${nodeUrl}${path}`, {
 				...init,
-				signal: controller.signal,
+				signal: signal ? AbortSignal.any([controller.signal, signal]) : controller.signal,
 			});
 		} catch (error) {
 			if (signal?.aborted) {

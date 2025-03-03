@@ -3,8 +3,8 @@
 
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 
-import { WalrusClient } from '../src/client.js';
-import { getFundedKeypair } from './funded-keypiar.js';
+import { WalrusClient } from '../../src/client.js';
+import { getFundedKeypair } from '../funded-keypair.js';
 
 /** @ts-ignore */
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';

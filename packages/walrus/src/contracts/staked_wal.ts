@@ -174,16 +174,6 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function destroy_zero(options: { arguments: [RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::staked_wal::StakedWal`];
-		return (tx: Transaction) =>
-			tx.moveCall({
-				package: packageAddress,
-				module: 'staked_wal',
-				function: 'destroy_zero',
-				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
-			});
-	}
 	return {
 		mint,
 		into_balance,
@@ -197,6 +187,5 @@ export function init(packageAddress: string) {
 		withdraw_epoch,
 		join,
 		split,
-		destroy_zero,
 	};
 }

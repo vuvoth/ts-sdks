@@ -123,7 +123,7 @@ export class WalrusClient {
 	}
 
 	get systemContract() {
-		return initSystemContract(this.packageConfig.packageId);
+		return initSystemContract(this.packageConfig.latestPackageId);
 	}
 
 	/** The cached system object for the walrus package */
@@ -173,11 +173,6 @@ export class WalrusClient {
 	}
 
 	async getBlobMetadata({ blobId, signal }: GetBlobMetadataOptions) {
-		const controller = new AbortController();
-		signal?.addEventListener('abort', () => {
-			controller.abort(signal.reason);
-		});
-
 		const committee = await this.#getReadCommittee({ blobId, signal });
 		const randomizedNodes = shuffle(committee.nodes);
 
@@ -187,12 +182,16 @@ export class WalrusClient {
 		let numNotFoundWeight = 0;
 		let numBlockedWeight = 0;
 		let totalErrorCount = 0;
+		const controller = new AbortController();
 
 		const metadataExecutors = randomizedNodes.map((node) => async () => {
 			try {
 				return await this.#storageNodeClient.getBlobMetadata(
 					{ blobId },
-					{ nodeUrl: node.networkUrl, signal: controller.signal },
+					{
+						nodeUrl: node.networkUrl,
+						signal: signal ? AbortSignal.any([controller.signal, signal]) : controller.signal,
+					},
 				);
 			} catch (error) {
 				if (error instanceof NotFoundError) {
@@ -250,11 +249,6 @@ export class WalrusClient {
 	}
 
 	async getSlivers({ blobId, signal }: GetSliversOptions) {
-		const controller = new AbortController();
-		signal?.addEventListener('abort', () => {
-			controller.abort(signal.reason);
-		});
-
 		const committee = await this.#getReadCommittee({ blobId, signal });
 		const randomizedNodes = weightedShuffle(
 			committee.nodes.map((node) => ({
@@ -274,6 +268,7 @@ export class WalrusClient {
 			})),
 		);
 
+		const controller = new AbortController();
 		const chunkedSliverPairIndices = chunk(sliverPairIndices, minSymbols);
 		const slivers: GetSliverResponse[] = [];
 		const failedNodes = new Set<string>();
@@ -296,7 +291,10 @@ export class WalrusClient {
 
 						const sliver = await this.#storageNodeClient.getSliver(
 							{ blobId, sliverPairIndex, sliverType: 'primary' },
-							{ nodeUrl: url, signal: controller.signal },
+							{
+								nodeUrl: url,
+								signal: signal ? AbortSignal.any([controller.signal, signal]) : controller.signal,
+							},
 						);
 
 						if (slivers.length === minSymbols) {
@@ -350,16 +348,12 @@ export class WalrusClient {
 	 * Gets the blob status from multiple storage nodes and returns the latest status that can be verified.
 	 */
 	async getVerifiedBlobStatus({ blobId, signal }: GetVerifiedBlobStatusOptions) {
-		const controller = new AbortController();
-		signal?.addEventListener('abort', () => {
-			controller.abort(signal.reason);
-		});
-
 		// Read from the latest committee because, during epoch change, it is the committee
 		// that will have the most up-to-date information on old and newly certified blobs:
 		const committee = await this.#getActiveCommittee();
 		const stakingState = await this.stakingState();
 		const numShards = stakingState.n_shards;
+		const controller = new AbortController();
 
 		const statuses = await new Promise<{ status: BlobStatus; weight: number }[]>(
 			(resolve, reject) => {
@@ -374,7 +368,10 @@ export class WalrusClient {
 					try {
 						const status = await this.#storageNodeClient.getBlobStatus(
 							{ blobId },
-							{ nodeUrl: node.networkUrl, signal: controller.signal },
+							{
+								nodeUrl: node.networkUrl,
+								signal: signal ? AbortSignal.any([controller.signal, signal]) : controller.signal,
+							},
 						);
 
 						if (isQuorum(successWeight, numShards)) {
@@ -735,7 +732,7 @@ export class WalrusClient {
 	 * tx.add(await client.certifyBlob({ blobId, blobObjectId, confirmations }));
 	 * ```
 	 */
-	async certifyBlob({ blobId, blobObjectId, confirmations }: CertifyBlobOptions) {
+	async certifyBlob({ blobId, blobObjectId, confirmations, deletable }: CertifyBlobOptions) {
 		const systemState = await this.systemState();
 		const committee = await this.#getActiveCommittee();
 
@@ -750,9 +747,15 @@ export class WalrusClient {
 			epoch: systemState.committee.epoch,
 			messageContents: {
 				blobId,
-				blobType: {
-					Permanent: null,
-				},
+				blobType: deletable
+					? {
+							Deletable: {
+								objectId: blobObjectId,
+							},
+						}
+					: {
+							Permanent: null,
+						},
 			},
 		}).toBase64();
 
@@ -774,6 +777,10 @@ export class WalrusClient {
 					: null;
 			})
 			.filter((confirmation) => confirmation !== null);
+
+		if (!isQuorum(filteredConfirmations.length, systemState.committee.members.length)) {
+			throw new NotEnoughBlobConfirmationsError('Too many invalid confirmations received for blob');
+		}
 
 		const combinedSignature = combineSignatures(
 			filteredConfirmations,
@@ -809,10 +816,11 @@ export class WalrusClient {
 		blobId,
 		blobObjectId,
 		confirmations,
+		deletable,
 	}: CertifyBlobOptions & {
 		transaction?: Transaction;
 	}) {
-		transaction.add(await this.certifyBlob({ blobId, blobObjectId, confirmations }));
+		transaction.add(await this.certifyBlob({ blobId, blobObjectId, confirmations, deletable }));
 
 		return transaction;
 	}
@@ -1055,7 +1063,7 @@ export class WalrusClient {
 					{ nodeUrl: node.networkUrl, signal },
 				);
 
-		return result;
+		return result?.success?.data?.signed ?? null;
 	}
 
 	/**
@@ -1121,10 +1129,9 @@ export class WalrusClient {
 	 */
 	async writeSliversToNode({ blobId, slivers, signal }: WriteSliversToNodeOptions) {
 		const controller = new AbortController();
-
-		signal?.addEventListener('abort', () => {
-			controller.abort(signal.reason);
-		});
+		const combinedSignal = signal
+			? AbortSignal.any([controller.signal, signal])
+			: controller.signal;
 
 		const primarySliverWrites = slivers.primary.map(({ sliverPairIndex, sliver }) => {
 			return this.writeSliver({
@@ -1132,7 +1139,7 @@ export class WalrusClient {
 				sliverPairIndex,
 				sliverType: 'primary',
 				sliver,
-				signal: controller.signal,
+				signal: combinedSignal,
 			});
 		});
 
@@ -1142,7 +1149,7 @@ export class WalrusClient {
 				sliverPairIndex,
 				sliverType: 'secondary',
 				sliver,
-				signal: controller.signal,
+				signal: combinedSignal,
 			});
 		});
 
@@ -1195,11 +1202,6 @@ export class WalrusClient {
 	async writeBlob({ blob, deletable, epochs, signer, signal, owner }: WriteBlobOptions) {
 		const systemState = await this.systemState();
 		const committee = await this.#getActiveCommittee();
-		const controller = new AbortController();
-
-		signal?.addEventListener('abort', () => {
-			controller.abort(signal.reason);
-		});
 
 		const { sliversByNode, blobId, metadata, rootHash } = await this.encodeBlob(blob);
 
@@ -1213,6 +1215,7 @@ export class WalrusClient {
 			owner,
 		});
 
+		const controller = new AbortController();
 		const blobObjectId = suiBlobObject.blob.id.id;
 		let failures = 0;
 
@@ -1223,8 +1226,9 @@ export class WalrusClient {
 					nodeIndex,
 					metadata,
 					slivers,
-					deletable: false,
-					signal: controller.signal,
+					deletable,
+					objectId: blobObjectId,
+					signal: signal ? AbortSignal.any([controller.signal, signal]) : controller.signal,
 				}).catch(() => {
 					failures += committee.nodes[nodeIndex].shardIndices.length;
 
@@ -1246,6 +1250,7 @@ export class WalrusClient {
 			blobId,
 			blobObjectId,
 			confirmations,
+			deletable,
 		});
 
 		return {

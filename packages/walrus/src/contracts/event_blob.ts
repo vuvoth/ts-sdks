@@ -23,7 +23,7 @@ export function EventBlob() {
 export function EventBlobCertificationState() {
 	return bcs.struct('EventBlobCertificationState', {
 		latest_certified_blob: bcs.option(EventBlob()),
-		aggregate_weight_per_blob: vec_map.VecMap(bcs.u256(), bcs.u16()),
+		aggregate_weight_per_blob: vec_map.VecMap(EventBlob(), bcs.u16()),
 	});
 }
 export function init(packageAddress: string) {
@@ -175,12 +175,14 @@ export function init(packageAddress: string) {
 		arguments: [
 			RawTransactionArgument<string>,
 			RawTransactionArgument<number | bigint>,
+			RawTransactionArgument<number | bigint>,
 			RawTransactionArgument<number>,
 		];
 	}) {
 		const argumentsTypes = [
 			`${packageAddress}::event_blob::EventBlobCertificationState`,
 			'u256',
+			'u64',
 			'u16',
 		];
 		return (tx: Transaction) =>
@@ -192,9 +194,17 @@ export function init(packageAddress: string) {
 			});
 	}
 	function start_tracking_blob(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<number | bigint>];
+		arguments: [
+			RawTransactionArgument<string>,
+			RawTransactionArgument<number | bigint>,
+			RawTransactionArgument<number | bigint>,
+		];
 	}) {
-		const argumentsTypes = [`${packageAddress}::event_blob::EventBlobCertificationState`, 'u256'];
+		const argumentsTypes = [
+			`${packageAddress}::event_blob::EventBlobCertificationState`,
+			'u256',
+			'u64',
+		];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,

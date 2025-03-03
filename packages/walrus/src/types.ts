@@ -23,6 +23,7 @@ import type { BlobMetadata } from './utils/bcs.js';
 export interface WalrusPackageConfig {
 	/** The package ID of the Walrus package */
 	packageId: string;
+	latestPackageId: string;
 	/** The system object ID of the Walrus package */
 	systemObjectId: string;
 	/** The staking pool ID of the Walrus package */
@@ -104,6 +105,7 @@ export interface CertifyBlobOptions {
 	 * These confirmations must be provided in the same order as the nodes in the committee.
 	 * For nodes that have not provided a confirmation you can pass `null` */
 	confirmations: (StorageConfirmation | null)[];
+	deletable: boolean;
 }
 
 type DeletableConfirmationOptions =

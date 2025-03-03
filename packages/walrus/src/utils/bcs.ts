@@ -18,10 +18,19 @@ const SliverPairMetadata = bcs.struct('SliverPairMetadata', {
 const EncodingType = bcs
 	.enum('EncodingType', {
 		RedStuff: null,
+		RS2: null,
 	})
 	.transform({
-		input: (encodingType: { RedStuff: boolean | object | null } | 'RedStuff') =>
-			typeof encodingType === 'string' ? { RedStuff: null } : { RedStuff: encodingType.RedStuff },
+		input: (
+			encodingType:
+				| { RedStuff: boolean | object | null }
+				| { RS2: boolean | object | null }
+				| 'RedStuff'
+				| 'RS2',
+		) =>
+			typeof encodingType === 'string'
+				? ({ [encodingType]: null } as Exclude<typeof encodingType, string>)
+				: encodingType,
 		output: (encodingType) => encodingType,
 	});
 

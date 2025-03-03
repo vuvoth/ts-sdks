@@ -81,12 +81,14 @@ export function init(packageAddress: string) {
 			RawTransactionArgument<string>,
 			RawTransactionArgument<number | bigint>,
 			RawTransactionArgument<number>,
+			RawTransactionArgument<boolean>,
 		];
 	}) {
 		const argumentsTypes = [
 			`${packageAddress}::system_state_inner::SystemStateInnerV1`,
 			'u64',
 			'u32',
+			'bool',
 		];
 		return (tx: Transaction) =>
 			tx.moveCall({
