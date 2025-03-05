@@ -96,6 +96,8 @@ export interface RegisterBlobOptions extends StorageWithSizeOptions {
 	deletable: boolean;
 	/** optionally specify a WAL coin pay for the registration.  This will consume WAL from the signer by default. */
 	walCoin?: TransactionObjectArgument;
+	/** The attributes to write for the blob. */
+	attributes?: Record<string, string | null>;
 }
 
 export interface CertifyBlobOptions {
@@ -175,6 +177,8 @@ export type WriteBlobOptions = {
 	signer: Signer;
 	/** Where the blob should be transferred to after it is registered.  Defaults to the signer address. */
 	owner?: string;
+	/** The attributes to write for the blob. */
+	attributes?: Record<string, string | null>;
 } & WalrusClientRequestOptions;
 
 export interface DeleteBlobOptions {
@@ -195,5 +199,18 @@ export type ExtendBlobOptions = {
 			/** The new end epoch for the storage period of the blob. */
 			endEpoch: number;
 			epochs?: never;
+	  }
+);
+
+export type WriteBlobAttributesOptions = {
+	attributes: Record<string, string | null>;
+} & (
+	| {
+			blobObject: TransactionObjectArgument;
+			blobObjectId?: never;
+	  }
+	| {
+			blobObjectId: string;
+			blobObject?: never;
 	  }
 );

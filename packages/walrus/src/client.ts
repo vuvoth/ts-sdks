@@ -5,12 +5,14 @@ import type { InferBcsType } from '@mysten/bcs';
 import { bcs, fromBase64 } from '@mysten/bcs';
 import { SuiClient } from '@mysten/sui/client';
 import type { Signer } from '@mysten/sui/cryptography';
+import type { TransactionObjectArgument } from '@mysten/sui/transactions';
 import { coinWithBalance, Transaction } from '@mysten/sui/transactions';
 import { bls12381_min_pk_verify } from '@mysten/walrus-wasm';
 
 import { statusLifecycleRank, TESTNET_WALRUS_PACKAGE_CONFIG } from './constants.js';
-import { Blob } from './contracts/blob.js';
+import { Blob, init as initBlobContract } from './contracts/blob.js';
 import type { Committee } from './contracts/committee.js';
+import { init as initMetadataContract } from './contracts/metadata.js';
 import { StakingInnerV1 } from './contracts/staking_inner.js';
 import { StakingPool } from './contracts/staking_pool.js';
 import { Staking } from './contracts/staking.js';
@@ -49,6 +51,7 @@ import type {
 	StorageWithSizeOptions,
 	WalrusClientConfig,
 	WalrusPackageConfig,
+	WriteBlobAttributesOptions,
 	WriteBlobOptions,
 	WriteEncodedBlobOptions,
 	WriteMetadataOptions,
@@ -124,6 +127,14 @@ export class WalrusClient {
 
 	get systemContract() {
 		return initSystemContract(this.packageConfig.latestPackageId);
+	}
+
+	get #blobContract() {
+		return initBlobContract(this.packageConfig.packageId);
+	}
+
+	get #metadataContract() {
+		return initMetadataContract(this.packageConfig.packageId);
 	}
 
 	/** The cached system object for the walrus package */
@@ -617,7 +628,15 @@ export class WalrusClient {
 	 * tx.transferObjects([await client.registerBlob({ size: 1000, epochs: 3, blobId, rootHash, deletable: true })], owner);
 	 * ```
 	 */
-	async registerBlob({ size, epochs, blobId, rootHash, deletable, walCoin }: RegisterBlobOptions) {
+	async registerBlob({
+		size,
+		epochs,
+		blobId,
+		rootHash,
+		deletable,
+		walCoin,
+		attributes,
+	}: RegisterBlobOptions) {
 		const storage = await this.createStorage({ size, epochs, walCoin });
 		const { writeCost } = await this.storageCost(size, epochs);
 
@@ -651,6 +670,10 @@ export class WalrusClient {
 				typeArguments: [this.walType],
 				arguments: [writeCoin],
 			});
+
+			if (attributes) {
+				tx.add(this.#writeBlobAttributesForRef({ blob, attributes, existingAttributes: null }));
+			}
 
 			return blob;
 		};
@@ -996,6 +1019,158 @@ export class WalrusClient {
 		return { digest };
 	}
 
+	async readBlobAttributes({
+		blobObjectId,
+	}: {
+		blobObjectId: string;
+	}): Promise<Record<string, string> | null> {
+		const response = await this.#suiClient.getDynamicFieldObject({
+			parentId: blobObjectId,
+			name: {
+				type: 'vector<u8>',
+				value: [...new TextEncoder().encode('metadata')],
+			},
+		});
+
+		if (response.error?.code === 'dynamicFieldNotFound') {
+			return null;
+		}
+
+		if (response.error || !response.data) {
+			throw new WalrusClientError(
+				`Failed to fetch metadata for object ${blobObjectId}: ${response.error}`,
+			);
+		}
+
+		const metadata = (
+			response.data as unknown as {
+				content: {
+					fields: {
+						value: {
+							fields: {
+								metadata: {
+									fields: { contents: { fields: { key: string; value: string } }[] };
+								};
+							};
+						};
+					};
+				};
+			}
+		).content.fields.value.fields.metadata.fields.contents;
+
+		return Object.fromEntries(metadata.map(({ fields: { key, value } }) => [key, value]));
+	}
+
+	#writeBlobAttributesForRef({
+		blob,
+		attributes,
+		existingAttributes,
+	}: {
+		blob: TransactionObjectArgument;
+		attributes: Record<string, string | null>;
+		existingAttributes: Record<string, string> | null;
+	}) {
+		return (tx: Transaction) => {
+			if (!existingAttributes) {
+				tx.add(
+					this.#blobContract.add_metadata({
+						arguments: [
+							blob,
+							this.#metadataContract._new({
+								arguments: [],
+							}),
+						],
+					}),
+				);
+			}
+
+			Object.keys(attributes).forEach((key) => {
+				const value = attributes[key];
+
+				if (value === null) {
+					if (existingAttributes && key in existingAttributes) {
+						tx.add(
+							this.#blobContract.remove_metadata_pair({
+								arguments: [blob, key],
+							}),
+						);
+					}
+				} else {
+					tx.add(
+						this.#blobContract.insert_or_update_metadata_pair({
+							arguments: [blob, key, value],
+						}),
+					);
+				}
+			});
+		};
+	}
+
+	/**
+	 * Write attributes to a blob
+	 *
+	 * If attributes already exists, their previous values will be overwritten
+	 * If an attribute is set to `null`, it will be removed from the blob
+	 *
+	 * @usage
+	 * ```ts
+	 * tx.add(await client.writeBlobAttributes({ blobObjectId, attributes: { key: 'value', keyToRemove: null } }));
+	 * ```
+	 */
+	async writeBlobAttributes({ blobObject, blobObjectId, attributes }: WriteBlobAttributesOptions) {
+		const existingAttributes = blobObjectId
+			? await this.readBlobAttributes({ blobObjectId })
+			: null;
+
+		return (tx: Transaction) => {
+			const blob = blobObject ?? tx.object(blobObjectId);
+
+			tx.add(this.#writeBlobAttributesForRef({ blob, attributes, existingAttributes }));
+		};
+	}
+
+	/**
+	 * Create a transaction that writes attributes to a blob
+	 *
+	 * If attributes already exists, their previous values will be overwritten
+	 * If an attribute is set to `null`, it will be removed from the blob
+	 *
+	 * @usage
+	 * ```ts
+	 * const tx = await client.writeBlobAttributesTransaction({ blobObjectId, attributes: { key: 'value', keyToRemove: null } });
+	 * ```
+	 */
+	async writeBlobAttributesTransaction({
+		transaction = new Transaction(),
+		...options
+	}: WriteBlobAttributesOptions & { transaction?: Transaction }) {
+		transaction.add(await this.writeBlobAttributes(options));
+		return transaction;
+	}
+
+	/**
+	 * Execute a transaction that writes attributes to a blob
+	 *
+	 * If attributes already exists, their previous values will be overwritten
+	 * If an attribute is set to `null`, it will be removed from the blob
+	 *
+	 * @usage
+	 * ```ts
+	 * const { digest } = await client.executeWriteBlobAttributesTransaction({ blobObjectId, signer });
+	 * ```
+	 */
+	async executeWriteBlobAttributesTransaction({
+		signer,
+		...options
+	}: WriteBlobAttributesOptions & { signer: Signer; transaction?: Transaction }) {
+		const { digest } = await this.#executeTransaction(
+			await this.writeBlobAttributesTransaction(options),
+			signer,
+			'write blob attributes',
+		);
+		return { digest };
+	}
+
 	/**
 	 * Write a sliver to a storage node
 	 *
@@ -1199,7 +1374,15 @@ export class WalrusClient {
 	 * const { blobId, blobObject } = await client.writeBlob({ blob, deletable, epochs, signer });
 	 * ```
 	 */
-	async writeBlob({ blob, deletable, epochs, signer, signal, owner }: WriteBlobOptions) {
+	async writeBlob({
+		blob,
+		deletable,
+		epochs,
+		signer,
+		signal,
+		owner,
+		attributes,
+	}: WriteBlobOptions) {
 		const systemState = await this.systemState();
 		const committee = await this.#getActiveCommittee();
 
@@ -1213,6 +1396,7 @@ export class WalrusClient {
 			rootHash,
 			deletable,
 			owner,
+			attributes,
 		});
 
 		const controller = new AbortController();
