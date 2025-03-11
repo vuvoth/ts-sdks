@@ -3,7 +3,6 @@
 
 import type { BcsType } from '@mysten/sui/bcs';
 import { bcs } from '@mysten/sui/bcs';
-import { fromBase64, toBase64 } from '@mysten/sui/utils';
 
 const MerkleNode = bcs.enum('MerkleNode', {
 	Empty: null,
@@ -44,22 +43,27 @@ export const BlobMetadata = bcs.enum('BlobMetadata', {
 	V1: BlobMetadataV1,
 });
 
-export const BlobId = bcs.bytes(32).transform({
-	input: (blobId: string | Iterable<number>) =>
-		typeof blobId === 'string' ? blobIdToBytes(blobId) : blobId,
-	output: (bytes: Uint8Array) => blobIdFromBytes(bytes),
+export const BlobId = bcs.u256().transform({
+	input: (blobId: string | bigint) => (typeof blobId === 'string' ? blobIdToInt(blobId) : blobId),
+	output: (id: string) => blobIdFromInt(id),
 });
 
-export function blobIdFromBytes(blobId: Uint8Array): string {
-	return toBase64(blobId).replace(/=*$/, '').replaceAll('+', '-').replaceAll('/', '_');
+export function blobIdFromInt(blobId: bigint | string): string {
+	return bcs
+		.u256()
+		.serialize(blobId)
+		.toBase64()
+		.replace(/=*$/, '')
+		.replaceAll('+', '-')
+		.replaceAll('/', '_');
 }
 
-export function blobIdToBytes(blobId: string): Uint8Array {
-	return fromBase64(blobId.replaceAll('-', '+').replaceAll('_', '/'));
+export function blobIdFromBytes(blobId: Uint8Array): string {
+	return blobIdFromInt(bcs.u256().parse(blobId));
 }
 
 export function blobIdToInt(blobId: string): bigint {
-	return BigInt(bcs.u256().parse(blobIdToBytes(blobId)));
+	return BigInt(bcs.u256().fromBase64(blobId.replaceAll('-', '+').replaceAll('_', '/')));
 }
 
 export const BlobMetadataWithId = bcs.struct('BlobMetadataWithId', {

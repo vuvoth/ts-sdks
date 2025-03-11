@@ -8,3 +8,5 @@ export { type StorageNodeClientOptions } from './storage-node/client.js';
 export type * from './types.js';
 export * from './storage-node/error.js';
 export * from './error.js';
+
+export { blobIdFromInt, blobIdToInt } from './utils/bcs.js';
