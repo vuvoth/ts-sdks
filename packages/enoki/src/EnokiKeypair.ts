@@ -2,39 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { SignatureWithBytes } from '@mysten/sui/cryptography';
-import { Keypair, PublicKey, SIGNATURE_SCHEME_TO_FLAG } from '@mysten/sui/cryptography';
-import type { Ed25519Keypair, Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519';
+import { Signer } from '@mysten/sui/cryptography';
+import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import type { ZkLoginSignatureInputs } from '@mysten/sui/zklogin';
-import { getZkLoginSignature } from '@mysten/sui/zklogin';
+import { getZkLoginSignature, ZkLoginPublicIdentifier } from '@mysten/sui/zklogin';
 
-export class EnokiPublicKey extends PublicKey {
-	#address: string;
-	#ephemeralPublicKey: Ed25519PublicKey;
+export class EnokiPublicKey extends ZkLoginPublicIdentifier {}
 
-	constructor(input: { address: string; ephemeralPublicKey: Ed25519PublicKey }) {
-		super();
-		this.#address = input.address;
-		this.#ephemeralPublicKey = input.ephemeralPublicKey;
-	}
-
-	flag(): number {
-		return SIGNATURE_SCHEME_TO_FLAG['ZkLogin'];
-	}
-
-	toSuiAddress(): string {
-		return this.#address;
-	}
-
-	verify(): never {
-		throw new Error('Verification for EnokiPublicKey is not supported');
-	}
-
-	toRawBytes(): Uint8Array {
-		return this.#ephemeralPublicKey.toRawBytes();
-	}
-}
-
-export class EnokiKeypair extends Keypair {
+export class EnokiKeypair extends Signer {
 	#proof: ZkLoginSignatureInputs;
 	#maxEpoch: number;
 	#ephemeralKeypair: Ed25519Keypair;
@@ -50,10 +25,7 @@ export class EnokiKeypair extends Keypair {
 		this.#proof = input.proof;
 		this.#maxEpoch = input.maxEpoch;
 		this.#ephemeralKeypair = input.ephemeralKeypair;
-		this.#publicKey = new EnokiPublicKey({
-			address: input.address,
-			ephemeralPublicKey: input.ephemeralKeypair.getPublicKey(),
-		});
+		this.#publicKey = EnokiPublicKey.fromProof(input.address, input.proof);
 	}
 
 	async sign(data: Uint8Array) {
@@ -98,13 +70,5 @@ export class EnokiKeypair extends Keypair {
 
 	getPublicKey() {
 		return this.#publicKey;
-	}
-
-	export(): never {
-		throw new Error('EnokiKeypair does not support exporting');
-	}
-
-	getSecretKey(): never {
-		throw new Error('EnokiKeypair does not support getting the secret key');
 	}
 }
