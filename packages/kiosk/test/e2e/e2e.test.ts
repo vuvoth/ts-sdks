@@ -68,16 +68,20 @@ describe('Testing Kiosk SDK transaction building & querying e2e', () => {
 		await prepareHeroRuleset({ toolbox, heroPackageId, kioskClient });
 		await prepareVillainTransferPolicy({ toolbox, heroPackageId, kioskClient });
 		await createKiosk(toolbox, kioskClient);
+		await createKiosk(toolbox, kioskClient);
+		await createKiosk(toolbox, kioskClient);
+		await createPersonalKiosk(toolbox, kioskClient);
+		await createPersonalKiosk(toolbox, kioskClient);
 		await createPersonalKiosk(toolbox, kioskClient);
 	});
 
-	it('Should fetch the two already created owned kiosks in a single non-paginated request', async () => {
+	it('Should fetch the six already created owned kiosks in a single non-paginated request', async () => {
 		const page = await kioskClient.getOwnedKiosks({
 			address: toolbox.address(),
 		});
 		expect(page.hasNextPage).toBe(false);
-		expect(page.kioskIds).toHaveLength(2);
-		expect(page.kioskOwnerCaps).toHaveLength(2);
+		expect(page.kioskIds).toHaveLength(6);
+		expect(page.kioskOwnerCaps).toHaveLength(6);
 
 		const emptyPage = await kioskClient.getOwnedKiosks({
 			address: toolbox.address(),
@@ -92,32 +96,81 @@ describe('Testing Kiosk SDK transaction building & querying e2e', () => {
 		expect(emptyPage.kioskOwnerCaps).toHaveLength(0);
 	});
 
-	it('Should fetch the two already created owned kiosks in two paginated requests', async () => {
+	it('Should fetch the six already created owned kiosks in 3 paginated requests', async () => {
 		const firstPage = await kioskClient.getOwnedKiosks({
 			address: toolbox.address(),
 			pagination: {
-				limit: 1,
+				limit: 2,
 			},
 		});
 		expect(firstPage.hasNextPage).toBe(true);
-		expect(firstPage.kioskIds).toHaveLength(1);
-		expect(firstPage.kioskOwnerCaps).toHaveLength(1);
+		expect(firstPage.kioskIds).toHaveLength(2);
+		expect(firstPage.kioskOwnerCaps).toHaveLength(2);
 
 		const secondPage = await kioskClient.getOwnedKiosks({
 			address: toolbox.address(),
 			pagination: {
-				limit: 1,
+				limit: 2,
 				cursor: firstPage.nextCursor!,
 			},
 		});
-		expect(secondPage.hasNextPage).toBe(false);
-		expect(secondPage.kioskIds).toHaveLength(1);
-		expect(secondPage.kioskOwnerCaps).toHaveLength(1);
+
+		expect(secondPage.hasNextPage).toBe(true);
+		expect(secondPage.kioskIds).toHaveLength(2);
+		expect(secondPage.kioskOwnerCaps).toHaveLength(2);
+
+		const thirdPage = await kioskClient.getOwnedKiosks({
+			address: toolbox.address(),
+			pagination: {
+				limit: 2,
+				cursor: secondPage.nextCursor!,
+			},
+		});
+
+		expect(thirdPage.hasNextPage).toBe(false);
+		expect(thirdPage.kioskIds).toHaveLength(2);
+		expect(thirdPage.kioskOwnerCaps).toHaveLength(2);
 
 		const emptyPage = await kioskClient.getOwnedKiosks({
 			address: toolbox.address(),
 			pagination: {
-				limit: 1,
+				limit: 2,
+				cursor: thirdPage.nextCursor!,
+			},
+		});
+		expect(emptyPage.hasNextPage).toBe(false);
+		expect(emptyPage.nextCursor).toBe(thirdPage.nextCursor);
+		expect(emptyPage.kioskIds).toHaveLength(0);
+		expect(emptyPage.kioskOwnerCaps).toHaveLength(0);
+	});
+
+	it('Should fetch the six already created owned kiosks in 2 paginated requests', async () => {
+		const firstPage = await kioskClient.getOwnedKiosks({
+			address: toolbox.address(),
+			pagination: {
+				limit: 3,
+			},
+		});
+		expect(firstPage.hasNextPage).toBe(true);
+		expect(firstPage.kioskIds).toHaveLength(3);
+		expect(firstPage.kioskOwnerCaps).toHaveLength(3);
+
+		const secondPage = await kioskClient.getOwnedKiosks({
+			address: toolbox.address(),
+			pagination: {
+				limit: 3,
+				cursor: firstPage.nextCursor!,
+			},
+		});
+
+		expect(secondPage.hasNextPage).toBe(false);
+		expect(secondPage.kioskIds).toHaveLength(3);
+		expect(secondPage.kioskOwnerCaps).toHaveLength(3);
+
+		const emptyPage = await kioskClient.getOwnedKiosks({
+			address: toolbox.address(),
+			pagination: {
+				limit: 3,
 				cursor: secondPage.nextCursor!,
 			},
 		});
@@ -135,7 +188,7 @@ describe('Testing Kiosk SDK transaction building & querying e2e', () => {
 			address: toolbox.address(),
 		});
 
-		expect(kioskOwnerCaps).toHaveLength(2);
+		expect(kioskOwnerCaps).toHaveLength(6);
 
 		const normalKiosk = kioskOwnerCaps.find((x) => !x.isPersonal);
 		const personalKiosk = kioskOwnerCaps.find((x) => x.isPersonal);

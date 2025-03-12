@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type {
+	PaginatedObjectsResponse,
 	PaginationArguments,
 	SuiClient,
 	SuiObjectData,
-	SuiObjectDataFilter,
 	SuiObjectResponse,
 } from '@mysten/sui/client';
 import { isValidSuiAddress } from '@mysten/sui/utils';
@@ -86,6 +86,10 @@ export async function fetchKiosk(
  * Returns a list of `kioskOwnerCapIds` and `kioskIds`.
  * Extra options allow pagination.
  */
+
+const DEFAULT_PAGE_SIZE = 50;
+const PERSON_KIOSK_CURSOR = 'personal';
+const OWNED_KIOSKS_CURSOR = 'owned';
 export async function getOwnedKiosks(
 	client: SuiClient,
 	address: string,
@@ -94,45 +98,120 @@ export async function getOwnedKiosks(
 		personalKioskType: string;
 	},
 ): Promise<OwnedKiosks> {
-	if (!isValidSuiAddress(address))
+	// TODO: this should throw an error, but I am not going to change it right now incase it breaks existing code.
+	if (!isValidSuiAddress(address)) {
 		return {
 			nextCursor: null,
 			hasNextPage: false,
 			kioskOwnerCaps: [],
 			kioskIds: [],
 		};
-
-	const filter: SuiObjectDataFilter = {
-		MatchAny: [
-			{
-				StructType: KIOSK_OWNER_CAP,
-			},
-		],
-	};
-
-	if (options?.personalKioskType) {
-		filter.MatchAny.push({
-			StructType: options.personalKioskType,
-		});
 	}
 
-	// fetch owned kiosk caps, paginated.
-	const { data, hasNextPage, nextCursor } = await client.getOwnedObjects({
-		owner: address,
-		filter,
-		options: {
-			showContent: true,
-			showType: true,
-		},
-		...(options?.pagination || {}),
-	});
+	const limit = options?.pagination?.limit ?? DEFAULT_PAGE_SIZE;
+	const [cursorType, cursor] = options?.pagination?.cursor?.split(':') ?? [
+		PERSON_KIOSK_CURSOR,
+		null,
+	];
 
+	if (options?.personalKioskType && cursorType === PERSON_KIOSK_CURSOR) {
+		const personalKioskResponse = formatOwnedKioskResponse(
+			await client.getOwnedObjects({
+				owner: address,
+				filter: {
+					StructType: options.personalKioskType,
+				},
+				options: {
+					showContent: true,
+					showType: true,
+				},
+				cursor,
+				limit,
+			}),
+			PERSON_KIOSK_CURSOR,
+		);
+
+		if (personalKioskResponse.hasNextPage) {
+			return personalKioskResponse;
+		}
+
+		const remainingLimit = limit - personalKioskResponse.kioskOwnerCaps.length;
+
+		// If we have all personal kiosks, but don't have space for the owned kiosks
+		// we need to start loading owned kiosks for the next page, but don't have a real cursor
+		if (remainingLimit < 1) {
+			return {
+				nextCursor: `${OWNED_KIOSKS_CURSOR}:`,
+				hasNextPage: true,
+				kioskOwnerCaps: personalKioskResponse.kioskOwnerCaps,
+				kioskIds: personalKioskResponse.kioskIds,
+			};
+		}
+
+		const ownedKiosksResponse = formatOwnedKioskResponse(
+			await client.getOwnedObjects({
+				owner: address,
+				filter: {
+					StructType: KIOSK_OWNER_CAP,
+				},
+				options: {
+					showContent: true,
+					showType: true,
+				},
+				limit: remainingLimit,
+			}),
+			OWNED_KIOSKS_CURSOR,
+		);
+
+		return {
+			nextCursor: ownedKiosksResponse.nextCursor,
+			hasNextPage: ownedKiosksResponse.hasNextPage,
+			kioskOwnerCaps: [
+				...personalKioskResponse.kioskOwnerCaps,
+				...ownedKiosksResponse.kioskOwnerCaps,
+			],
+			kioskIds: [...personalKioskResponse.kioskIds, ...ownedKiosksResponse.kioskIds],
+		};
+	}
+
+	return formatOwnedKioskResponse(
+		await client.getOwnedObjects({
+			owner: address,
+			filter: {
+				StructType: KIOSK_OWNER_CAP,
+			},
+			options: {
+				showContent: true,
+				showType: true,
+			},
+			// cursor might be an empty string if the number of personal kiosks was a multiple of the limit.
+			cursor: cursor ? cursor : null,
+			limit,
+		}),
+		OWNED_KIOSKS_CURSOR,
+	);
+}
+
+function formatOwnedKioskResponse(
+	response: PaginatedObjectsResponse,
+	cursorType: string,
+): OwnedKiosks {
+	const { data, hasNextPage, nextCursor } = response;
 	// get kioskIds from the OwnerCaps.
 	const kioskIdList = data?.map((x: SuiObjectResponse) => {
-		const fields = x.data?.content?.dataType === 'moveObject' ? x.data.content.fields : null;
-		// @ts-ignore-next-line TODO: should i remove ts ignore here?
-		return (fields?.cap ? fields?.cap?.fields?.for : fields?.for) as string;
-		// return (fields as { for: string })?.for;
+		const fields =
+			x.data?.content?.dataType === 'moveObject'
+				? (x.data.content.fields as unknown as
+						| {
+								cap: { fields: { for: string } };
+								for?: never;
+						  }
+						| {
+								cap?: never;
+								for: string;
+						  })
+				: null;
+		return fields?.cap ? fields?.cap?.fields?.for : (fields?.for as string);
 	});
 
 	// clean up data that might have an error in them.
@@ -140,7 +219,7 @@ export async function getOwnedKiosks(
 	const filteredData = data.filter((x) => 'data' in x).map((x) => x.data) as SuiObjectData[];
 
 	return {
-		nextCursor,
+		nextCursor: nextCursor ? `${cursorType}:${nextCursor}` : nextCursor,
 		hasNextPage,
 		kioskOwnerCaps: filteredData.map((x, idx) => ({
 			isPersonal: x.type !== KIOSK_OWNER_CAP,
