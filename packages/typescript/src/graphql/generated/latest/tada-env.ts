@@ -3319,6 +3319,10 @@ const introspection = {
           {
             "kind": "OBJECT",
             "name": "RandomnessStateCreateTransaction"
+          },
+          {
+            "kind": "OBJECT",
+            "name": "StoreExecutionTimeObservationsTransaction"
           }
         ]
       },
@@ -8788,19 +8792,6 @@ const introspection = {
                 }
               }
             }
-          },
-          {
-            "name": "objectKeys",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "ObjectKey"
-                }
-              }
-            }
           }
         ],
         "isOneOf": false
@@ -10200,6 +10191,38 @@ const introspection = {
             "isDeprecated": false
           },
           {
+            "name": "multiGetObjects",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "OBJECT",
+                  "name": "Object"
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "keys",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "LIST",
+                    "ofType": {
+                      "kind": "NON_NULL",
+                      "ofType": {
+                        "kind": "INPUT_OBJECT",
+                        "name": "ObjectKey"
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
             "name": "object",
             "type": {
               "kind": "OBJECT",
@@ -10927,6 +10950,18 @@ const introspection = {
           },
           {
             "name": "maxMoveValueDepth",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Int"
+              }
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "maxMultiGetObjectsKeys",
             "type": {
               "kind": "NON_NULL",
               "ofType": {
@@ -12078,6 +12113,22 @@ const introspection = {
             "type": {
               "kind": "SCALAR",
               "name": "BigInt"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "StoreExecutionTimeObservationsTransaction",
+        "fields": [
+          {
+            "name": "_",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
             },
             "args": [],
             "isDeprecated": false
