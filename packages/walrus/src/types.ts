@@ -13,7 +13,7 @@ import type {
 	StoreSliverRequestInput,
 	Uploadable,
 } from './storage-node/types.js';
-import type { BlobMetadata } from './utils/bcs.js';
+import type { BlobMetadata, EncodingType } from './utils/bcs.js';
 
 /**
  * Configuration for the Walrus package on sui
@@ -214,3 +214,5 @@ export type WriteBlobAttributesOptions = {
 			blobObject?: never;
 	  }
 );
+
+export type EncodingType = Extract<typeof EncodingType.$inferInput, string>;

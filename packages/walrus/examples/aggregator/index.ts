@@ -5,7 +5,7 @@ import { serve } from '@hono/node-server';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { Hono } from 'hono';
 
-import { BlobBlockedError, WalrusClient } from '../../src/index.js';
+import { BlobBlockedError, BlobNotCertifiedError, WalrusClient } from '../../src/index.js';
 
 /** @ts-ignore */
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';

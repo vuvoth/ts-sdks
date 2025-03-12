@@ -155,3 +155,45 @@ successfully to read or publish a blob.
 When using the lower level methods to build your own read or publish flows, it is recommended to
 understand the number of shards/sliver that need to be successfully written or read for you
 operation to succeed, and gracefully handle cases where some nodes may be in a bad state.
+
+## Configuring network requests
+
+Reading and writing blobs directly from storage nodes requires a lot of requests. The walrus SDK
+will issue all requests needed to complete these operations, but does not handling all the
+complexities a robust aggregator or publisher might encounter.
+
+By default all requests are issued using the global `fetch` for whatever runtime the SDK is running
+in.
+
+This will not impose any limitations on concurrency, and will be subject to default timeouts and
+behavior defined by your runtime. To customize how requests are made, you can provide a custom
+`fetch` method:
+
+```ts
+import type { RequestInfo, RequestInit } from 'undici';
+import { Agent, fetch, setGlobalDispatcher } from 'undici';
+
+const walrusClient = new WalrusClient({
+	network: 'testnet',
+	suiClient,
+	storageNodeClientOptions: {
+		timeout: 60_000,
+		fetch: (url, init) => {
+			// Some casting may be required because undici types may not exactly match the @node/types types
+			return fetch(url as RequestInfo, {
+				...(init as RequestInit),
+				dispatcher: new Agent({
+					connectTimeout: 60_000,
+				}),
+			}) as unknown as Promise<Response>;
+		},
+	},
+});
+```
+
+### Known fetch limitations you might run into
+
+- Some nodes can be slow to respond. When running in node, the default connectTimeout is 10 seconds
+  and can cause request timeouts
+- In `bun` the `abort` signal will stop requests from responding, but they still wait for completion
+  before their promises reject

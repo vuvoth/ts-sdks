@@ -2,9 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
+import { Agent, setGlobalDispatcher } from 'undici';
 
 import { WalrusClient } from '../../src/client.js';
 import { getFundedKeypair } from '../funded-keypair.js';
+
+// Node connect timeout is 10 seconds, and walrus nodes can be slow to respond
+setGlobalDispatcher(
+	new Agent({
+		connectTimeout: 60_000,
+		connect: { timeout: 60_000 },
+	}),
+);
 
 /** @ts-ignore */
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
@@ -16,6 +25,9 @@ const suiClient = new SuiClient({
 const walrusClient = new WalrusClient({
 	network: 'testnet',
 	suiClient,
+	storageNodeClientOptions: {
+		timeout: 60_000,
+	},
 });
 
 async function uploadFile() {

@@ -23,6 +23,7 @@ import {
 	BehindCurrentEpochError,
 	BlobBlockedError,
 	BlobNotCertifiedError,
+	InconsistentBlobError,
 	NoBlobMetadataReceivedError,
 	NoBlobStatusReceivedError,
 	NotEnoughBlobConfirmationsError,
@@ -62,8 +63,8 @@ import { blobIdToInt, IntentType, SliverData, StorageConfirmation } from './util
 import {
 	chunk,
 	encodedBlobLength,
-	getPrimarySourceSymbols,
 	getShardIndicesByNodeId,
+	getSourceSymbols,
 	isAboveValidity,
 	isQuorum,
 	signersToBitmap,
@@ -73,7 +74,7 @@ import {
 } from './utils/index.js';
 import { SuiObjectDataLoader } from './utils/object-loader.js';
 import { shuffle, weightedShuffle } from './utils/randomness.js';
-import { combineSignatures, decodePrimarySlivers, encodeBlob } from './wasm.js';
+import { combineSignatures, computeMetadata, decodePrimarySlivers, encodeBlob } from './wasm.js';
 
 export class WalrusClient {
 	#storageNodeClient: StorageNodeClient;
@@ -178,9 +179,23 @@ export class WalrusClient {
 		const numShards = systemState.committee.n_shards;
 
 		const blobMetadata = await this.getBlobMetadata({ blobId, signal });
+
 		const slivers = await this.getSlivers({ blobId, signal });
 
-		return decodePrimarySlivers(numShards, blobMetadata.metadata.V1.unencoded_length, slivers);
+		const blobBytes = decodePrimarySlivers(
+			blobId,
+			numShards,
+			blobMetadata.metadata.V1.unencoded_length,
+			slivers,
+		);
+
+		const reconstructedBlobMetadata = computeMetadata(systemState.committee.n_shards, blobBytes);
+
+		if (reconstructedBlobMetadata.blob_id !== blobId) {
+			throw new InconsistentBlobError('The specified blob was encoded incorrectly.');
+		}
+
+		return blobBytes;
 	}
 
 	async getBlobMetadata({ blobId, signal }: GetBlobMetadataOptions) {
@@ -270,7 +285,7 @@ export class WalrusClient {
 
 		const stakingState = await this.stakingState();
 		const numShards = stakingState.n_shards;
-		const minSymbols = getPrimarySourceSymbols(numShards);
+		const { primarySymbols: minSymbols } = getSourceSymbols(numShards);
 
 		const sliverPairIndices = randomizedNodes.flatMap((node) =>
 			node.shardIndices.map((shardIndex) => ({
@@ -658,7 +673,7 @@ export class WalrusClient {
 						blobIdToInt(blobId),
 						BigInt(bcs.u256().parse(rootHash)),
 						size,
-						0,
+						1,
 						deletable,
 						writeCoin,
 					],
@@ -802,7 +817,9 @@ export class WalrusClient {
 			.filter((confirmation) => confirmation !== null);
 
 		if (!isQuorum(filteredConfirmations.length, systemState.committee.members.length)) {
-			throw new NotEnoughBlobConfirmationsError('Too many invalid confirmations received for blob');
+			throw new NotEnoughBlobConfirmationsError(
+				`Too many invalid confirmations received for blob (${filteredConfirmations.length} of ${systemState.committee.members.length})`,
+			);
 		}
 
 		const combinedSignature = combineSignatures(

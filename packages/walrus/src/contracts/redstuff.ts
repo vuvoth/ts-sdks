@@ -8,13 +8,9 @@ import type { RawTransactionArgument } from './utils/index.js';
 
 export function init(packageAddress: string) {
 	function encoded_blob_length(options: {
-		arguments: [
-			RawTransactionArgument<number | bigint>,
-			RawTransactionArgument<number>,
-			RawTransactionArgument<number>,
-		];
+		arguments: [RawTransactionArgument<number | bigint>, RawTransactionArgument<number>];
 	}) {
-		const argumentsTypes = ['u64', 'u16', 'u8'];
+		const argumentsTypes = ['u64', 'u16'];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -23,10 +19,8 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function source_symbols_primary(options: {
-		arguments: [RawTransactionArgument<number>, RawTransactionArgument<number>];
-	}) {
-		const argumentsTypes = ['u16', 'u8'];
+	function source_symbols_primary(options: { arguments: [RawTransactionArgument<number>] }) {
+		const argumentsTypes = ['u16'];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -35,10 +29,8 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function source_symbols_secondary(options: {
-		arguments: [RawTransactionArgument<number>, RawTransactionArgument<number>];
-	}) {
-		const argumentsTypes = ['u16', 'u8'];
+	function source_symbols_secondary(options: { arguments: [RawTransactionArgument<number>] }) {
+		const argumentsTypes = ['u16'];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -47,10 +39,8 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function n_source_symbols(options: {
-		arguments: [RawTransactionArgument<number>, RawTransactionArgument<number>];
-	}) {
-		const argumentsTypes = ['u16', 'u8'];
+	function n_source_symbols(options: { arguments: [RawTransactionArgument<number>] }) {
+		const argumentsTypes = ['u16'];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -60,13 +50,9 @@ export function init(packageAddress: string) {
 			});
 	}
 	function symbol_size(options: {
-		arguments: [
-			RawTransactionArgument<number | bigint>,
-			RawTransactionArgument<number>,
-			RawTransactionArgument<number>,
-		];
+		arguments: [RawTransactionArgument<number | bigint>, RawTransactionArgument<number>];
 	}) {
-		const argumentsTypes = ['u64', 'u16', 'u8'];
+		const argumentsTypes = ['u64', 'u16'];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -82,18 +68,6 @@ export function init(packageAddress: string) {
 				package: packageAddress,
 				module: 'redstuff',
 				function: 'metadata_size',
-				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
-			});
-	}
-	function decoding_safety_limit(options: {
-		arguments: [RawTransactionArgument<number>, RawTransactionArgument<number>];
-	}) {
-		const argumentsTypes = ['u16', 'u8'];
-		return (tx: Transaction) =>
-			tx.moveCall({
-				package: packageAddress,
-				module: 'redstuff',
-				function: 'decoding_safety_limit',
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
@@ -114,7 +88,6 @@ export function init(packageAddress: string) {
 		n_source_symbols,
 		symbol_size,
 		metadata_size,
-		decoding_safety_limit,
 		max_byzantine,
 	};
 }
