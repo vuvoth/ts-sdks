@@ -4,7 +4,7 @@
     "jonaslindstrom"
   ],
   "version": "0.0.0",
-  "private": true,
+  "private": false,
   "files": [
     "walrus_wasm_bg.wasm",
     "walrus_wasm.js",

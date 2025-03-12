@@ -34,6 +34,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 						url: '/kiosk',
 					},
 					{
+						title: 'Walrus',
+						description: 'Publish and Read blobs directly from walrus storage nodes',
+						url: '/walrus',
+					},
+					{
 						title: 'zkSend',
 						description: 'Send Sui with a link',
 						url: '/zksend',

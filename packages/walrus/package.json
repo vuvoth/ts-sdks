@@ -1,7 +1,7 @@
 {
 	"name": "@mysten/walrus",
 	"version": "0.0.0",
-	"private": true,
+	"private": false,
 	"description": "Walrus SDK",
 	"license": "Apache-2.0",
 	"author": "Mysten Labs <build@mystenlabs.com>",
