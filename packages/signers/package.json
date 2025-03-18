@@ -13,6 +13,10 @@
 		"./gcp": {
 			"import": "./dist/esm/gcp/index.js",
 			"require": "./dist/cjs/gcp/index.js"
+		},
+		"./webcrypto": {
+			"import": "./dist/esm/webcrypto/index.js",
+			"require": "./dist/cjs/webcrypto/index.js"
 		}
 	},
 	"sideEffects": false,
