@@ -4,6 +4,7 @@
 import type { SignatureScheme } from '@mysten/sui/cryptography';
 import { Signer } from '@mysten/sui/cryptography';
 import { Secp256r1PublicKey } from '@mysten/sui/keypairs/secp256r1';
+import { secp256r1 } from '@noble/curves/p256';
 
 // Convert from uncompressed (65 bytes) to compressed (33 bytes) format
 function getCompressedPublicKey(publicKey: Uint8Array) {
@@ -76,7 +77,7 @@ export class WebCryptoSigner extends Signer {
 	}
 
 	async sign(bytes: Uint8Array): Promise<Uint8Array> {
-		const signature = await globalThis.crypto.subtle.sign(
+		const rawSignature = await globalThis.crypto.subtle.sign(
 			{
 				name: 'ECDSA',
 				hash: 'SHA-256',
@@ -85,6 +86,8 @@ export class WebCryptoSigner extends Signer {
 			bytes,
 		);
 
-		return new Uint8Array(signature);
+		const signature = secp256r1.Signature.fromCompact(new Uint8Array(rawSignature));
+
+		return signature.normalizeS().toCompactRawBytes();
 	}
 }
