@@ -175,6 +175,7 @@ export function replaceNames(builder: TransactionDataBuilder, cache: NamedPackag
 	}
 }
 
+
 export function batch<T>(arr: T[], size: number): T[][] {
 	const batches = [];
 	for (let i = 0; i < arr.length; i += size) {

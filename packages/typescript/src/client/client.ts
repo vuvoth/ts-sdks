@@ -3,6 +3,9 @@
 import { fromBase58, toBase64, toHex } from '@mysten/bcs';
 
 import type { Signer } from '../cryptography/index.js';
+import type { Experimental_SuiClient } from '../experimental/client.js';
+import { JSONRpcTransport } from '../experimental/transports/jsonRPC.js';
+import type { SelfRegisteringClientExtension } from '../experimental/types.js';
 import type { Transaction } from '../transactions/index.js';
 import { isTransaction } from '../transactions/index.js';
 import {
@@ -126,7 +129,7 @@ export function isSuiClient(client: unknown): client is SuiClient {
 	);
 }
 
-export class SuiClient {
+export class SuiClient implements SelfRegisteringClientExtension {
 	protected transport: SuiTransport;
 
 	get [SUI_CLIENT_BRAND]() {
@@ -825,5 +828,15 @@ export class SuiClient {
 
 		// This should never happen, because the above case should always throw, but just adding it in the event that something goes horribly wrong.
 		throw new Error('Unexpected error while waiting for transaction block.');
+	}
+
+	experimental_asClientExtension(this: SuiClient) {
+		return {
+			name: 'jsonRPC',
+			register: (client: Experimental_SuiClient) => {
+				client.$registerTransport(new JSONRpcTransport(this));
+				return this;
+			},
+		} as const;
 	}
 }
