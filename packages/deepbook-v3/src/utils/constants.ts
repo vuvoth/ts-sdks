@@ -44,6 +44,11 @@ export const testnetCoins: CoinMap = {
 		type: `0xf7152c05930480cd740d7311b5b8b45c6f488e3a53a11c3f74a6fac36a52e0d7::DBUSDT::DBUSDT`,
 		scalar: 1000000,
 	},
+	WAL: {
+		address: `0x9ef7676a9f81937a52ae4b2af8d511a28a0b080477c0c2db40b0ab8882240d76`,
+		type: `0x9ef7676a9f81937a52ae4b2af8d511a28a0b080477c0c2db40b0ab8882240d76::wal::WAL`,
+		scalar: 1000000000,
+	},
 };
 
 export const mainnetCoins: CoinMap = {
@@ -146,6 +151,16 @@ export const testnetPools: PoolMap = {
 		baseCoin: 'DBUSDT',
 		quoteCoin: 'DBUSDC',
 	},
+	WAL_DBUSDC: {
+		address: `0xeb524b6aea0ec4b494878582e0b78924208339d360b62aec4a8ecd4031520dbb`,
+		baseCoin: 'WAL',
+		quoteCoin: 'DBUSDC',
+	},
+	WAL_SUI: {
+		address: `0x8c1c1b186c4fddab1ebd53e0895a36c1d1b3b9a77cd34e607bef49a38af0150a`,
+		baseCoin: 'WAL',
+		quoteCoin: 'SUI',
+	},
 };
 
 export const mainnetPools: PoolMap = {
@@ -213,5 +228,15 @@ export const mainnetPools: PoolMap = {
 		address: `0x1fe7b99c28ded39774f37327b509d58e2be7fff94899c06d22b407496a6fa990`,
 		baseCoin: 'SEND',
 		quoteCoin: 'USDC',
+	},
+	WAL_USDC: {
+		address: `0x56a1c985c1f1123181d6b881714793689321ba24301b3585eec427436eb1c76d`,
+		baseCoin: 'WAL',
+		quoteCoin: 'USDC',
+	},
+	WAL_SUI: {
+		address: `0x81f5339934c83ea19dd6bcc75c52e83509629a5f71d3257428c2ce47cc94d08b`,
+		baseCoin: 'WAL',
+		quoteCoin: 'SUI',
 	},
 };
