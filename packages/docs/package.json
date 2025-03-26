@@ -22,6 +22,7 @@
 		"@mysten/enoki": "workspace:*",
 		"@mysten/graphql-transport": "workspace:*",
 		"@mysten/kiosk": "workspace:*",
+		"@mysten/seal": "workspace:*",
 		"@mysten/signers": "workspace:*",
 		"@mysten/sui": "workspace:*",
 		"@mysten/suins": "workspace:*",
