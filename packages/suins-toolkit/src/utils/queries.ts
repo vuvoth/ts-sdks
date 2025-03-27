@@ -3,7 +3,9 @@
 
 import type { SuiClient, SuiObjectResponse } from '@mysten/sui/client';
 
-// get NFT's owner from RPC.
+/**
+ * @deprecated Use `@mysten/suins` package instead.
+ */
 export const getOwner = async (client: SuiClient, nftId: string): Promise<string | null> => {
 	const ownerResponse = await client.getObject({
 		id: nftId,
@@ -17,7 +19,9 @@ export const getOwner = async (client: SuiClient, nftId: string): Promise<string
 	);
 };
 
-// get avatar NFT Object from RPC.
+/**
+ * @deprecated Use `@mysten/suins` package instead.
+ */
 export const getAvatar = async (client: SuiClient, avatar: string): Promise<SuiObjectResponse> => {
 	return await client.getObject({
 		id: avatar,

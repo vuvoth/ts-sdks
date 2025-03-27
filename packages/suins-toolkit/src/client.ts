@@ -10,6 +10,9 @@ import { getAvatar, getOwner } from './utils/queries.js';
 
 export const AVATAR_NOT_OWNED = 'AVATAR_NOT_OWNED';
 
+/**
+ * @deprecated Use `@mysten/suins` package instead.
+ */
 class SuinsClient {
 	private suiClient: SuiClient;
 	contractObjects: SuiNSContract | undefined;

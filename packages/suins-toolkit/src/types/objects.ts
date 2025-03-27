@@ -1,6 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+/**
+ * @deprecated Use `@mysten/suins` package instead.
+ */
 export type SuiNSContract = {
 	packageId: string;
 	suins: string;
@@ -8,6 +11,9 @@ export type SuiNSContract = {
 	reverseRegistry: string;
 };
 
+/**
+ * @deprecated Use `@mysten/suins` package instead.
+ */
 export type NameObject = {
 	id: string;
 	owner: string;
@@ -16,6 +22,12 @@ export type NameObject = {
 	contentHash?: string;
 };
 
+/**
+ * @deprecated Use `@mysten/suins` package instead.
+ */
 export type DataFields = 'avatar' | 'contentHash';
 
+/**
+ * @deprecated Use `@mysten/suins` package instead.
+ */
 export type NetworkType = 'devnet' | 'testnet';

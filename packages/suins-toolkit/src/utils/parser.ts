@@ -4,11 +4,20 @@
 import type { SuiMoveObject, SuiObjectData, SuiObjectResponse } from '@mysten/sui/client';
 import { normalizeSuiAddress } from '@mysten/sui/utils';
 
+/**
+ * @deprecated Use `@mysten/suins` package instead.
+ */
 export const camelCase = (string: string) => string.replace(/(_\w)/g, (g) => g[1].toUpperCase());
 
+/**
+ * @deprecated Use `@mysten/suins` package instead.
+ */
 export const parseObjectDataResponse = (response: SuiObjectResponse | undefined) =>
 	((response?.data as SuiObjectData)?.content as SuiMoveObject)?.fields as Record<string, any>;
 
+/**
+ * @deprecated Use `@mysten/suins` package instead.
+ */
 export const parseRegistryResponse = (response: SuiObjectResponse | undefined): any => {
 	const fields = parseObjectDataResponse(response)?.value?.fields || {};
 
