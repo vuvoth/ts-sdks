@@ -1,6 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+import { fromHex } from '@mysten/bcs';
 import { combine as externalCombine } from 'shamir-secret-sharing';
 
 import type { EncryptedObject } from './bcs.js';
@@ -59,6 +60,7 @@ export async function decrypt({ encryptedObject, keys }: DecryptOptions): Promis
 			nonce,
 			keys.get(`${fullId}:${objectId}`)!,
 			encryptedShares[i],
+			fromHex(fullId),
 			info,
 		);
 		// The Shamir secret sharing library expects the index/x-coordinate to be at the end of the share.

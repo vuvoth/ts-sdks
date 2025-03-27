@@ -5,7 +5,8 @@ import { hkdf } from '@noble/hashes/hkdf';
 import { hmac } from '@noble/hashes/hmac';
 import { sha3_256 } from '@noble/hashes/sha3';
 
-import type { GTElement } from './bls12381.js';
+import { G1Element } from './bls12381.js';
+import type { G2Element, GTElement } from './bls12381.js';
 
 /**
  * The default key derivation function.
@@ -14,7 +15,12 @@ import type { GTElement } from './bls12381.js';
  * @param info Optional context and application specific information.
  * @returns The derived key.
  */
-export function kdf(element: GTElement, info: Uint8Array): Uint8Array {
+export function kdf(
+	element: GTElement,
+	nonce: G2Element,
+	id: Uint8Array,
+	info: Uint8Array,
+): Uint8Array {
 	// This permutation flips the order of 6 pairs of coefficients of the GT element.
 	// The permutation may be computed as:
 	// for i in 0..3 {
@@ -34,7 +40,12 @@ export function kdf(element: GTElement, info: Uint8Array): Uint8Array {
 			pi * COEFFICIENT_SIZE,
 		);
 	});
-	return hkdf(sha3_256, permutedBytes, '', info, 32);
+	const inputBytes = new Uint8Array([
+		...permutedBytes,
+		...nonce.toBytes(),
+		...G1Element.hashToCurve(id).toBytes(),
+	]);
+	return hkdf(sha3_256, inputBytes, '', info, 32);
 }
 
 export enum KeyPurpose {

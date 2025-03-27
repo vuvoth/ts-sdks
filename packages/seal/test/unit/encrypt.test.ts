@@ -355,9 +355,10 @@ describe('Seal encryption tests', () => {
 		const x = G1Element.generator().pairing(
 			G2Element.generator().multiply(Scalar.fromNumber(12345)),
 		);
-		const key = kdf(x, new Uint8Array([]));
+		const nonce = G2Element.generator().multiply(Scalar.fromNumber(12345));
+		const key = kdf(x, nonce, new Uint8Array([0]), new Uint8Array([]));
 		expect(key).toEqual(
-			fromHex('55e99a131b254f1687727bbf1f255e73bb80fcfac8901c371e53df32f45c1fb3'),
+			fromHex('57d43441a0b561088d4162a1b38ea8a2d443dd2c50ec4aca0610a1a79c057f74'),
 		);
 	});
 
