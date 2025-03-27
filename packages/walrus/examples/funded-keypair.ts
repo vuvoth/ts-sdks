@@ -32,7 +32,7 @@ export async function getFundedKeypair() {
 
 	const walBalance = await suiClient.getBalance({
 		owner: keypair.toSuiAddress(),
-		coinType: `${TESTNET_WALRUS_PACKAGE_CONFIG.walPackageId}::wal::WAL`,
+		coinType: `0x8190b041122eb492bf63cb464476bd68c6b7e570a4079645a8b28732b6197a82::wal::WAL`,
 	});
 	console.log('wal balance:', walBalance.totalBalance);
 

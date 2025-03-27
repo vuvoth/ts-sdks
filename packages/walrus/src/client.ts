@@ -7,9 +7,14 @@ import { SuiClient } from '@mysten/sui/client';
 import type { Signer } from '@mysten/sui/cryptography';
 import type { TransactionObjectArgument } from '@mysten/sui/transactions';
 import { coinWithBalance, Transaction } from '@mysten/sui/transactions';
+import { normalizeStructTag, parseStructTag } from '@mysten/sui/utils';
 import { bls12381_min_pk_verify } from '@mysten/walrus-wasm';
 
-import { statusLifecycleRank, TESTNET_WALRUS_PACKAGE_CONFIG } from './constants.js';
+import {
+	MAINNET_WALRUS_PACKAGE_CONFIG,
+	statusLifecycleRank,
+	TESTNET_WALRUS_PACKAGE_CONFIG,
+} from './constants.js';
 import { Blob, init as initBlobContract } from './contracts/blob.js';
 import type { Committee } from './contracts/committee.js';
 import { init as initMetadataContract } from './contracts/metadata.js';
@@ -78,7 +83,9 @@ import {
 	storageUnitsFromSize,
 	toPairIndex,
 	toShardIndex,
+	toTypeString,
 } from './utils/index.js';
+import { MemoCache } from './utils/memo.js';
 import { SuiObjectDataLoader } from './utils/object-loader.js';
 import { shuffle, weightedShuffle } from './utils/randomness.js';
 import { combineSignatures, computeMetadata, decodePrimarySlivers, encodeBlob } from './wasm.js';
@@ -86,26 +93,29 @@ import { combineSignatures, computeMetadata, decodePrimarySlivers, encodeBlob } 
 export class WalrusClient {
 	#storageNodeClient: StorageNodeClient;
 
-	packageConfig: WalrusPackageConfig;
+	#packageConfig: WalrusPackageConfig;
 	#suiClient: SuiClient;
 	#objectLoader: SuiObjectDataLoader;
 
 	#blobMetadataConcurrencyLimit = 10;
-	#activeCommittee?: CommitteeInfo | Promise<CommitteeInfo> | null;
 	#readCommittee?: CommitteeInfo | Promise<CommitteeInfo> | null;
+	#memo = new MemoCache();
 
 	constructor(config: WalrusClientConfig) {
 		if (config.network && !config.packageConfig) {
 			const network = config.network;
 			switch (network) {
 				case 'testnet':
-					this.packageConfig = TESTNET_WALRUS_PACKAGE_CONFIG;
+					this.#packageConfig = TESTNET_WALRUS_PACKAGE_CONFIG;
+					break;
+				case 'mainnet':
+					this.#packageConfig = MAINNET_WALRUS_PACKAGE_CONFIG;
 					break;
 				default:
 					throw new WalrusClientError(`Unsupported network: ${network}`);
 			}
 		} else {
-			this.packageConfig = config.packageConfig!;
+			this.#packageConfig = config.packageConfig!;
 		}
 
 		this.#suiClient =
@@ -119,49 +129,71 @@ export class WalrusClient {
 	}
 
 	/** The Move type for a WAL coin */
-	get walType() {
-		return `${this.packageConfig.walPackageId}::wal::WAL`;
-	}
+	#walType = this.#memo.create('walType', async () => {
+		const stakedWal = await this.#suiClient.getNormalizedMoveStruct({
+			package: await this.#getPackageId(),
+			module: 'staked_wal',
+			struct: 'StakedWal',
+		});
+
+		const balanceType = stakedWal.fields.find((field) => field.name === 'principal')?.type;
+
+		if (!balanceType) {
+			throw new WalrusClientError('WAL type not found');
+		}
+
+		const parsed = parseStructTag(toTypeString(balanceType));
+		const coinType = parsed.typeParams[0];
+
+		if (!coinType) {
+			throw new WalrusClientError('WAL type not found');
+		}
+
+		return normalizeStructTag(coinType);
+	});
+
+	#getPackageId = this.#memo.create('getPackageId', async () => {
+		const system = await this.#objectLoader.load(this.#packageConfig.systemObjectId);
+		return parseStructTag(system.type!).address;
+	});
 
 	/** The Move type for a Blob object */
-	get blobType() {
-		return `${this.packageConfig.packageId}::blob::Blob`;
-	}
+	#getBlobType = this.#memo.create('getBlobType', async () => {
+		return `${await this.#getPackageId()}::blob::Blob`;
+	});
 
-	/** The Move type for a Storage object */
-	get storageType() {
-		return `${this.packageConfig.packageId}::storage_resource::Storage`;
-	}
+	#getSystemContract = this.#memo.create('getSystemContract', async () => {
+		const { package_id } = await this.systemObject();
+		return initSystemContract(package_id);
+	});
 
-	get systemContract() {
-		return initSystemContract(this.packageConfig.latestPackageId);
-	}
+	#getBlobContract = this.#memo.create('getBlobContract', async () => {
+		const { package_id } = await this.systemObject();
+		return initBlobContract(package_id);
+	});
 
-	get #blobContract() {
-		return initBlobContract(this.packageConfig.packageId);
-	}
-
-	get #metadataContract() {
-		return initMetadataContract(this.packageConfig.packageId);
-	}
+	#getMetadataContract = this.#memo.create('getMetadataContract', async () => {
+		const { package_id } = await this.systemObject();
+		return initMetadataContract(package_id);
+	});
 
 	/** The cached system object for the walrus package */
 	systemObject() {
-		return this.#objectLoader.load(this.packageConfig.systemObjectId, System());
+		return this.#objectLoader.load(this.#packageConfig.systemObjectId, System());
 	}
 
 	/** The cached staking pool object for the walrus package */
 	stakingObject() {
-		return this.#objectLoader.load(this.packageConfig.stakingPoolId, Staking());
+		return this.#objectLoader.load(this.#packageConfig.stakingPoolId, Staking());
 	}
 
 	/** The system state for the current version of walrus contract  */
 	async systemState() {
 		const systemState = await this.#objectLoader.loadFieldObject(
-			this.packageConfig.systemObjectId,
+			this.#packageConfig.systemObjectId,
 			{ type: 'u64', value: (await this.systemObject()).version },
 
-			this.packageConfig.systemObjectId === TESTNET_WALRUS_PACKAGE_CONFIG.systemObjectId
+			this.#packageConfig.systemObjectId === TESTNET_WALRUS_PACKAGE_CONFIG.systemObjectId
 				? (TestnetSystemStateInnerV1 as never)
 				: SystemStateInnerV1(),
 		);
@@ -172,7 +204,7 @@ export class WalrusClient {
 	/** The staking state for the current version of walrus contract */
 	async stakingState() {
 		return this.#objectLoader.loadFieldObject(
-			this.packageConfig.stakingPoolId,
+			this.#packageConfig.stakingPoolId,
 			{
 				type: 'u64',
 				value: (await this.stakingObject()).version,
@@ -555,6 +587,8 @@ export class WalrusClient {
 		const systemState = await this.systemState();
 		const encodedSize = encodedBlobLength(size, systemState.committee.n_shards);
 		const { storageCost } = await this.storageCost(size, epochs);
+		const walType = await this.#walType();
+		const systemContract = await this.#getSystemContract();
 
 		return (tx: Transaction) => {
 			const coin = walCoin
@@ -562,18 +596,18 @@ export class WalrusClient {
 				: tx.add(
 						coinWithBalance({
 							balance: storageCost,
-							type: this.walType,
+							type: walType,
 						}),
 					);
 
 			const storage = tx.add(
-				this.systemContract.reserve_space({
+				systemContract.reserve_space({
 					arguments: [systemObject.id.id, encodedSize, epochs, coin],
 				}),
 			);
 			tx.moveCall({
 				target: '0x2::coin::destroy_zero',
-				typeArguments: [this.walType],
+				typeArguments: [walType],
 				arguments: [coin],
 			});
 
@@ -616,6 +650,7 @@ export class WalrusClient {
 			...options,
 			owner: options.transaction?.getData().sender ?? signer.toSuiAddress(),
 		});
+		const blobType = await this.#getBlobType();
 
 		const { digest, effects } = await this.#executeTransaction(
 			transaction,
@@ -633,7 +668,7 @@ export class WalrusClient {
 			},
 		});
 
-		const suiBlobObject = createdObjects.find((object) => object.data?.type === this.blobType);
+		const suiBlobObject = createdObjects.find((object) => object.data?.type === blobType);
 
 		if (!suiBlobObject || suiBlobObject.data?.bcs?.dataType !== 'moveObject') {
 			throw new WalrusClientError('Storage object not found in transaction effects');
@@ -664,6 +699,14 @@ export class WalrusClient {
 	}: RegisterBlobOptions) {
 		const storage = await this.createStorage({ size, epochs, walCoin });
 		const { writeCost } = await this.storageCost(size, epochs);
+		const walType = await this.#walType();
+		const systemContract = await this.#getSystemContract();
+		const writeAttributes = attributes
+			? await this.#writeBlobAttributesForRef({
+					attributes,
+					existingAttributes: null,
+				})
+			: null;
 
 		return (tx: Transaction) => {
 			const writeCoin = walCoin
@@ -671,14 +714,14 @@ export class WalrusClient {
 				: tx.add(
 						coinWithBalance({
 							balance: writeCost,
-							type: this.walType,
+							type: walType,
 						}),
 					);
 
 			const blob = tx.add(
-				this.systemContract.register_blob({
+				systemContract.register_blob({
 					arguments: [
-						tx.object(this.packageConfig.systemObjectId),
+						tx.object(this.#packageConfig.systemObjectId),
 						storage,
 						blobIdToInt(blobId),
 						BigInt(bcs.u256().parse(rootHash)),
@@ -692,12 +735,12 @@ export class WalrusClient {
 
 			tx.moveCall({
 				target: '0x2::coin::destroy_zero',
-				typeArguments: [this.walType],
+				typeArguments: [walType],
 				arguments: [writeCoin],
 			});
 
-			if (attributes) {
-				tx.add(this.#writeBlobAttributesForRef({ blob, attributes, existingAttributes: null }));
+			if (writeAttributes) {
+				tx.add((tx) => writeAttributes(tx, blob));
 			}
 
 			return blob;
@@ -743,7 +786,7 @@ export class WalrusClient {
 			...options,
 			owner: options.owner ?? options.transaction?.getData().sender ?? signer.toSuiAddress(),
 		});
-
+		const blobType = await this.#getBlobType();
 		const { digest, effects } = await this.#executeTransaction(
 			transaction,
 			signer,
@@ -760,7 +803,7 @@ export class WalrusClient {
 			},
 		});
 
-		const suiBlobObject = createdObjects.find((object) => object.data?.type === this.blobType);
+		const suiBlobObject = createdObjects.find((object) => object.data?.type === blobType);
 
 		if (!suiBlobObject || suiBlobObject.data?.bcs?.dataType !== 'moveObject') {
 			throw new WalrusClientError('Blob object not found in transaction effects');
@@ -836,11 +879,12 @@ export class WalrusClient {
 			filteredConfirmations,
 			filteredConfirmations.map(({ index }) => index),
 		);
+		const systemContract = await this.#getSystemContract();
 
 		return (tx: Transaction) => {
-			this.systemContract.certify_blob({
+			systemContract.certify_blob({
 				arguments: [
-					tx.object(this.packageConfig.systemObjectId),
+					tx.object(this.#packageConfig.systemObjectId),
 					tx.object(blobObjectId),
 					tx.pure.vector('u8', fromBase64(combinedSignature.signature)),
 					tx.pure.vector(
@@ -909,10 +953,10 @@ export class WalrusClient {
 	deleteBlob({ blobObjectId }: DeleteBlobOptions) {
 		return (tx: Transaction) =>
 			tx.moveCall({
-				package: this.packageConfig.systemObjectId,
+				package: this.#packageConfig.systemObjectId,
 				module: 'system',
 				function: 'delete_blob',
-				arguments: [tx.object(this.packageConfig.systemObjectId), tx.object(blobObjectId)],
+				arguments: [tx.object(this.#packageConfig.systemObjectId), tx.object(blobObjectId)],
 			});
 	}
 
@@ -977,6 +1021,8 @@ export class WalrusClient {
 		}
 
 		const { storageCost } = await this.storageCost(Number(blob.storage.storage_size), numEpochs);
+		const walType = await this.#walType();
+		const systemContract = await this.#getSystemContract();
 
 		return (tx: Transaction) => {
 			const coin = walCoin
@@ -985,14 +1031,14 @@ export class WalrusClient {
 						coinWithBalance({
 							balance: storageCost,
 
-							type: this.walType,
+							type: walType,
 						}),
 					);
 
 			tx.add(
-				this.systemContract.extend_blob({
+				systemContract.extend_blob({
 					arguments: [
-						tx.object(this.packageConfig.systemObjectId),
+						tx.object(this.#packageConfig.systemObjectId),
 						tx.object(blobObjectId),
 						numEpochs,
 						coin,
@@ -1002,7 +1048,7 @@ export class WalrusClient {
 
 			tx.moveCall({
 				target: '0x2::coin::destroy_zero',
-				typeArguments: [this.walType],
+				typeArguments: [walType],
 				arguments: [coin],
 			});
 		};
@@ -1088,22 +1134,22 @@ export class WalrusClient {
 		return Object.fromEntries(metadata.map(({ fields: { key, value } }) => [key, value]));
 	}
 
-	#writeBlobAttributesForRef({
-		blob,
+	async #writeBlobAttributesForRef({
 		attributes,
 		existingAttributes,
 	}: {
-		blob: TransactionObjectArgument;
 		attributes: Record<string, string | null>;
 		existingAttributes: Record<string, string> | null;
 	}) {
-		return (tx: Transaction) => {
+		const blobContract = await this.#getBlobContract();
+		const metadataContract = await this.#getMetadataContract();
+		return (tx: Transaction, blob: TransactionObjectArgument) => {
 			if (!existingAttributes) {
 				tx.add(
-					this.#blobContract.add_metadata({
+					blobContract.add_metadata({
 						arguments: [
 							blob,
-							this.#metadataContract._new({
+							metadataContract._new({
 								arguments: [],
 							}),
 						],
@@ -1117,14 +1163,14 @@ export class WalrusClient {
 				if (value === null) {
 					if (existingAttributes && key in existingAttributes) {
 						tx.add(
-							this.#blobContract.remove_metadata_pair({
+							blobContract.remove_metadata_pair({
 								arguments: [blob, key],
 							}),
 						);
 					}
 				} else {
 					tx.add(
-						this.#blobContract.insert_or_update_metadata_pair({
+						blobContract.insert_or_update_metadata_pair({
 							arguments: [blob, key, value],
 						}),
 					);
@@ -1149,10 +1195,15 @@ export class WalrusClient {
 			? await this.readBlobAttributes({ blobObjectId })
 			: null;
 
+		const writeAttributes = await this.#writeBlobAttributesForRef({
+			attributes,
+			existingAttributes,
+		});
+
 		return (tx: Transaction) => {
 			const blob = blobObject ?? tx.object(blobObjectId);
 
-			tx.add(this.#writeBlobAttributesForRef({ blob, attributes, existingAttributes }));
+			tx.add((tx) => writeAttributes(tx, blob));
 		};
 	}
 
@@ -1545,15 +1596,10 @@ export class WalrusClient {
 		};
 	}
 
-	async #getActiveCommittee() {
-		if (!this.#activeCommittee) {
-			const stakingState = await this.stakingState();
-			this.#activeCommittee = this.#getCommittee(stakingState.committee);
-			this.#activeCommittee = await this.#activeCommittee;
-		}
-
-		return this.#activeCommittee;
-	}
+	#getActiveCommittee = this.#memo.create('getActiveCommittee', async () => {
+		const stakingState = await this.stakingState();
+		return this.#getCommittee(stakingState.committee);
+	});
 
 	async #stakingPool(committee: InferBcsType<ReturnType<typeof Committee>>) {
 		const nodeIds = committee.pos0.contents.map((node) => node.key);
@@ -1578,8 +1624,8 @@ export class WalrusClient {
 	 */
 	reset() {
 		this.#objectLoader.clearAll();
-		this.#activeCommittee = null;
 		this.#readCommittee = null;
+		this.#memo.reset();
 	}
 
 	#retryOnPossibleEpochChange<T extends (...args: any[]) => Promise<any>>(fn: T): T {

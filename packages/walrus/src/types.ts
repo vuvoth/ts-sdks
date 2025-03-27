@@ -21,15 +21,10 @@ import type { BlobMetadata, EncodingType } from './utils/bcs.js';
  * This is used to configure the Walrus package to use a specific package ID, system object ID, staking pool ID, and WAL package ID.
  */
 export interface WalrusPackageConfig {
-	/** The package ID of the Walrus package */
-	packageId: string;
-	latestPackageId: string;
 	/** The system object ID of the Walrus package */
 	systemObjectId: string;
 	/** The staking pool ID of the Walrus package */
 	stakingPoolId: string;
-	/** The package ID of the WAL coin */
-	walPackageId: string;
 	exchange?: {
 		packageId: string;
 		exchangeIds: string[];
@@ -48,7 +43,7 @@ type SuiClientOrRpcUrl =
 
 type WalrusNetworkOrPackageConfig =
 	| {
-			network: 'testnet';
+			network: 'mainnet' | 'testnet';
 			packageConfig?: WalrusPackageConfig;
 	  }
 	| {

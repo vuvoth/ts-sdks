@@ -18,8 +18,8 @@ export class SuiObjectDataLoader extends DataLoader<string, SuiObjectData> {
 				const objects = await suiClient.multiGetObjects({
 					ids: ids as string[],
 					options: {
+						showType: true,
 						showBcs: true,
-						showContent: true,
 					},
 				});
 
