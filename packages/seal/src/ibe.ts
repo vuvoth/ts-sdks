@@ -41,12 +41,12 @@ export abstract class IBEServers {
 	 * Encrypt a batch of messages for the given identity.
 	 *
 	 * @param id The identity.
-	 * @param msgAndInfos The messages and an additional info parameter which will be included in the KDF.
+	 * @param msgAndIndices The messages and the corresponding indices of the share being encrypted.
 	 * @returns The encrypted messages.
 	 */
 	abstract encryptBatched(
 		id: Uint8Array,
-		msgAndInfos: { msg: Uint8Array; info: Uint8Array }[],
+		msgAndIndices: { msg: Uint8Array; index: number }[],
 		randomnessKey: Uint8Array,
 	): typeof IBEEncryptions.$inferType;
 }
@@ -65,15 +65,15 @@ export class BonehFranklinBLS12381Services extends IBEServers {
 
 	encryptBatched(
 		id: Uint8Array,
-		msgAndInfos: { msg: Uint8Array; info: Uint8Array }[],
+		msgAndIndices: { msg: Uint8Array; index: number }[],
 		randomnessKey: Uint8Array,
 	): typeof IBEEncryptions.$inferType {
-		if (this.publicKeys.length === 0 || this.publicKeys.length !== msgAndInfos.length) {
+		if (this.publicKeys.length === 0 || this.publicKeys.length !== msgAndIndices.length) {
 			throw new Error('Invalid public keys');
 		}
 		const [r, nonce, keys] = encapBatched(this.publicKeys, id);
-		const encryptedShares = msgAndInfos.map((msgAndInfo, i) =>
-			xor(msgAndInfo.msg, kdf(keys[i], nonce, id, msgAndInfo.info)),
+		const encryptedShares = msgAndIndices.map((msgAndIndex, i) =>
+			xor(msgAndIndex.msg, kdf(keys[i], nonce, id, this.objectIds[i], msgAndIndex.index)),
 		);
 		const encryptedRandomness = xor(randomnessKey, r.toBytes());
 
@@ -114,9 +114,9 @@ export class BonehFranklinBLS12381Services extends IBEServers {
 		sk: G1Element,
 		ciphertext: Uint8Array,
 		id: Uint8Array,
-		info: Uint8Array,
+		[objectId, index]: [string, number],
 	): Uint8Array {
-		return xor(ciphertext, kdf(decap(nonce, sk), nonce, id, info));
+		return xor(ciphertext, kdf(decap(nonce, sk), nonce, id, objectId, index));
 	}
 }
 

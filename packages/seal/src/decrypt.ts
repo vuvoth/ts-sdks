@@ -55,13 +55,12 @@ export async function decrypt({ encryptedObject, keys }: DecryptOptions): Promis
 	const shares = inKeystore.map((i: number) => {
 		const [objectId, index] = encryptedObject.services[i];
 		// Use the index as the unique info parameter to allow for multiple shares per key server.
-		const info = new Uint8Array([index]);
 		const share = BonehFranklinBLS12381Services.decrypt(
 			nonce,
 			keys.get(`${fullId}:${objectId}`)!,
 			encryptedShares[i],
 			fromHex(fullId),
-			info,
+			[objectId, index],
 		);
 		// The Shamir secret sharing library expects the index/x-coordinate to be at the end of the share.
 		return { index, share };

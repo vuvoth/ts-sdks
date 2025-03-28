@@ -1,6 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+import { fromHex } from '@mysten/bcs';
 import { hkdf } from '@noble/hashes/hkdf';
 import { hmac } from '@noble/hashes/hmac';
 import { sha3_256 } from '@noble/hashes/sha3';
@@ -19,7 +20,8 @@ export function kdf(
 	element: GTElement,
 	nonce: G2Element,
 	id: Uint8Array,
-	info: Uint8Array,
+	objectId: string,
+	index: number,
 ): Uint8Array {
 	// This permutation flips the order of 6 pairs of coefficients of the GT element.
 	// The permutation may be computed as:
@@ -45,6 +47,7 @@ export function kdf(
 		...nonce.toBytes(),
 		...G1Element.hashToCurve(id).toBytes(),
 	]);
+	const info = new Uint8Array([...fromHex(objectId), index]);
 	return hkdf(sha3_256, inputBytes, '', info, 32);
 }
 
