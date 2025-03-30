@@ -4,3 +4,4 @@
 export { getAllowlistedKeyServers } from './key-server.js';
 export { SealClient, type SealClientOptions } from './client.js';
 export { SessionKey } from './session-key.js';
+export * from './error.js';
