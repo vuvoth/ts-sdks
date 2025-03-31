@@ -10,6 +10,10 @@
     "walrus_wasm.js",
     "walrus_wasm.d.ts"
   ],
-  "main": "walrus_wasm.js",
-  "types": "walrus_wasm.d.ts"
+  "main": "index.js",
+  "types": "./web/walrus_wasm.d.ts",
+  "exports": {
+    "browser": "./web/walrus_wasm.js",
+    "require": "./index.js"
+  }
 }

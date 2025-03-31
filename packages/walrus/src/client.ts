@@ -913,7 +913,7 @@ export class WalrusClient {
 			);
 		}
 
-		const combinedSignature = combineSignatures(
+		const combinedSignature = await combineSignatures(
 			filteredConfirmations,
 			filteredConfirmations.map(({ index }) => index),
 		);
@@ -924,7 +924,7 @@ export class WalrusClient {
 				arguments: [
 					tx.object(this.#packageConfig.systemObjectId),
 					tx.object(blobObjectId),
-					tx.pure.vector('u8', fromBase64(combinedSignature.signature)),
+					tx.pure.vector('u8', combinedSignature.signature),
 					tx.pure.vector(
 						'u8',
 						signersToBitmap(combinedSignature.signers, systemState.committee.members.length),
@@ -1367,7 +1367,7 @@ export class WalrusClient {
 		const committee = await this.#getActiveCommittee();
 
 		const numShards = systemState.committee.n_shards;
-		const { blobId, metadata, sliverPairs, rootHash } = encodeBlob(numShards, blob);
+		const { blobId, metadata, sliverPairs, rootHash } = await encodeBlob(numShards, blob);
 
 		const sliversByNodeMap = new Map<number, SliversForNode>();
 
