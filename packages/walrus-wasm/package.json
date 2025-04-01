@@ -5,15 +5,12 @@
   ],
   "version": "0.0.2",
   "private": false,
-  "files": [
-    "walrus_wasm_bg.wasm",
-    "walrus_wasm.js",
-    "walrus_wasm.d.ts"
-  ],
   "main": "index.js",
   "types": "./web/walrus_wasm.d.ts",
   "exports": {
-    "browser": "./web/walrus_wasm.js",
-    "require": "./index.js"
+    ".": {
+      "browser": "./web/walrus_wasm.js",
+      "require": "./index.js"
+    }
   }
 }

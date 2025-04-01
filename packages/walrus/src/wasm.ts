@@ -2,7 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { fromBase64 } from '@mysten/bcs';
-import init, { BlobEncoder, bls12381_min_pk_aggregate } from '@mysten/walrus-wasm';
+import init, {
+	BlobEncoder,
+	bls12381_min_pk_aggregate,
+	bls12381_min_pk_verify,
+} from '@mysten/walrus-wasm';
 
 import type { StorageConfirmation } from './storage-node/types.js';
 import type { EncodingType } from './types.js';
@@ -85,6 +89,16 @@ export function decodePrimarySlivers(
 	);
 
 	return new Uint8Array(bytes);
+}
+
+export async function getVerifySignature() {
+	await init();
+	return (confirmation: StorageConfirmation, publicKey: Uint8Array) =>
+		bls12381_min_pk_verify(
+			fromBase64(confirmation.signature),
+			publicKey,
+			fromBase64(confirmation.serializedMessage),
+		);
 }
 
 export function computeMetadata(
