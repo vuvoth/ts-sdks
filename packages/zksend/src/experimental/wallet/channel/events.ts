@@ -2,30 +2,55 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { InferOutput } from 'valibot';
-import { literal, object, optional, pipe, string, url, uuid, variant } from 'valibot';
+import {
+	any,
+	array,
+	literal,
+	object,
+	optional,
+	pipe,
+	record,
+	string,
+	url,
+	uuid,
+	variant,
+} from 'valibot';
 
 export const StashedRequestData = variant('type', [
 	object({
 		type: literal('connect'),
 	}),
 	object({
-		type: literal('sign-transaction-block'),
-		data: string('`data` is required'),
+		type: literal('sign-transaction'),
+		transaction: string('`transaction` is required'),
 		address: string('`address` is required'),
+		chain: string('`chain` is required'),
+		session: string('`session` is required'),
+	}),
+	object({
+		type: literal('sign-and-execute-transaction'),
+		transaction: string('`transaction` is required'),
+		address: string('`address` is required'),
+		chain: string('`chain` is required'),
+		session: string('`session` is required'),
 	}),
 	object({
 		type: literal('sign-personal-message'),
-		bytes: string('`bytes` is required'),
+		chain: optional(string('`chain` is required')),
+		message: string('`message` is required'),
 		address: string('`address` is required'),
+		session: string('`session` is required'),
 	}),
 ]);
 export type StashedRequestData = InferOutput<typeof StashedRequestData>;
 
 export const StashedRequest = object({
-	id: pipe(string('`id` is required'), uuid()),
-	origin: pipe(string(), url('`origin` must be a valid URL')),
-	name: optional(string()),
+	version: literal('v1'),
+	requestId: pipe(string('`requestId` is required'), uuid()),
+	appUrl: pipe(string(), url('`appUrl` must be a valid URL')),
+	appName: string('`appName` is required'),
 	payload: StashedRequestData,
+	metadata: optional(record(string(), any())),
 });
 
 export type StashedRequest = InferOutput<typeof StashedRequest>;
@@ -33,12 +58,25 @@ export type StashedRequest = InferOutput<typeof StashedRequest>;
 export const StashedResponseData = variant('type', [
 	object({
 		type: literal('connect'),
-		address: string(),
+		accounts: array(
+			object({
+				address: string('`address` is required'),
+				publicKey: optional(string('`publicKey` must be a string')),
+			}),
+		),
+		session: string('`session` is required'),
 	}),
 	object({
-		type: literal('sign-transaction-block'),
+		type: literal('sign-transaction'),
 		bytes: string(),
 		signature: string(),
+	}),
+	object({
+		type: literal('sign-and-execute-transaction'),
+		bytes: string(),
+		signature: string(),
+		digest: string(),
+		effects: optional(string()),
 	}),
 	object({
 		type: literal('sign-personal-message'),
@@ -51,6 +89,7 @@ export type StashedResponseData = InferOutput<typeof StashedResponseData>;
 export const StashedResponsePayload = variant('type', [
 	object({
 		type: literal('reject'),
+		reason: optional(string('`reason` must be a string')),
 	}),
 	object({
 		type: literal('resolve'),
@@ -63,6 +102,7 @@ export const StashedResponse = object({
 	id: pipe(string(), uuid()),
 	source: literal('stashed-channel'),
 	payload: StashedResponsePayload,
+	version: literal('v1'),
 });
 export type StashedResponse = InferOutput<typeof StashedResponse>;
 

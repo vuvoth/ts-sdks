@@ -5,7 +5,6 @@ import type { InferOutput } from 'valibot';
 import { parse, safeParse } from 'valibot';
 
 import { withResolvers } from '../../utils/withResolvers.js';
-import type { StashedSupportedNetwork } from '../types.js';
 import type { StashedRequestData, StashedResponsePayload, StashedResponseTypes } from './events.js';
 import { StashedRequest, StashedResponse } from './events.js';
 
@@ -13,13 +12,27 @@ export const DEFAULT_STASHED_ORIGIN = 'https://getstashed.com';
 
 export { StashedRequest, StashedResponse };
 
+const getClientMetadata = () => {
+	return {
+		version: 'v1',
+		originUrl: window.location.href,
+		userAgent: navigator.userAgent,
+		screenResolution: `${window.screen.width}x${window.screen.height}`,
+		language: navigator.language,
+		platform: navigator.platform,
+		timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+		timestamp: Date.now(),
+	};
+};
+
 export class StashedPopup {
 	#popup: Window;
 
+	#version: string;
 	#id: string;
 	#origin: string;
 	#name: string;
-	#network: StashedSupportedNetwork;
+	#chain: string | undefined;
 
 	#promise: Promise<unknown>;
 	#resolve: (data: unknown) => void;
@@ -29,12 +42,12 @@ export class StashedPopup {
 
 	constructor({
 		name,
-		network,
 		origin = DEFAULT_STASHED_ORIGIN,
+		chain,
 	}: {
 		name: string;
-		network: StashedSupportedNetwork;
 		origin?: string;
+		chain?: string;
 	}) {
 		const popup = window.open('about:blank', '_blank');
 
@@ -46,8 +59,8 @@ export class StashedPopup {
 		this.#id = crypto.randomUUID();
 		this.#origin = origin;
 		this.#name = name;
-		this.#network = network;
-
+		this.#version = 'v1';
+		this.#chain = chain;
 		const { promise, resolve, reject } = withResolvers();
 		this.#promise = promise;
 		this.#resolve = resolve;
@@ -72,13 +85,23 @@ export class StashedPopup {
 		type: T;
 	} & Extract<StashedRequestData, { type: T }>): Promise<StashedResponseTypes[T]> {
 		window.addEventListener('message', this.#listener);
+
+		const requestData = {
+			version: this.#version,
+			requestId: this.#id,
+			appUrl: window.location.href.split('#')[0],
+			appName: this.#name,
+			payload: {
+				type,
+				chain: this.#chain,
+				...data,
+			},
+			metadata: getClientMetadata(),
+		};
+		const encodedRequestData = btoa(JSON.stringify(requestData));
+
 		this.#popup.location.assign(
-			`${this.#origin}/dapp/${type}?${new URLSearchParams({
-				id: this.#id,
-				origin: window.origin,
-				network: this.#network,
-				name: this.#name,
-			})}${data ? `#${new URLSearchParams(data as never)}` : ''}`,
+			`${this.#origin}/dapp-request${data ? `#${encodedRequestData}` : ''}`,
 		);
 
 		return this.#promise as Promise<StashedResponseTypes[T]>;
@@ -127,21 +150,15 @@ export class StashedHost {
 		this.#request = request;
 	}
 
-	static fromUrl(url: string = window.location.href) {
-		const parsed = new URL(url);
-
-		const urlHashData = parsed.hash
-			? Object.fromEntries([...new URLSearchParams(parsed.hash.slice(1))])
-			: {};
+	static fromPayload(payload: StashedRequest) {
+		const { requestId, appUrl, appName, version, ...rest } = payload;
 
 		const request = parse(StashedRequest, {
-			id: parsed.searchParams.get('id'),
-			origin: parsed.searchParams.get('origin'),
-			name: parsed.searchParams.get('name'),
-			payload: {
-				type: parsed.pathname.split('/').pop(),
-				...urlHashData,
-			},
+			version,
+			requestId,
+			appUrl,
+			appName,
+			...rest,
 		});
 
 		return new StashedHost(request);
@@ -154,11 +171,12 @@ export class StashedHost {
 	sendMessage(payload: StashedResponsePayload) {
 		window.opener.postMessage(
 			{
-				id: this.#request.id,
+				id: this.#request.requestId,
 				source: 'stashed-channel',
 				payload,
+				version: this.#request.version,
 			} satisfies StashedResponse,
-			this.#request.origin,
+			this.#request.appUrl,
 		);
 	}
 
