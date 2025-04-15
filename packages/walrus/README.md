@@ -229,6 +229,16 @@ const walrusClient = new WalrusClient({
 });
 ```
 
+In next.js when using walrus in API routes, you may need to tell next.js to skip bundling for the
+walrus packages:
+
+```ts
+// next.config.ts
+const nextConfig: NextConfig = {
+	serverExternalPackages: ['@mysten/walrus', '@mysten/walrus-wasm'],
+};
+```
+
 ### Known fetch limitations you might run into
 
 - Some nodes can be slow to respond. When running in node, the default connectTimeout is 10 seconds

@@ -10,7 +10,7 @@
   "exports": {
     ".": {
       "browser": "./web/walrus_wasm.js",
-      "import": "./index.js",
+      "import": "./index.mjs",
       "require": "./index.js"
     },
     "./web/walrus_wasm_bg.wasm": {
