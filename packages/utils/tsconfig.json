@@ -7,6 +7,5 @@
 		"isolatedModules": true,
 		"rootDir": "src",
 		"lib": ["ESNext", "dom"]
-	},
-	"references": [{ "path": "../utils" }]
+	}
 }

@@ -37,7 +37,8 @@
 		"test:e2e": "vitest run e2e"
 	},
 	"dependencies": {
-		"@mysten/sui": "workspace:*"
+		"@mysten/sui": "workspace:*",
+		"@mysten/utils": "workspace:*"
 	},
 	"devDependencies": {
 		"@mysten/build-scripts": "workspace:*",
