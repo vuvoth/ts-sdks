@@ -1,7 +1,7 @@
 {
-	"name": "@mysten/zksend",
-	"version": "0.12.25",
-	"description": "TODO: Write Description",
+	"name": "@mysten/window-wallet-core",
+	"version": "0.0.1",
+	"description": "Window wallet core functionality",
 	"license": "Apache-2.0",
 	"author": "Mysten Labs <build@mystenlabs.com>",
 	"type": "commonjs",
@@ -12,17 +12,12 @@
 		".": {
 			"import": "./dist/esm/index.js",
 			"require": "./dist/cjs/index.js"
-		},
-		"./experimental/unified-adapter": {
-			"import": "./dist/esm/experimental/index.js",
-			"require": "./dist/cjs/experimental/index.js"
 		}
 	},
 	"sideEffects": false,
 	"files": [
 		"CHANGELOG.md",
-		"dist",
-		"experimental"
+		"dist"
 	],
 	"scripts": {
 		"clean": "rm -rf tsconfig.tsbuildinfo ./dist",
@@ -45,17 +40,12 @@
 	"homepage": "https://github.com/mystenlabs/ts-sdks#readme",
 	"devDependencies": {
 		"@mysten/build-scripts": "workspace:*",
-		"@types/node": "^22.13.17",
 		"typescript": "^5.8.2",
 		"vitest": "^3.1.1"
 	},
 	"dependencies": {
-		"@mysten/sui": "workspace:*",
 		"@mysten/utils": "workspace:*",
-		"@mysten/wallet-standard": "workspace:*",
-		"@mysten/window-wallet-core": "workspace:*",
-		"mitt": "^3.0.1",
-		"nanostores": "^0.10.3",
+		"jose": "^6.0.10",
 		"valibot": "^0.36.0"
 	}
 }
