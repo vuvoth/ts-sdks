@@ -30,15 +30,15 @@ import type { InferOutput } from 'valibot';
 import { boolean, object, parse, string } from 'valibot';
 import { DappPostMessageChannel, decodeJwtSession } from '@mysten/window-wallet-core';
 
-const DEFAULT_STASHED_ORIGIN = 'https://getstashed.com';
+const DEFAULT_SLUSH_ORIGIN = 'https://getslush.com';
 
 type WalletEventsMap = {
 	[E in keyof StandardEventsListeners]: Parameters<StandardEventsListeners[E]>[0];
 };
 
-const STASHED_SESSION_KEY = 'stashed:session';
+const SLUSH_SESSION_KEY = 'slush:session';
 
-export const STASHED_WALLET_NAME = 'Stashed' as const;
+export const SLUSH_WALLET_NAME = 'Slush' as const;
 
 const SUI_WALLET_EXTENSION_ID = 'com.mystenlabs.suiwallet' as const;
 const METADATA_API_URL = 'http://localhost:3001/api/wallet/metadata';
@@ -51,11 +51,11 @@ const WalletMetadataSchema = object({
 });
 
 function setSessionToStorage(session: string) {
-	localStorage.setItem(STASHED_SESSION_KEY, session);
+	localStorage.setItem(SLUSH_SESSION_KEY, session);
 }
 
 function getSessionFromStorage() {
-	const session = localStorage.getItem(STASHED_SESSION_KEY);
+	const session = localStorage.getItem(SLUSH_SESSION_KEY);
 
 	if (!session) {
 		throw new Error('No session found');
@@ -86,7 +86,7 @@ async function getAccountsFromSession(session: string) {
 }
 
 type WalletMetadata = InferOutput<typeof WalletMetadataSchema>;
-export class StashedWallet implements Wallet {
+export class SlushWallet implements Wallet {
 	#id: string;
 	#events: Emitter<WalletEventsMap>;
 	#accounts: ReadonlyWalletAccount[];
@@ -171,7 +171,7 @@ export class StashedWallet implements Wallet {
 		this.#id = metadata.id;
 		this.#accounts = [];
 		this.#events = mitt();
-		this.#origin = origin || DEFAULT_STASHED_ORIGIN;
+		this.#origin = origin || DEFAULT_SLUSH_ORIGIN;
 		this.#name = name;
 		this.#walletName = metadata.walletName;
 		this.#icon = metadata.icon as WalletIcon;
@@ -302,7 +302,7 @@ export class StashedWallet implements Wallet {
 	};
 
 	#disconnect: StandardDisconnectMethod = async () => {
-		localStorage.removeItem(STASHED_SESSION_KEY);
+		localStorage.removeItem(SLUSH_SESSION_KEY);
 		this.#setAccounts([]);
 	};
 
@@ -323,7 +323,7 @@ async function fetchMetadata(metadataApiUrl: string): Promise<WalletMetadata> {
 	return parse(WalletMetadataSchema, data);
 }
 
-export async function registerStashedWallet(
+export async function registerSlushWallet(
 	name: string,
 	{
 		origin,
@@ -348,16 +348,16 @@ export async function registerStashedWallet(
 	}
 
 	if (!metadata?.enabled) {
-		console.log('Stashed wallet is not currently enabled.');
+		console.log('Slush wallet is not currently enabled.');
 		return;
 	}
-	const stashedWalletInstance = new StashedWallet({
+	const slushWalletInstance = new SlushWallet({
 		name,
 		origin,
 		metadata,
 	});
 
-	const unregister = wallets.register(stashedWalletInstance);
+	const unregister = wallets.register(slushWalletInstance);
 
 	// listen for wallet registration
 	wallets.on('register', (wallet) => {
@@ -367,7 +367,7 @@ export async function registerStashedWallet(
 	});
 
 	return {
-		wallet: stashedWalletInstance,
+		wallet: slushWalletInstance,
 		unregister,
 	};
 }
