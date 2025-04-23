@@ -29,7 +29,7 @@ import type { InferOutput } from 'valibot';
 import { boolean, object, parse, string } from 'valibot';
 import { DappPostMessageChannel, decodeJwtSession } from '@mysten/window-wallet-core';
 
-const DEFAULT_SLUSH_ORIGIN = 'https://getslush.com';
+const DEFAULT_SLUSH_ORIGIN = 'https://my.slush.app';
 
 type WalletEventsMap = {
 	[E in keyof StandardEventsListeners]: Parameters<StandardEventsListeners[E]>[0];
@@ -40,7 +40,7 @@ const SLUSH_SESSION_KEY = 'slush:session';
 export const SLUSH_WALLET_NAME = 'Slush' as const;
 
 const SUI_WALLET_EXTENSION_ID = 'com.mystenlabs.suiwallet' as const;
-const METADATA_API_URL = 'http://localhost:3001/api/wallet/metadata';
+const METADATA_API_URL = 'https://api.slush.app/api/wallet/metadata';
 
 const WalletMetadataSchema = object({
 	id: string('Wallet ID is required'),

@@ -32,8 +32,16 @@ type WalletEventsMap = {
 
 const STASHED_RECENT_ADDRESS_KEY = 'stashed:recentAddress';
 
+/**
+ * @deprecated This name is deprecated and will be removed after 04/24/2025.
+ * Please migrate to '@mysten/slush-wallet' package for the new Slush experience.
+ */
 export const STASHED_WALLET_NAME = 'Stashed' as const;
 
+/**
+ * @deprecated This class is deprecated and will be removed after 04/24/2025.
+ * Please migrate to '@mysten/slush-wallet' package for the new Slush experience.
+ */
 export class StashedWallet implements Wallet {
 	#events: Emitter<WalletEventsMap>;
 	#accounts: ReadonlyWalletAccount[];
@@ -245,6 +253,11 @@ export class StashedWallet implements Wallet {
 	};
 }
 
+/**
+ * Register Stashed wallet with the wallet standard.
+ * @deprecated This function is deprecated and will be removed after 04/24/2025.
+ * Please migrate to '@mysten/slush-wallet' package for the new Slush experience.
+ */
 export function registerStashedWallet(
 	name: string,
 	{

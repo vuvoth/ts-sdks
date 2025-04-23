@@ -303,6 +303,9 @@ importers:
 
   packages/dapp-kit:
     dependencies:
+      '@mysten/slush-wallet':
+        specifier: workspace:*
+        version: link:../slush-wallet
       '@mysten/sui':
         specifier: workspace:*
         version: link:../typescript
@@ -312,9 +315,6 @@ importers:
       '@mysten/wallet-standard':
         specifier: workspace:*
         version: link:../wallet-standard
-      '@mysten/zksend':
-        specifier: workspace:*
-        version: link:../zksend
       '@radix-ui/react-dialog':
         specifier: ^1.1.6
         version: 1.1.6(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
