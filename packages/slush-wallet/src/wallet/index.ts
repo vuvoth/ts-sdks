@@ -1,7 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { Transaction } from '@mysten/sui/transactions';
 import { fromBase64, toBase64 } from '@mysten/sui/utils';
 import type {
 	StandardConnectFeature,
@@ -182,8 +181,6 @@ export class SlushWallet implements Wallet {
 		account,
 		chain,
 	}) => {
-		transactionBlock.setSenderIfNotSet(account.address);
-
 		const data = await transactionBlock.toJSON();
 
 		const popup = this.#getNewPopupChannel();
@@ -228,10 +225,7 @@ export class SlushWallet implements Wallet {
 	}) => {
 		const popup = this.#getNewPopupChannel();
 
-		const tx = Transaction.from(await transaction.toJSON());
-		tx.setSenderIfNotSet(account.address);
-
-		const data = await tx.toJSON();
+		const data = await transaction.toJSON();
 
 		const response = await popup.send({
 			type: 'sign-and-execute-transaction',
