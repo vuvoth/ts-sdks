@@ -1,7 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 import { fromBase64, fromHex } from '@mysten/bcs';
-import type { SuiClient } from '@mysten/sui/client';
 import { bls12_381 } from '@noble/curves/bls12-381';
 
 import { KeyServerMove } from './bcs.js';
@@ -13,6 +12,7 @@ import {
 } from './error.js';
 import { DST_POP } from './ibe.js';
 import { PACKAGE_VERSION } from './version.js';
+import type { SealCompatibleClient } from './types.js';
 
 export type KeyServer = {
 	objectId: string;
@@ -55,28 +55,21 @@ export async function retrieveKeyServers({
 	client,
 }: {
 	objectIds: string[];
-	client: SuiClient;
+	client: SealCompatibleClient;
 }): Promise<KeyServer[]> {
 	// todo: do not fetch the same object ID if this is fetched before.
 	return await Promise.all(
 		objectIds.map(async (objectId) => {
-			const res = await client.getObject({
-				id: objectId,
-				options: {
-					showBcs: true,
-				},
-			});
-			if (!res || res.error || !res.data) {
-				throw new InvalidGetObjectError(`KeyServer ${objectId} not found; ${res.error}`);
+			let res;
+			try {
+				res = await client.core.getObject({
+					objectId,
+				});
+			} catch (e) {
+				throw new InvalidGetObjectError(`KeyServer ${objectId} not found; ${(e as Error).message}`);
 			}
 
-			if (!res.data.bcs || !('bcsBytes' in res.data.bcs)) {
-				throw new InvalidGetObjectError(
-					`Invalid KeyServer query: ${objectId}, expected object, got package`,
-				);
-			}
-
-			const ks = KeyServerMove.parse(fromBase64(res.data.bcs!.bcsBytes));
+			const ks = KeyServerMove.parse(res.object.content);
 			if (ks.keyType !== 0) {
 				throw new UnsupportedFeatureError(`Unsupported key type ${ks.keyType}`);
 			}

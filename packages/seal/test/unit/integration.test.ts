@@ -182,6 +182,44 @@ describe('Integration test', () => {
 		expect(decryptedBytes2).toEqual(data2);
 	});
 
+	it('client extension', { timeout: 12000 }, async () => {
+		const whitelistId = '0xaae704d2280f2c3d24fc08972bb31f2ef1f1c968784935434c3296be5bfd9d5b';
+		const data = new Uint8Array([1, 2, 3]);
+
+		const client = suiClient.$extend(
+			SealClient.experimental_asClientExtension({
+				serverObjectIds: objectIds,
+				verifyKeyServers: false,
+			}),
+		);
+
+		const { encryptedObject: encryptedBytes } = await client.seal.encrypt({
+			threshold: objectIds.length,
+			packageId: TESTNET_PACKAGE_ID,
+			id: whitelistId,
+			data,
+		});
+
+		const txBytes = await constructTxBytes(TESTNET_PACKAGE_ID, 'whitelist', suiClient, [
+			whitelistId,
+		]);
+
+		const sessionKey = new SessionKey({
+			address: suiAddress,
+			packageId: TESTNET_PACKAGE_ID,
+			ttlMin: 10,
+			signer: keypair,
+		});
+		// decrypt the object encrypted to whitelist 1.
+		const decryptedBytes = await client.seal.decrypt({
+			data: encryptedBytes,
+			sessionKey,
+			txBytes,
+		});
+
+		expect(decryptedBytes).toEqual(data);
+	});
+
 	it('test different validateEncryptionServices errors', async () => {
 		const whitelistId = '0xaae704d2280f2c3d24fc08972bb31f2ef1f1c968784935434c3296be5bfd9d5b';
 		const data = new Uint8Array([1, 2, 3]);
