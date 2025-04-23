@@ -25,6 +25,7 @@
 		"@mysten/kiosk": "workspace:*",
 		"@mysten/seal": "workspace:*",
 		"@mysten/signers": "workspace:*",
+		"@mysten/slush-wallet": "workspace:*",
 		"@mysten/sui": "workspace:*",
 		"@mysten/suins": "workspace:*",
 		"@mysten/utils": "workspace:*",

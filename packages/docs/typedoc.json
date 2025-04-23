@@ -9,6 +9,7 @@
 		"../kiosk",
 		"../seal",
 		"../signers",
+		"../slush-wallet",
 		"../suins",
 		"../typescript",
 		"../utils",
