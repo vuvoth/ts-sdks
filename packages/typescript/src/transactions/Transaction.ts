@@ -151,6 +151,7 @@ export class Transaction {
 	#commandSection: CommandSection = [];
 	#availableResults: Set<number> = new Set();
 	#pendingPromises = new Set<Promise<unknown>>();
+	#added = new Map<(...args: any[]) => unknown, unknown>();
 
 	/**
 	 * Converts from a serialize transaction kind (built with `build({ onlyTransactionKind: true })`) to a `Transaction` class.
@@ -414,7 +415,7 @@ export class Transaction {
 		fork.#intentResolvers = this.#intentResolvers;
 		fork.#pendingPromises = this.#pendingPromises;
 		fork.#availableResults = new Set(this.#availableResults);
-
+		fork.#added = this.#added;
 		this.#inputSection.push(fork.#inputSection);
 		this.#commandSection.push(fork.#commandSection);
 
@@ -432,11 +433,16 @@ export class Transaction {
 	): T;
 	add(command: Command | AsyncTransactionThunk | ((tx: Transaction) => unknown)): unknown {
 		if (typeof command === 'function') {
+			if (this.#added.has(command)) {
+				return this.#added.get(command);
+			}
+
 			const fork = this.#fork();
 			const result = command(fork);
 
 			if (!(result && typeof result === 'object' && 'then' in result)) {
 				this.#availableResults = fork.#availableResults;
+				this.#added.set(command, result);
 				return result;
 			}
 
@@ -456,6 +462,9 @@ export class Transaction {
 					placeholder.$Intent.data.result = result;
 				}),
 			);
+			const txResult = createTransactionResult(this.#data.commands.length - 1);
+			this.#added.set(command, txResult);
+			return txResult;
 		} else {
 			this.#addCommand(command);
 		}
