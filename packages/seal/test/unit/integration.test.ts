@@ -360,6 +360,37 @@ describe('Integration test', () => {
 				threshold: encryptedObject.threshold,
 			}),
 		).rejects.toThrow(NoAccessError);
+
+		// construct a non move call ptb, gets invalid PTB error.
+		const tx = new Transaction();
+		const objectArg = tx.object(whitelistId);
+		tx.transferObjects([objectArg], suiAddress);
+		const txBytes3 = await tx.build({ client: suiClient, onlyTransactionKind: true });
+
+		const client2 = new SealClient({
+			suiClient,
+			serverObjectIds: objectIds,
+			verifyKeyServers: false,
+		});
+
+		const sessionKey3 = new SessionKey({
+			address: suiAddress,
+			packageId: TESTNET_PACKAGE_ID,
+			ttlMin: 10,
+			signer: keypair,
+		});
+		await expect(
+			client2.fetchKeys({
+				ids: [whitelistId],
+				txBytes: txBytes3,
+				sessionKey: sessionKey3,
+				threshold: 2,
+			}),
+		).rejects.toThrowError(
+			expect.objectContaining({
+				message: expect.stringContaining('Invalid PTB: Invalid first command'),
+			}),
+		);
 	});
 
 	it('test session key verify personal message signature', async () => {
