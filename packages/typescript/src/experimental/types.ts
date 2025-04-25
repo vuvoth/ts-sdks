@@ -69,6 +69,8 @@ export namespace Experimental_SuiClientTypes {
 	export interface GetCoinsOptions extends CoreClientMethodOptions {
 		address: string;
 		coinType: string;
+		limit?: number;
+		cursor?: string | null;
 	}
 
 	export interface GetDynamicFieldsOptions extends CoreClientMethodOptions {
@@ -119,11 +121,9 @@ export namespace Experimental_SuiClientTypes {
 		hasNextPage: boolean;
 		cursor: string | null;
 		dynamicFields: {
-			name: DynamicFieldName;
 			id: string;
-			version: string;
-			digest: string;
 			type: string;
+			name: DynamicFieldName;
 		}[];
 	}
 
@@ -190,11 +190,11 @@ export namespace Experimental_SuiClientTypes {
 	export interface TransactionResponse {
 		digest: string;
 		signatures: string[];
-		// TODO: Return parsed data:
-		// We need structured representations of effects, events, and transaction data
-		bcs: Uint8Array;
 		effects: TransactionEffects;
-		events?: Uint8Array;
+		// TODO: Return parsed data:
+		// We need structured representations events, and transaction data
+		bcs: Uint8Array;
+		// events?: Uint8Array;
 	}
 
 	export interface GetTransactionOptions extends CoreClientMethodOptions {
@@ -222,8 +222,12 @@ export namespace Experimental_SuiClientTypes {
 		transaction: TransactionResponse;
 	}
 
+	export interface GetReferenceGasPriceOptions extends CoreClientMethodOptions {}
+
 	export interface TransportMethods {
-		getReferenceGasPrice?: () => Promise<GetReferenceGasPriceResponse>;
+		getReferenceGasPrice?: (
+			options?: GetReferenceGasPriceOptions,
+		) => Promise<GetReferenceGasPriceResponse>;
 	}
 
 	export interface GetReferenceGasPriceResponse {
