@@ -1,5 +1,13 @@
 # @mysten/graphql-transport
 
+## 0.2.54
+
+### Patch Changes
+
+- Updated dependencies [7d66a32]
+- Updated dependencies [eb91fba]
+  - @mysten/sui@1.29.0
+
 ## 0.2.53
 
 ### Patch Changes

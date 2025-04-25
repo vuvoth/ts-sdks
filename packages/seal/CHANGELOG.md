@@ -1,5 +1,15 @@
 # @mysten/seal
 
+## 0.4.1
+
+### Patch Changes
+
+- 81f406a: Add more details to InvalidPTB error
+- 7f108cb: feat(seal): add import export to session key
+- Updated dependencies [7d66a32]
+- Updated dependencies [eb91fba]
+  - @mysten/sui@1.29.0
+
 ## 0.4.0
 
 ### Minor Changes
