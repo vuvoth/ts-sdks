@@ -1,5 +1,14 @@
 # @mysten/walrus
 
+## 0.0.20
+
+### Patch Changes
+
+- 7d66a32: Use async thunks to improve transaction construction
+- Updated dependencies [7d66a32]
+- Updated dependencies [eb91fba]
+  - @mysten/sui@1.29.0
+
 ## 0.0.19
 
 ### Patch Changes

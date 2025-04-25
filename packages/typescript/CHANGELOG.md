@@ -1,5 +1,12 @@
 # @mysten/sui.js
 
+## 1.29.0
+
+### Minor Changes
+
+- 7d66a32: Add support for async thunks inn tx.add
+- eb91fba: memoize tx.add calls to avoid accidental duplicate inputs and commands in transactions
+
 ## 1.28.2
 
 ### Patch Changes
