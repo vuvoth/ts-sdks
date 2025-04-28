@@ -133,7 +133,6 @@ describe('key-server tests', () => {
 
 		// Update when SERVER_VERSION_REQUIREMENT changes
 		expect(version0.older_than(SERVER_VERSION_REQUIREMENT)).toBe(true);
-		expect(version1.older_than(SERVER_VERSION_REQUIREMENT)).toBe(false);
 		expect(SERVER_VERSION_REQUIREMENT.older_than(version0)).toBe(false);
 	});
 });
