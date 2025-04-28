@@ -121,6 +121,7 @@ export class InvalidGetObjectError extends UserError {}
 export class UnsupportedFeatureError extends UserError {}
 export class UnsupportedNetworkError extends UserError {}
 export class InvalidKeyServerError extends UserError {}
+export class InvalidKeyServerVersionError extends UserError {}
 export class InvalidCiphertextError extends UserError {}
 export class InvalidThresholdError extends UserError {}
 export class InconsistentKeyServersError extends UserError {}

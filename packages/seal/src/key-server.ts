@@ -6,6 +6,7 @@ import { bls12_381 } from '@noble/curves/bls12-381';
 import { KeyServerMove } from './bcs.js';
 import {
 	InvalidGetObjectError,
+	InvalidKeyServerVersionError,
 	SealAPIError,
 	UnsupportedFeatureError,
 	UnsupportedNetworkError,
@@ -13,6 +14,7 @@ import {
 import { DST_POP } from './ibe.js';
 import { PACKAGE_VERSION } from './version.js';
 import type { SealCompatibleClient } from './types.js';
+import { Version } from './utils.js';
 
 export type KeyServer = {
 	objectId: string;
@@ -25,6 +27,8 @@ export type KeyServer = {
 export enum KeyServerType {
 	BonehFranklinBLS12381 = 0,
 }
+
+export const SERVER_VERSION_REQUIREMENT = new Version('0.2.0');
 
 /**
  * Returns a static list of Seal key server object ids that the dapp can choose to use.
@@ -107,6 +111,7 @@ export async function verifyKeyServer(server: KeyServer, timeout: number): Promi
 	});
 
 	await SealAPIError.assertResponse(response, requestId);
+	verifyKeyServerVersion(response);
 	const serviceResponse = await response.json();
 
 	if (serviceResponse.service_id !== server.objectId) {
@@ -114,4 +119,21 @@ export async function verifyKeyServer(server: KeyServer, timeout: number): Promi
 	}
 	const fullMsg = new Uint8Array([...DST_POP, ...server.pk, ...fromHex(server.objectId)]);
 	return bls12_381.verifyShortSignature(fromBase64(serviceResponse.pop), fullMsg, server.pk);
+}
+
+/**
+ * Verify the key server version. Throws an `InvalidKeyServerError` if the version is not supported.
+ *
+ * @param response - The response from the key server.
+ */
+export function verifyKeyServerVersion(response: Response) {
+	const keyServerVersion = response.headers.get('X-KeyServer-Version');
+	if (keyServerVersion == null) {
+		throw new InvalidKeyServerVersionError('Key server version not found');
+	}
+	if (new Version(keyServerVersion).older_than(SERVER_VERSION_REQUIREMENT)) {
+		throw new InvalidKeyServerVersionError(
+			`Key server version ${keyServerVersion} is not supported`,
+		);
+	}
 }
