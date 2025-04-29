@@ -3,17 +3,20 @@
 
 import { computed, readonlyType } from 'nanostores';
 import { createState } from './state.js';
+import { syncRegisteredWallets } from './initializers/registered-wallets.js';
 
 export type DAppKitStore = ReturnType<typeof createDAppKitStore>;
 
 type CreateDAppKitStoreOptions = void;
 
 export function createDAppKitStore(_: CreateDAppKitStoreOptions) {
-	const $state = createState();
+	const state = createState();
+
+	syncRegisteredWallets(state);
 
 	return {
-		$state: readonlyType($state),
-		$wallets: computed($state, (state) => state.wallets),
+		$state: readonlyType(state.$state),
+		$wallets: computed(state.$state, (state) => state.wallets),
 	};
 }
 
