@@ -32,7 +32,9 @@
 		"eslint:check": "eslint --max-warnings=0 .",
 		"eslint:fix": "pnpm run eslint:check --fix",
 		"lint": "pnpm run eslint:check && pnpm run prettier:check",
-		"lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix"
+		"lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix",
+		"storybook": "storybook dev -p 6006",
+		"build-storybook": "storybook build"
 	},
 	"bugs": {
 		"url": "https://github.com/MystenLabs/ts-sdks/issues/new"
@@ -42,6 +44,11 @@
 	},
 	"devDependencies": {
 		"@mysten/build-scripts": "workspace:*",
+		"@storybook/addon-essentials": "^8.6.12",
+		"@storybook/blocks": "^8.6.12",
+		"@storybook/web-components": "^8.6.12",
+		"@storybook/web-components-vite": "^8.6.12",
+		"storybook": "^8.6.12",
 		"typescript": "^5.8.2"
 	},
 	"dependencies": {
