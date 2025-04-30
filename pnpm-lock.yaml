@@ -575,6 +575,9 @@ importers:
       '@mysten/enoki':
         specifier: workspace:*
         version: link:../enoki
+      '@mysten/enoki-connect':
+        specifier: workspace:*
+        version: link:../enoki-connect
       '@mysten/graphql-transport':
         specifier: workspace:*
         version: link:../graphql-transport
