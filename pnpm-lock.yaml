@@ -409,9 +409,6 @@ importers:
       '@nanostores/lit':
         specifier: ^0.2.2
         version: 0.2.2(lit@3.3.0)(nanostores@1.0.1)
-      '@nanostores/persistent':
-        specifier: ^1.0.0
-        version: 1.0.0(nanostores@1.0.1)
       '@wallet-standard/ui':
         specifier: ^1.0.1
         version: 1.0.1
@@ -3407,12 +3404,6 @@ packages:
     peerDependencies:
       lit: ^2.6.0 || ^3.0.0
       nanostores: ^0.7 || ^0.8 || ^0.9 || ^0.10 || ^0.11
-
-  '@nanostores/persistent@1.0.0':
-    resolution: {integrity: sha512-iuucWTxcxSLwHvcxBTIAwofDc+KO7cw5EiQklAltJX6Ynx/CKTecOCUG76kF42yNnCZZQcMeuIcl99DkxekIig==}
-    engines: {node: ^20.0.0 || >=22.0.0}
-    peerDependencies:
-      nanostores: ^0.9.0 || ^0.10.0 || ^0.11.0 || ^1.0.0
 
   '@nanostores/react@1.0.0':
     resolution: {integrity: sha512-eDduyNy+lbQJMg6XxZ/YssQqF6b4OXMFEZMYKPJCCmBevp1lg0g+4ZRi94qGHirMtsNfAWKNwsjOhC+q1gvC+A==}
@@ -12280,10 +12271,6 @@ snapshots:
   '@nanostores/lit@0.2.2(lit@3.3.0)(nanostores@1.0.1)':
     dependencies:
       lit: 3.3.0
-      nanostores: 1.0.1
-
-  '@nanostores/persistent@1.0.0(nanostores@1.0.1)':
-    dependencies:
       nanostores: 1.0.1
 
   '@nanostores/react@1.0.0(nanostores@1.0.1)(react@18.3.1)':

@@ -25,7 +25,7 @@ export type ConnectWalletArgs = {
 	account?: UiWalletAccount;
 } & Omit<StandardConnectInput, 'silent'>;
 
-export function connectWalletCreator({ $state }: DAppKitState) {
+export function connectWalletCreator($state: DAppKitState) {
 	/**
 	 * Prompts the specified wallet to connect and authorize new accounts for the current domain.
 	 */
@@ -35,8 +35,11 @@ export function connectWalletCreator({ $state }: DAppKitState) {
 		...standardConnectArgs
 	}: ConnectWalletArgs) {
 		return await task(async () => {
+			const { connection } = $state.get();
+			const isAlreadyConnected = connection.status === 'connected';
+
 			try {
-				$state.setKey('connectionStatus', 'connecting');
+				$state.setKey('connection.status', isAlreadyConnected ? 'reconnecting' : 'connecting');
 
 				const { connect } = getWalletFeature(
 					wallet,
@@ -50,7 +53,7 @@ export function connectWalletCreator({ $state }: DAppKitState) {
 					.filter((account) => account.chains.some(isSuiChain))
 					.map(getOrCreateUiWalletAccountForStandardWalletAccount.bind(null, underlyingWallet));
 
-				if (suiAccounts.length === 0) {
+				if (!isAlreadyConnected && suiAccounts.length === 0) {
 					throw new WalletNoAccountsConnectedError('No accounts were authorized.');
 				}
 
@@ -60,16 +63,14 @@ export function connectWalletCreator({ $state }: DAppKitState) {
 					);
 				}
 
-				$state.set({
-					...$state.get(),
-					connectionStatus: 'connected',
-					supportedIntents: result.supportedIntents ?? [],
+				$state.setKey('connection', {
+					status: 'connected',
 					currentAccount: account ?? suiAccounts[0],
 				});
 
 				return { accounts: suiAccounts };
 			} catch (error) {
-				$state.setKey('connectionStatus', 'disconnected');
+				$state.setKey('connection.status', isAlreadyConnected ? 'connected' : 'disconnected');
 				throw error;
 			}
 		});
