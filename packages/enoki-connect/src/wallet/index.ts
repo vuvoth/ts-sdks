@@ -321,12 +321,12 @@ async function getEnokiConnectMetadata(publicAppSlugs: string[], enokiApiUrl: st
 	const queryParams = new URLSearchParams();
 
 	for (const publicAppSlug of sortedPublicAppSlugs) {
-		queryParams.append('s', publicAppSlug);
+		queryParams.append('slugs', publicAppSlug);
 	}
 
 	queryParams.sort();
 
-	const res = await fetch(new URL(`/connect/metadata?${queryParams.toString()}`, enokiApiUrl));
+	const res = await fetch(new URL(`/v1/connect/metadata?${queryParams.toString()}`, enokiApiUrl));
 
 	if (!res.ok) {
 		throw new Error('Failed to fetch enoki connect metadata');

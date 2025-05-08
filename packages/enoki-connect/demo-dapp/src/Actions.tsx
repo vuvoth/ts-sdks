@@ -30,6 +30,7 @@ export function Actions() {
           const { signature } = await signMessage.mutateAsync({
             message,
             account,
+            chain: "sui:testnet",
           });
           try {
             await verifyPersonalMessageSignature(message, signature, {
