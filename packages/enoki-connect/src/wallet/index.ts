@@ -25,6 +25,7 @@ import type {
 import {
 	getWallets,
 	ReadonlyWalletAccount,
+	SUI_DEVNET_CHAIN,
 	SUI_MAINNET_CHAIN,
 	SUI_TESTNET_CHAIN,
 } from '@mysten/wallet-standard';
@@ -32,13 +33,13 @@ import type { Emitter } from 'mitt';
 import mitt from 'mitt';
 import { DappPostMessageChannel, decodeJwtSession } from '@mysten/window-wallet-core';
 
-export type SupportedNetwork = 'mainnet' | 'testnet';
+export type SupportedNetwork = 'mainnet' | 'testnet' | 'devnet';
 
 type WalletEventsMap = {
 	[E in keyof StandardEventsListeners]: Parameters<StandardEventsListeners[E]>[0];
 };
 
-const SUPPORTED_CHAINS = [SUI_MAINNET_CHAIN, SUI_TESTNET_CHAIN] as const;
+const SUPPORTED_CHAINS = [SUI_MAINNET_CHAIN, SUI_TESTNET_CHAIN, SUI_DEVNET_CHAIN] as const;
 const ACCOUNT_FEATURES = [
 	'sui:signTransaction',
 	'sui:signAndExecuteTransaction',
