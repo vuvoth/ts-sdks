@@ -24,7 +24,7 @@ import type { DerivedKey, KeyServer } from './key-server.js';
 import { fetchKeysForAllIds } from './keys.js';
 import type { SessionKey } from './session-key.js';
 import type { KeyCacheKey, SealCompatibleClient } from './types.js';
-import { createFullId } from './utils.js';
+import { createFullId, count } from './utils.js';
 
 /**
  * Configuration options for initializing a SealClient
@@ -163,20 +163,16 @@ export class SealClient {
 
 	#validateEncryptionServices(services: string[], threshold: number) {
 		// Check that the client's key servers are a subset of the encrypted object's key servers.
-		const serverObjectIdsMap = new Map<string, number>();
-		for (const objectId of this.#serverObjectIds) {
-			serverObjectIdsMap.set(objectId, (serverObjectIdsMap.get(objectId) ?? 0) + 1);
-		}
-		const servicesMap = new Map<string, number>();
-		for (const service of services) {
-			servicesMap.set(service, (servicesMap.get(service) ?? 0) + 1);
-		}
-		for (const [objectId, count] of serverObjectIdsMap) {
-			if (servicesMap.get(objectId) !== count) {
-				throw new InconsistentKeyServersError(
-					`Client's key servers must be a subset of the encrypted object's key servers`,
-				);
-			}
+		// TODO: fix this check to allow for non-equal weights.
+		if (
+			services.some((objectId) => {
+				const countInClient = count(this.#serverObjectIds, objectId);
+				return countInClient > 0 && countInClient !== count(services, objectId);
+			})
+		) {
+			throw new InconsistentKeyServersError(
+				`Client's key servers must be a subset of the encrypted object's key servers`,
+			);
 		}
 		// Check that the threshold can be met with the client's key servers.
 		if (threshold > this.#serverObjectIds.length) {
@@ -257,16 +253,10 @@ export class SealClient {
 		// Count a server as completed if it has keys for all fullIds.
 		// Duplicated key server ids will be counted towards the threshold.
 		for (const server of keyServers) {
-			let hasAllKeys = true;
-			for (const fullId of fullIds) {
-				if (!this.#cachedKeys.has(`${fullId}:${server.objectId}`)) {
-					hasAllKeys = false;
-					remainingKeyServers.add(server);
-					break;
-				}
-			}
-			if (hasAllKeys) {
+			if (fullIds.every((fullId) => this.#cachedKeys.has(`${fullId}:${server.objectId}`))) {
 				completedServerCount++;
+			} else {
+				remainingKeyServers.add(server);
 			}
 		}
 
@@ -321,14 +311,10 @@ export class SealClient {
 
 				// Check if all the receivedIds are consistent with the requested fullIds.
 				// If so, consider the key server got all keys and mark as completed.
-				const expectedIds = new Set(fullIds);
-				const hasAllKeys =
-					receivedIds.size === expectedIds.size &&
-					[...receivedIds].every((id) => expectedIds.has(id));
-
-				// Return early if the completed servers is more than threshold.
-				if (hasAllKeys) {
+				if (fullIds.every((fullIds) => receivedIds.has(fullIds))) {
 					completedServerCount++;
+
+					// Return early if the completed servers is more than the threshold.
 					if (completedServerCount >= threshold) {
 						controller.abort();
 					}
