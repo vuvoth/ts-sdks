@@ -29,7 +29,7 @@ export type ConnectWalletArgs = {
 
 export function connectWalletCreator(
 	{ $baseConnection }: DAppKitStores,
-	supportedNetworks: Experimental_SuiClientTypes.Network[],
+	supportedNetworks: readonly Experimental_SuiClientTypes.Network[],
 ) {
 	/**
 	 * Prompts the specified wallet to connect and authorize new accounts for the current domain.
