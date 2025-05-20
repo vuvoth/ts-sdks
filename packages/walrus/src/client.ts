@@ -22,7 +22,7 @@ import { StakingInnerV1 } from './contracts/staking_inner.js';
 import { StakingPool } from './contracts/staking_pool.js';
 import { Staking } from './contracts/staking.js';
 import { Storage } from './contracts/storage_resource.js';
-import { init as initSubsidiesContract } from './contracts/subsidies.js';
+import { init as initSubsidiesContract, Subsidies } from './contracts/subsidies.js';
 import { SystemStateInnerV1 } from './contracts/system_state_inner.js';
 import { init as initSystemContract, System } from './contracts/system.js';
 import {
@@ -218,11 +218,12 @@ export class WalrusClient {
 				throw new WalrusClientError('Subsidies object ID not defined in package config');
 			}
 
-			const subsidiesObject = await this.#objectLoader.load(this.#packageConfig.subsidiesObjectId);
+			const subsidiesObject = await this.#objectLoader.load(
+				this.#packageConfig.subsidiesObjectId,
+				Subsidies(),
+			);
 
-			const packageId = parseStructTag(subsidiesObject.type!).address;
-
-			return initSubsidiesContract(packageId);
+			return initSubsidiesContract(subsidiesObject.package_id);
 		});
 	}
 
