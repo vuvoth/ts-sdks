@@ -19,6 +19,8 @@ export const LEGACY_PRIVATE_KEY_SIZE = 64;
 export const SUI_PRIVATE_KEY_PREFIX = 'suiprivkey';
 
 export type ParsedKeypair = {
+	scheme: SignatureScheme;
+	/** @deprecated use `scheme` instead */
 	schema: SignatureScheme;
 	secretKey: Uint8Array;
 };
@@ -128,7 +130,9 @@ export function decodeSuiPrivateKey(value: string): ParsedKeypair {
 	const secretKey = extendedSecretKey.slice(1);
 	const signatureScheme =
 		SIGNATURE_FLAG_TO_SCHEME[extendedSecretKey[0] as keyof typeof SIGNATURE_FLAG_TO_SCHEME];
+
 	return {
+		scheme: signatureScheme,
 		schema: signatureScheme,
 		secretKey: secretKey,
 	};

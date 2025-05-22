@@ -194,29 +194,50 @@ const keyPair = Ed25519Keypair.deriveKeypair(exampleMnemonic);
 
 ## Deriving a `Keypair` from a Bech32 encoded secret key
 
-You can derive a `Keypair` by converting the 33-byte secret key encoded in Bech32 string to a
-`Uint8Array` and passing it to the `fromSecretKey` method of a `Keypair` class.
+If you know the Keypair scheme for your secret key, you can use the `fromSecretKey` method of the
+appropriate `Keypair` class to derive the keypair from the secret key.
 
 ```typescript
-import { decodeSuiPrivateKey, encodeSuiPrivateKey } from '@mysten/sui/cryptography';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 
-const encoded = encodeSuiPrivateKey(
-	[
-		59, 148, 11, 85, 134, 130, 61, 253, 2, 174, 59, 70, 27, 180, 51, 107, 94, 203, 174, 253, 102,
-		39, 170, 146, 46, 252, 4, 143, 236, 12, 136, 28,
-	],
-	'ED25519',
-);
-const { schema, secretKey } = decodeSuiPrivateKey(encoded);
-// use schema to choose the correct key pair
+// Example bech32 encoded secret key (which always starts with 'suiprivkey')
+const secretKey = 'suiprivkey1qzse89atw7d3zum8ujep76d2cxmgduyuast0y9fu23xcl0mpafgkktllhyc';
+
 const keypair = Ed25519Keypair.fromSecretKey(secretKey);
+```
+
+You can also use the `decodeSuiPrivateKey` function to decode the secret key and determine the
+keyScheme, and get the keypairs private key bytes, which can be used to instantiate the appropriate
+`Keypair` class.
+
+```typescript
+import { decodeSuiPrivateKey } from '@mysten/sui/cryptography';
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import { Secp256r1Keypair } from '@mysten/sui/keypairs/secp256r1';
+import { Secp256k1Keypair } from '@mysten/sui/keypairs/secp256k1';
+
+const { scheme, secretKey } = decodeSuiPrivateKey(encoded);
+
+// use scheme to choose the correct key pair
+switch (scheme) {
+	case 'ED25519':
+		keypair = Ed25519Keypair.fromSecretKey(secretKey);
+		break;
+	case 'Secp256r1':
+		keypair = Secp256r1Keypair.fromSecretKey(secretKey);
+		break;
+	case 'Secp256k1':
+		keypair = Secp256k1Keypair.fromSecretKey(secretKey);
+		break;
+	default:
+		throw new Error(`Unsupported key pair scheme: ${scheme}`);
+}
 ```
 
 See [SIP-15](https://github.com/sui-foundation/sips/blob/main/sips/sip-15.md) for additional context
 and motivation.
 
-If you know your keypair schema, you can use the `fromSecretKey` method of the appropriate keypair
+If you know your keypair scheme, you can use the `fromSecretKey` method of the appropriate keypair
 to directly derive the keypair from the secret key.
 
 ```typescript
@@ -229,6 +250,21 @@ You can also export a keypair to a Bech32 encoded secret key using the `getSecre
 
 ```typescript
 const secretKey = keypair.getSecretKey();
+```
+
+If you have only the raw private key bytes for your keypair, you can encode to the Bech32 format
+using the `encodeSuiPrivateKey` function.
+
+```typescript
+import { encodeSuiPrivateKey } from '@mysten/sui/cryptography';
+
+const encoded = encodeSuiPrivateKey(
+	new Uint8Array([
+		59, 148, 11, 85, 134, 130, 61, 253, 2, 174, 59, 70, 27, 180, 51, 107, 94, 203, 174, 253, 102,
+		39, 170, 146, 46, 252, 4, 143, 236, 12, 136, 28,
+	]),
+	'ED25519',
+);
 ```
 
 ## Deriving a `Keypair` from a hex encoded secret key
