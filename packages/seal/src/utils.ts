@@ -18,17 +18,16 @@ export function xorUnchecked(a: Uint8Array, b: Uint8Array): Uint8Array {
 }
 
 /**
- * Create a full ID concatenating DST || package ID || inner ID.
- * @param dst - The domain separation tag.
+ * Create a full ID concatenating package ID || inner ID.
  * @param packageId - The package ID.
  * @param innerId - The inner ID.
  * @returns The full ID.
  */
-export function createFullId(dst: Uint8Array, packageId: string, innerId: string): string {
+export function createFullId(packageId: string, innerId: string): string {
 	if (!isValidSuiObjectId(packageId)) {
 		throw new UserError(`Invalid package ID ${packageId}`);
 	}
-	const fullId = flatten([new Uint8Array([dst.length]), dst, fromHex(packageId), fromHex(innerId)]);
+	const fullId = flatten([fromHex(packageId), fromHex(innerId)]);
 	return toHex(fullId);
 }
 

@@ -9,7 +9,7 @@ import type { G1Element } from './bls12381.js';
 import { G2Element } from './bls12381.js';
 import { AesGcm256, Hmac256Ctr } from './dem.js';
 import { InvalidCiphertextError, UnsupportedFeatureError } from './error.js';
-import { BonehFranklinBLS12381Services, DST } from './ibe.js';
+import { BonehFranklinBLS12381Services } from './ibe.js';
 import { deriveKey, KeyPurpose } from './kdf.js';
 import type { KeyCacheKey } from './types.js';
 import { createFullId, flatten } from './utils.js';
@@ -31,7 +31,7 @@ export async function decrypt({ encryptedObject, keys }: DecryptOptions): Promis
 		throw new UnsupportedFeatureError('Encryption mode not supported');
 	}
 
-	const fullId = createFullId(DST, encryptedObject.packageId, encryptedObject.id);
+	const fullId = createFullId(encryptedObject.packageId, encryptedObject.id);
 
 	// Get the indices of the service whose keys are in the keystore.
 	const inKeystore = encryptedObject.services
@@ -69,7 +69,13 @@ export async function decrypt({ encryptedObject, keys }: DecryptOptions): Promis
 	// Combine the decrypted shares into the key.
 	const baseKey = await combine(shares);
 
-	const demKey = deriveKey(KeyPurpose.DEM, baseKey);
+	const demKey = deriveKey(
+		KeyPurpose.DEM,
+		baseKey,
+		encryptedObject.encryptedShares.BonehFranklinBLS12381.encryptedShares,
+		encryptedObject.threshold,
+		encryptedObject.services.map(([objectId, _]) => objectId),
+	);
 
 	if (encryptedObject.ciphertext.Aes256Gcm) {
 		return AesGcm256.decrypt(demKey, encryptedObject.ciphertext);

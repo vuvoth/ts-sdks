@@ -9,7 +9,7 @@ import type { IBEEncryptions } from './bcs.js';
 import { EncryptedObject } from './bcs.js';
 import type { EncryptionInput } from './dem.js';
 import { UserError } from './error.js';
-import { BonehFranklinBLS12381Services, DST } from './ibe.js';
+import { BonehFranklinBLS12381Services } from './ibe.js';
 import { deriveKey, KeyPurpose } from './kdf.js';
 import type { KeyServer } from './key-server.js';
 import { createFullId } from './utils.js';
@@ -66,8 +66,7 @@ export async function encrypt({
 	const shares = await split(baseKey, keyServers.length, threshold);
 
 	// Encrypt the shares with the public keys of the key servers.
-	const fullId = createFullId(DST, packageId, id);
-	const randomnessKey = deriveKey(KeyPurpose.EncryptedRandomness, baseKey);
+	const fullId = createFullId(packageId, id);
 	const encryptedShares = encryptBatched(
 		keyServers,
 		kemType,
@@ -76,11 +75,18 @@ export async function encrypt({
 			msg: share,
 			index,
 		})),
-		randomnessKey,
+		baseKey,
+		threshold,
 	);
 
 	// Encrypt the object with the derived DEM key.
-	const demKey = deriveKey(KeyPurpose.DEM, baseKey);
+	const demKey = deriveKey(
+		KeyPurpose.DEM,
+		baseKey,
+		encryptedShares.BonehFranklinBLS12381.encryptedShares,
+		threshold,
+		keyServers.map(({ objectId }) => objectId),
+	);
 	const ciphertext = await encryptionInput.encrypt(demKey);
 
 	// Services and indices of their shares are stored as a tuple
@@ -117,11 +123,17 @@ function encryptBatched(
 	kemType: KemType,
 	id: Uint8Array,
 	msgs: { msg: Uint8Array; index: number }[],
-	randomnessKey: Uint8Array,
+	baseKey: Uint8Array,
+	threshold: number,
 ): typeof IBEEncryptions.$inferType {
 	switch (kemType) {
 		case KemType.BonehFranklinBLS12381DemCCA:
-			return new BonehFranklinBLS12381Services(keyServers).encryptBatched(id, msgs, randomnessKey);
+			return new BonehFranklinBLS12381Services(keyServers).encryptBatched(
+				id,
+				msgs,
+				baseKey,
+				threshold,
+			);
 	}
 }
 

@@ -96,9 +96,9 @@ describe('Hmac256Ctr', () => {
 		const aad = new TextEncoder().encode('Mark Twain');
 		const key = fromHex('5bfdfd7c814903f1311bebacfffa3c001cbeb1cbb3275baa9aafe21fadd9f396');
 		const blob = fromHex(
-			'b0c4eee6fbd97a2fb86bbd1e0dafa47d2ce5c9e8975a50c2d9eae02ebede8fee6b6434e68584be475b89089fce4c451cbd4c0d6e00dbcae1241abaf237df2eccdd86b890d35e4e8ae9418386012891d8413483d64179ce1d7fe69ad25d546495df54a1',
+			'feadb8c8f781036f86b6a9f436cac6f9f68ba8fc8b8444f0331a5820f78580f32034f698f7ce15f25defae1749f0131c0a8b8c5e751b96aacf507d0dbd4d7790440d196a339fcb8498ca7dd236014e353729b7aa2cf524284a8d2305d2378494eadd6f',
 		);
-		const mac = fromHex('5de3ffdd9d7a258e651ebdba7d80839df2e19ea40cd35b6e1b06375181a0c2f2');
+		const mac = fromHex('85d498365972c3dc7a53f94232f9cb10dcc94eff064d6835d41d7a7536b47b51');
 
 		const c = {
 			Hmac256Ctr: {

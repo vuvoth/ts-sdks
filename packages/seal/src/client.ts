@@ -15,7 +15,7 @@ import {
 	toMajorityError,
 	TooManyFailedFetchKeyRequestsError,
 } from './error.js';
-import { BonehFranklinBLS12381Services, DST } from './ibe.js';
+import { BonehFranklinBLS12381Services } from './ibe.js';
 import {
 	BonehFranklinBLS12381DerivedKey,
 	KeyServerType,
@@ -30,13 +30,13 @@ import { createFullId, count } from './utils.js';
 
 /**
  * Configuration options for initializing a SealClient
- * @property serverObjectIds: Array of object IDs for the key servers to use.
+ * @property serverObjectIds: Array of the key servers to use.
+ * 	 The first element is the object ID, and the second element is the weight of the key server.
  * @property verifyKeyServers: Whether to verify the key servers' authenticity.
  * 	 Should be false if servers are pre-verified (e.g., getAllowlistedKeyServers).
  * 	 Defaults to true.
  * @property timeout: Timeout in milliseconds for network requests. Defaults to 10 seconds.
  */
-
 export interface SealClientExtensionOptions {
 	serverObjectIds: [string, number][];
 	verifyKeyServers?: boolean;
@@ -276,7 +276,7 @@ export class SealClient {
 			);
 		}
 		const keyServers = await this.getKeyServers();
-		const fullIds = ids.map((id) => createFullId(DST, sessionKey.getPackageId(), id));
+		const fullIds = ids.map((id) => createFullId(sessionKey.getPackageId(), id));
 
 		// Count a server as completed if it has keys for all fullIds.
 		// Duplicated key server ids will be counted towards the threshold.
@@ -326,7 +326,6 @@ export class SealClient {
 					controller.signal,
 				);
 				// Check validity of the keys and add them to the cache.
-				const receivedIds = new Set<string>();
 				for (const { fullId, key } of allKeys) {
 					const keyElement = G1Element.fromBytes(key);
 					if (
@@ -340,12 +339,11 @@ export class SealClient {
 						continue;
 					}
 					this.#cachedKeys.set(`${fullId}:${server.objectId}`, keyElement);
-					receivedIds.add(fullId);
 				}
 
 				// Check if all the receivedIds are consistent with the requested fullIds.
 				// If so, consider the key server got all keys and mark as completed.
-				if (fullIds.every((fullId) => receivedIds.has(fullId))) {
+				if (fullIds.every((fullId) => this.#cachedKeys.has(`${fullId}:${server.objectId}`))) {
 					completedWeight += this.#weight(objectId)!;
 
 					// Return early if the completed servers is more than the threshold.
@@ -413,7 +411,7 @@ export class SealClient {
 				// After calling fetchKeys, we can be sure that there are at least `threshold` of the required keys in the cache.
 				// It is also checked there that the KeyServerType is BonehFranklinBLS12381 for all services.
 
-				const fullId = createFullId(DST, sessionKey.getPackageId(), id);
+				const fullId = createFullId(sessionKey.getPackageId(), id);
 
 				const derivedKeys = new Map();
 				let weight = 0;

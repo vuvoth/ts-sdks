@@ -9,8 +9,8 @@ import { G1Element, G2Element, Scalar } from '../../src/bls12381';
 import { decrypt } from '../../src/decrypt';
 import { AesGcm256, Hmac256Ctr, Plain } from '../../src/dem';
 import { encrypt, KemType } from '../../src/encrypt';
-import { BonehFranklinBLS12381Services, DST } from '../../src/ibe';
-import { kdf } from '../../src/kdf';
+import { BonehFranklinBLS12381Services } from '../../src/ibe';
+import { hashToG1, kdf } from '../../src/kdf';
 import { KeyCacheKey } from '../../src/types';
 import { createFullId } from '../../src/utils';
 
@@ -22,7 +22,7 @@ describe('Seal encryption tests', () => {
 	}
 
 	function extractUserSecretKey(sk: Scalar, id: Uint8Array): G1Element {
-		return G1Element.hashToCurve(id).multiply(sk);
+		return hashToG1(id).multiply(sk);
 	}
 
 	it('sanity checks for encryption format', async () => {
@@ -119,7 +119,7 @@ describe('Seal encryption tests', () => {
 
 		const parsed = EncryptedObject.parse(encryptedObject);
 
-		const id = createFullId(DST, parsed.packageId, parsed.id);
+		const id = createFullId(parsed.packageId, parsed.id);
 		const idBytes = fromHex(id);
 
 		const usk1 = extractUserSecretKey(sk1, idBytes);
@@ -214,7 +214,7 @@ describe('Seal encryption tests', () => {
 
 		const parsed = EncryptedObject.parse(encryptedObject);
 
-		const id = createFullId(DST, parsed.packageId, parsed.id);
+		const id = createFullId(parsed.packageId, parsed.id);
 		const idBytes = fromHex(id);
 
 		const usk1 = extractUserSecretKey(sk1, idBytes);
@@ -306,7 +306,7 @@ describe('Seal encryption tests', () => {
 
 		const parsed = EncryptedObject.parse(encryptedObject);
 
-		const id = createFullId(DST, parsed.packageId, parsed.id);
+		const id = createFullId(parsed.packageId, parsed.id);
 		const idBytes = fromHex(id);
 
 		const usk1 = extractUserSecretKey(sk1, idBytes);
@@ -345,9 +345,9 @@ describe('Seal encryption tests', () => {
 	it('G1 hash-to-curve regression test', async () => {
 		const packageId = toHex(new Uint8Array(32));
 		const innerId = toHex(new Uint8Array([1, 2, 3, 4]));
-		const hash = G1Element.hashToCurve(fromHex(createFullId(DST, packageId, innerId)));
+		const hash = hashToG1(fromHex(createFullId(packageId, innerId)));
 		const expected =
-			'b32685b6ffd1f373faf3abb10c05772e033f75da8af729c3611d81aea845670db48ceadd0132d3a667dbbaa36acefac7';
+			'a2f2624fda29c88ccacd286b560572d8c1261a5687e0c0cdbdcbef93bf0ec5c373563fac64a2cb5bb326cc6181ee65d7';
 		expect(toHex(hash.toBytes())).toEqual(expected);
 	});
 
@@ -364,27 +364,30 @@ describe('Seal encryption tests', () => {
 			42,
 		);
 		expect(key).toEqual(
-			fromHex('1963b93f076d0dc97cbb38c3864b2d6baeb87c7eb99139100fd775b0b09f668b'),
+			fromHex('89befdfd6aecdce1305ddbca891d1c29f0507cfd5225cd6b11e52e60f088ea87'),
 		);
 	});
 
 	it('Rust test vector decryption', async () => {
 		// Test created with seal-cli using the command:
-		// cargo run --bin seal-cli encrypt-hmac --message 48656C6C6F2C20776F726C6421 --aad 0x0000000000000000000000000000000000000000000000000000000000000001 --package-id 0x0 --id 0x381dd9078c322a4663c392761a0211b527c127b29583851217f948d62131f409 --threshold 2 aeb258b9fb9a2f29f74eb0a1a895860bb1c6ba3f9ea7075366de159e4764413e9ec0597ac9c0dad409723935440a45f40eee4728630ae3ea40a68a819375bba1d78d7810f901d8a469d785d00cfed6bd28f01d41e49c5652d924e9d19fddcf62 b1076a26f4f82f39d0e767fcd2118659362afe40bce4e8d553258c86756bb74f888bca79f2d6b71edf6e25af89efa83713a223b48a19d2e551897ac92ac7458336cd489be3be025e348ca93f4c94d22594f96f0e08990e51a7de9da8ff29c98f 95fcb465af3791f31d53d80db6c8dcf9f83a419b2570614ecfbb068f47613da17cb9ffc66bb052b9546f17196929538f0bd2d38e1f515d9916e2db13dc43e0ccbd4cb3d7cbb13ffecc0b68b37481ebaaaa17cad18096a9c2c27a797f17d78623 -- 0x34401905bebdf8c04f3cd5f04f442a39372c8dc321c29edfb4f9cb30b23ab96 0xd726ecf6f7036ee3557cd6c7b93a49b231070e8eecada9cfa157e40e3f02e5d3 0xdba72804cc9504a82bbaa13ed4a83a0e2c6219d7e45125cf57fd10cbab957a97
+		// cargo run --bin seal-cli encrypt-hmac --message 48656C6C6F2C20776F726C6421 --aad 0x0000000000000000000000000000000000000000000000000000000000000001 --package-id 0x0 --id 0x381dd9078c322a4663c392761a0211b527c127b29583851217f948d62131f409 --threshold 2 877da4fe90156295283ff79e8473305b15744b8c7a49448444fa8b11db41eb0d3342eca266a0dcb5ea2be821c77862761834150b3f9b92094c205015f715bcddee2b66e313d72c77261a66aa4f7e3206ee1b898e44a0464ef202cc101d22cd01 8a87e93fa775d39af2b2c55467e092b6723ecc60e327bd88810e0ad15785489bd52e887a8ad352032a4cf7bc950e9c7a102d1167365ac90af850f5d306ee5f5296116d957808ade429917accf65270a33801bcf6a7d9cff17f303e82290beebf 9091d93753906661a9fcd7c705f96bdde5a9f93205f6144afaa9f950185c314a33c647a85308754b62b70a6cab45a3a60280b900f78998f710d84544371450d909b861d3ac2a508f9eb716c5198f8911d18018b083d21a5131863b5b3226a0fa -- 0x034401905bebdf8c04f3cd5f04f442a39372c8dc321c29edfb4f9cb30b23ab96 0xd726ecf6f7036ee3557cd6c7b93a49b231070e8eecada9cfa157e40e3f02e5d3 0xdba72804cc9504a82bbaa13ed4a83a0e2c6219d7e45125cf57fd10cbab957a97
 		const encryptedObject = fromHex(
-			'00000000000000000000000000000000000000000000000000000000000000000020381dd9078c322a4663c392761a0211b527c127b29583851217f948d62131f40903034401905bebdf8c04f3cd5f04f442a39372c8dc321c29edfb4f9cb30b23ab9601d726ecf6f7036ee3557cd6c7b93a49b231070e8eecada9cfa157e40e3f02e5d302dba72804cc9504a82bbaa13ed4a83a0e2c6219d7e45125cf57fd10cbab957a97030200b7f57f44e5302b684737612ebf4561ce4b4c5fea496731914f78d402db1c3c712fae396125a150e8eb1582e05a1f98140afc3214db2060c80471d6d97a173407c41fa4ca58396f6f879826e4f78b7f58282c8e48c664c9f8c953ab2e7a727125030fbf02ffa94172ae1a5c5b1be1b8bddb20ea698d49150aa361ed56504daa3c8f6f7bc1e58f024dff40892db134da0b61e58fa82317afa6884ae14f5d739b5e95fc1b56d645b75d60302775aac94d1bf52a103eefbad9cecd61fbbad37c9dbccceeb9007861ee3f34e4a546b7fe6b5b195ef1fee6ba8080d5d228bd721904b0d5010dab6e4eca9b82653721946aac8401200000000000000000000000000000000000000000000000000000000000000001a5fb3bfe499a0fa285e7129a88962e278fc65e821851d4234ada909ac72a77e5',
+			'00000000000000000000000000000000000000000000000000000000000000000020381dd9078c322a4663c392761a0211b527c127b29583851217f948d62131f40903034401905bebdf8c04f3cd5f04f442a39372c8dc321c29edfb4f9cb30b23ab9601d726ecf6f7036ee3557cd6c7b93a49b231070e8eecada9cfa157e40e3f02e5d302dba72804cc9504a82bbaa13ed4a83a0e2c6219d7e45125cf57fd10cbab957a97030200b07b9e0e0bc81812957adee90c1eab51e738641f82983f17fee55ac15b75d86bf92e59ebf1cc1548a3db27d18ee315391086bb95f3333d16276d181bdf10c71d15c41d923d71d5c05383dda26b43004af78d7e08a6b086ebc3ea2e5d8752871b0305874fce4f5e944c97b13f60c2dcf1ff34410d2fcb07dc15405140a38d520606dbd23990a1c26f9ce2ce5776506cc18768485525511e59fc1c3ad346c95bb9cc288e7584add871e16e3aaf067f77bddf7df52ddf81ce0ecb130822328ac063c3dd39b21a4847f3aad9a816fadd2541ead355d4120f876e29bff825e5c53bedf6010d05d48cbd0c25cc230193f9389a012000000000000000000000000000000000000000000000000000000000000000018ba15d967ab74e1975c3149806cb483b5ce730be8039c46d18c2eb7c551f9fc4',
 		);
 		const parsed = EncryptedObject.parse(encryptedObject);
-		const id = createFullId(DST, parsed.packageId, parsed.id);
+		const id = createFullId(parsed.packageId, parsed.id);
 
+		// Created with cargo run --bin seal-cli extract --package-id 0x0 --id 0x381dd9078c322a4663c392761a0211b527c127b29583851217f948d62131f409 --master-key 1aa66668afc1893b66eb5ad690b14b32b41797dd92f7220b11f7441b11d22bfb
 		const usk0 = G1Element.fromBytes(
 			fromHex(
-				'8244fcbe49870a4d4aa947b7034a873e168580e18b5834ea34940dc9f492eda03a9b20c3c3c120b1a462f1642575e0cc',
+				'9376bdfac1abac0d81685c6ac9c944636709b76b500edaf20332b02b14de1b483996c68de07e77efad144ce01c6388e4',
 			),
 		);
+
+		// Created with cargo run --bin seal-cli extract --package-id 0x0 --id 0x381dd9078c322a4663c392761a0211b527c127b29583851217f948d62131f409 --master-key 0740419bedd2fdfb036f468a99d95d2f37ad66eb3111b815ca19ec001c35388a
 		const usk1 = G1Element.fromBytes(
 			fromHex(
-				'a0f04b759ed2ff477f0fe5b672992235205d2af502f659d4bbb484b745e35fd7a9ff11e37e12111023a891c3fa98a2d3',
+				'a19f8891f888b65c4809bfa3181f8b26457c15bb41dbe61109b4ff5e06064e8afc95f70980f1ec1ef9b674b51f0d678d',
 			),
 		);
 
@@ -429,7 +432,7 @@ describe('Seal encryption tests', () => {
 		});
 
 		const parsed = EncryptedObject.parse(encryptedObject);
-		const id = createFullId(DST, parsed.packageId, parsed.id);
+		const id = createFullId(parsed.packageId, parsed.id);
 		const idBytes = fromHex(id);
 		const usk1 = extractUserSecretKey(sk1, idBytes);
 
@@ -493,7 +496,7 @@ describe('Seal encryption tests', () => {
 
 		const parsed = EncryptedObject.parse(encryptedObject);
 
-		const id = createFullId(DST, parsed.packageId, parsed.id);
+		const id = createFullId(parsed.packageId, parsed.id);
 		const idBytes = fromHex(id);
 
 		const usk1 = extractUserSecretKey(sk1, idBytes);

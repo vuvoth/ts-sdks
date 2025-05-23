@@ -4,16 +4,11 @@
 import { fromHex } from '@mysten/bcs';
 
 import type { IBEEncryptions } from './bcs.js';
-import type { GTElement } from './bls12381.js';
-import { G1Element, G2Element, Scalar } from './bls12381.js';
-import { kdf } from './kdf.js';
+import type { G1Element, GTElement } from './bls12381.js';
+import { G2Element, Scalar } from './bls12381.js';
+import { deriveKey, hashToG1, kdf, KeyPurpose } from './kdf.js';
 import type { KeyServer } from './key-server.js';
 import { xor } from './utils.js';
-
-/**
- * The domain separation tag for the hash-to-group function.
- */
-export const DST: Uint8Array = new TextEncoder().encode('SUI-SEAL-IBE-BLS12381-00');
 
 /**
  * The domain separation tag for the signing proof of possession.
@@ -47,7 +42,8 @@ export abstract class IBEServers {
 	abstract encryptBatched(
 		id: Uint8Array,
 		msgAndIndices: { msg: Uint8Array; index: number }[],
-		randomnessKey: Uint8Array,
+		baseKey: Uint8Array,
+		threshold: number,
 	): typeof IBEEncryptions.$inferType;
 }
 
@@ -68,7 +64,8 @@ export class BonehFranklinBLS12381Services extends IBEServers {
 	encryptBatched(
 		id: Uint8Array,
 		msgAndIndices: { msg: Uint8Array; index: number }[],
-		randomnessKey: Uint8Array,
+		baseKey: Uint8Array,
+		threshold: number,
 	): typeof IBEEncryptions.$inferType {
 		if (this.publicKeys.length === 0 || this.publicKeys.length !== msgAndIndices.length) {
 			throw new Error('Invalid public keys');
@@ -76,6 +73,13 @@ export class BonehFranklinBLS12381Services extends IBEServers {
 		const [r, nonce, keys] = encapBatched(this.publicKeys, id);
 		const encryptedShares = msgAndIndices.map(({ msg, index }, i) =>
 			xor(msg, kdf(keys[i], nonce, id, this.objectIds[i], index)),
+		);
+		const randomnessKey = deriveKey(
+			KeyPurpose.EncryptedRandomness,
+			baseKey,
+			encryptedShares,
+			threshold,
+			this.objectIds,
 		);
 		const encryptedRandomness = xor(randomnessKey, r.toBytes());
 
@@ -98,7 +102,7 @@ export class BonehFranklinBLS12381Services extends IBEServers {
 	 */
 	static verifyUserSecretKey(userSecretKey: G1Element, id: string, publicKey: G2Element): boolean {
 		const lhs = userSecretKey.pairing(G2Element.generator());
-		const rhs = G1Element.hashToCurve(fromHex(id)).pairing(publicKey);
+		const rhs = hashToG1(fromHex(id)).pairing(publicKey);
 		return lhs.equals(rhs);
 	}
 
@@ -135,7 +139,7 @@ function encapBatched(publicKeys: G2Element[], id: Uint8Array): [Scalar, G2Eleme
 	}
 	const r = Scalar.random();
 	const nonce = G2Element.generator().multiply(r);
-	const gid = G1Element.hashToCurve(id).multiply(r);
+	const gid = hashToG1(id).multiply(r);
 	return [r, nonce, publicKeys.map((public_key) => gid.pairing(public_key))];
 }
 

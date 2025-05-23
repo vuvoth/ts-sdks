@@ -25,7 +25,6 @@ import { decrypt } from '../../src/decrypt';
 import { KeyCacheKey } from '../../src/types';
 import { G1Element } from '../../src/bls12381';
 import { createFullId } from '../../src/utils';
-import { DST } from '../../src/ibe';
 
 /**
  * Helper function
@@ -242,7 +241,7 @@ describe('Integration test', () => {
 		const encryptedObject = EncryptedObject.parse(encryptedBytes);
 
 		// Map to the format used for the key cache
-		const fullId = createFullId(DST, TESTNET_PACKAGE_ID, whitelistId);
+		const fullId = createFullId(TESTNET_PACKAGE_ID, whitelistId);
 		const keys = new Map<KeyCacheKey, G1Element>();
 		derivedKeys.forEach((value, s) => {
 			keys.set(`${fullId}:${s}`, G1Element.fromBytes(fromHex(value.toString())));
