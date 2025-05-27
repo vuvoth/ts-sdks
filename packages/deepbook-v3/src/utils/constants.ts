@@ -244,4 +244,9 @@ export const mainnetPools: PoolMap = {
 		baseCoin: 'WAL',
 		quoteCoin: 'SUI',
 	},
+	XBTC_USDC: {
+		address: `0x20b9a3ec7a02d4f344aa1ebc5774b7b0ccafa9a5d76230662fdc0300bb215307`,
+		baseCoin: 'XBTC',
+		quoteCoin: 'USDC',
+	},
 };
