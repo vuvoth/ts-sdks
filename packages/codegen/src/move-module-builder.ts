@@ -246,7 +246,10 @@ export class MoveModuleBuilder extends FileBuilder {
 			const address = this.moduleDef.address_identifiers[moduleHandle.address];
 			const name = this.moduleDef.identifiers[handle.name];
 
-			return address === SUI_FRAMEWORK_ADDRESS && name === 'TxContext';
+			return (
+				normalizeSuiAddress(address) === normalizeSuiAddress(SUI_FRAMEWORK_ADDRESS) &&
+				name === 'TxContext'
+			);
 		}
 
 		return false;

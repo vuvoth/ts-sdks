@@ -21,6 +21,10 @@
 		"dist",
 		"src"
 	],
+	"bin": {
+		"sui-ts-codegen": "dist/cjs/bin/cli.js",
+		"__sui-ts-codegen_bash_complete": "dist/cjs/bin/bash-complete.js"
+	},
 	"scripts": {
 		"clean": "rm -rf tsconfig.tsbuildinfo ./dist",
 		"dev": "pnpm build --watch",
@@ -52,10 +56,11 @@
 		"vitest": "^3.1.1"
 	},
 	"dependencies": {
-		"@drizzle-team/brocli": "^0.11.0",
 		"@mysten/bcs": "workspace:*",
 		"@mysten/move-bytecode-template": "workspace:*",
 		"@mysten/sui": "workspace:*",
+		"@stricli/auto-complete": "^1.1.2",
+		"@stricli/core": "^1.1.2",
 		"@types/node": "^22.13.17",
 		"typescript": "^5.8.2"
 	}
