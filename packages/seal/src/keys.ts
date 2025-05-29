@@ -28,6 +28,8 @@ export async function fetchKeysForAllIds(
 	encKey: Uint8Array,
 	certificate: Certificate,
 	timeout: number,
+	apiKeyName?: string,
+	apiKey?: string,
 	signal?: AbortSignal,
 ): Promise<{ fullId: string; key: Uint8Array }[]> {
 	const encKeyPk = toPublicKey(encKey);
@@ -51,6 +53,7 @@ export async function fetchKeysForAllIds(
 			'Request-Id': requestId,
 			'Client-Sdk-Type': 'typescript',
 			'Client-Sdk-Version': PACKAGE_VERSION,
+			...(apiKeyName && apiKey ? { apiKeyName: apiKey } : {}),
 		},
 		body: JSON.stringify(body),
 		signal: combinedSignal,

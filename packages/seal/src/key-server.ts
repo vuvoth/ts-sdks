@@ -98,7 +98,12 @@ export async function retrieveKeyServers({
  * @param server - The KeyServer to verify.
  * @returns - True if the key server is valid, false otherwise.
  */
-export async function verifyKeyServer(server: KeyServer, timeout: number): Promise<boolean> {
+export async function verifyKeyServer(
+	server: KeyServer,
+	timeout: number,
+	apiKeyName?: string,
+	apiKey?: string,
+): Promise<boolean> {
 	const requestId = crypto.randomUUID();
 	const response = await fetch(server.url! + '/v1/service', {
 		method: 'GET',
@@ -107,6 +112,7 @@ export async function verifyKeyServer(server: KeyServer, timeout: number): Promi
 			'Request-Id': requestId,
 			'Client-Sdk-Type': 'typescript',
 			'Client-Sdk-Version': PACKAGE_VERSION,
+			...(apiKeyName && apiKey ? { apiKeyName: apiKey } : {}),
 		},
 		signal: AbortSignal.timeout(timeout),
 	});
