@@ -4,6 +4,7 @@
 import { fromBase64, fromHex, toBase64 } from '@mysten/bcs';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import { SuiGraphQLClient } from '@mysten/sui/graphql';
 import { Transaction } from '@mysten/sui/transactions';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 
@@ -156,6 +157,7 @@ describe('Integration test', () => {
 			packageId: TESTNET_PACKAGE_ID,
 			ttlMin: 10,
 			signer: keypair,
+			suiClient,
 		});
 
 		// decrypt the object encrypted to whitelist 1.
@@ -221,6 +223,7 @@ describe('Integration test', () => {
 			packageId: TESTNET_PACKAGE_ID,
 			ttlMin: 10,
 			signer: keypair,
+			suiClient,
 		});
 
 		const derivedKeys = await client.getDerivedKeys({
@@ -280,6 +283,7 @@ describe('Integration test', () => {
 			packageId: TESTNET_PACKAGE_ID,
 			ttlMin: 10,
 			signer: keypair,
+			suiClient,
 		});
 		// decrypt the object encrypted to whitelist 1.
 		const decryptedBytes = await client.seal.decrypt({
@@ -323,6 +327,7 @@ describe('Integration test', () => {
 			packageId: TESTNET_PACKAGE_ID,
 			ttlMin: 10,
 			signer: keypair,
+			suiClient,
 		});
 
 		// client with only 2 servers should suffice
@@ -399,6 +404,7 @@ describe('Integration test', () => {
 			address: wrongSuiAddress,
 			packageId: TESTNET_PACKAGE_ID,
 			ttlMin: 10,
+			suiClient: new SuiGraphQLClient({ url: 'https://sui-testnet.mystenlabs.com/graphql' }),
 		});
 		const sig = await keypair.signPersonalMessage(sessionKey.getPersonalMessage());
 		await expect(sessionKey.setPersonalMessageSignature(sig.signature)).rejects.toThrow(
@@ -411,6 +417,7 @@ describe('Integration test', () => {
 			packageId: TESTNET_PACKAGE_ID,
 			ttlMin: 10,
 			signer: keypair,
+			suiClient: new SuiGraphQLClient({ url: 'https://sui-testnet.mystenlabs.com/graphql' }),
 		});
 
 		const wrongTxBytes = await constructTxBytes(TESTNET_PACKAGE_ID, 'whitelist', suiClient, [
@@ -442,6 +449,7 @@ describe('Integration test', () => {
 			packageId: TESTNET_PACKAGE_ID,
 			ttlMin: 10,
 			signer: keypair,
+			suiClient: new SuiGraphQLClient({ url: 'https://sui-testnet.mystenlabs.com/graphql' }),
 		});
 		await expect(
 			client2.fetchKeys({
@@ -463,6 +471,7 @@ describe('Integration test', () => {
 			address: kp.getPublicKey().toSuiAddress(),
 			packageId: TESTNET_PACKAGE_ID,
 			ttlMin: 10,
+			suiClient: new SuiGraphQLClient({ url: 'https://sui-testnet.mystenlabs.com/graphql' }),
 		});
 		// Wrong signature set throws error.
 		const sig = await kp.signPersonalMessage(new TextEncoder().encode('hello'));
@@ -503,6 +512,7 @@ describe('Integration test', () => {
 			packageId: TESTNET_PACKAGE_ID,
 			ttlMin: 10,
 			signer: keypair,
+			suiClient: new SuiGraphQLClient({ url: 'https://sui-testnet.mystenlabs.com/graphql' }),
 		});
 
 		const whitelistId = '0xaae704d2280f2c3d24fc08972bb31f2ef1f1c968784935434c3296be5bfd9d5b';
