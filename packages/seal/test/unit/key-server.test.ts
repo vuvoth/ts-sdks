@@ -79,7 +79,7 @@ describe('key-server tests', () => {
 		});
 		vi.clearAllMocks();
 		const headers = new Headers();
-		headers.set('x-keyserver-version', '0.2.0');
+		headers.set('x-keyserver-version', '0.4.1');
 		global.fetch = vi.fn().mockImplementation(() => {
 			return Promise.resolve({
 				ok: true,

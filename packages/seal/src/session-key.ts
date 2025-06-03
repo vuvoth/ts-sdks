@@ -5,7 +5,7 @@ import { toBase64 } from '@mysten/bcs';
 import { bcs } from '@mysten/sui/bcs';
 import type { Signer } from '@mysten/sui/cryptography';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
-import { isValidSuiAddress, isValidSuiObjectId } from '@mysten/sui/utils';
+import { isValidNamedPackage, isValidSuiAddress, isValidSuiObjectId } from '@mysten/sui/utils';
 import { verifyPersonalMessageSignature } from '@mysten/sui/verify';
 import { generateSecretKey, toPublicKey, toVerificationKey } from './elgamal.js';
 import {
@@ -27,11 +27,13 @@ export type Certificate = {
 	creation_time: number;
 	ttl_min: number;
 	signature: string;
+	mvr_name?: string;
 };
 
 export type SessionKeyType = {
 	address: string;
 	packageId: string;
+	mvrName?: string;
 	creationTimeMs: number;
 	ttlMin: number;
 	personalMessageSignature?: string;
@@ -41,6 +43,7 @@ export type SessionKeyType = {
 export class SessionKey {
 	#address: string;
 	#packageId: string;
+	#mvrName?: string;
 	#creationTimeMs: number;
 	#ttlMin: number;
 	#sessionKey: Ed25519Keypair;
@@ -51,16 +54,21 @@ export class SessionKey {
 	constructor({
 		address,
 		packageId,
+		mvrName,
 		ttlMin,
 		signer,
 		suiClient,
 	}: {
 		address: string;
 		packageId: string;
+		mvrName?: string;
 		ttlMin: number;
 		signer?: Signer;
 		suiClient: ZkLoginCompatibleClient;
 	}) {
+		if (mvrName && !isValidNamedPackage(mvrName)) {
+			throw new UserError(`Invalid package name ${mvrName}`);
+		}
 		if (!isValidSuiObjectId(packageId) || !isValidSuiAddress(address)) {
 			throw new UserError(`Invalid package ID ${packageId} or address ${address}`);
 		}
@@ -74,6 +82,7 @@ export class SessionKey {
 
 		this.#address = address;
 		this.#packageId = packageId;
+		this.#mvrName = mvrName;
 		this.#creationTimeMs = Date.now();
 		this.#ttlMin = ttlMin;
 		this.#sessionKey = Ed25519Keypair.generate();
@@ -90,6 +99,13 @@ export class SessionKey {
 		return this.#address;
 	}
 
+	getPackageName(): string {
+		if (this.#mvrName) {
+			return this.#mvrName;
+		}
+		return this.#packageId;
+	}
+
 	getPackageId(): string {
 		return this.#packageId;
 	}
@@ -97,7 +113,7 @@ export class SessionKey {
 	getPersonalMessage(): Uint8Array {
 		const creationTimeUtc =
 			new Date(this.#creationTimeMs).toISOString().slice(0, 19).replace('T', ' ') + ' UTC';
-		const message = `Accessing keys of package ${this.#packageId} for ${this.#ttlMin} mins from ${creationTimeUtc}, session key ${toBase64(this.#sessionKey.getPublicKey().toRawBytes())}`;
+		const message = `Accessing keys of package ${this.getPackageName()} for ${this.#ttlMin} mins from ${creationTimeUtc}, session key ${toBase64(this.#sessionKey.getPublicKey().toRawBytes())}`;
 		return new TextEncoder().encode(message);
 	}
 
@@ -130,6 +146,7 @@ export class SessionKey {
 			creation_time: this.#creationTimeMs,
 			ttl_min: this.#ttlMin,
 			signature: this.#personalMessageSignature,
+			mvr_name: this.#mvrName,
 		};
 	}
 
@@ -158,6 +175,7 @@ export class SessionKey {
 		const obj = {
 			address: this.#address,
 			packageId: this.#packageId,
+			mvrName: this.#mvrName,
 			creationTimeMs: this.#creationTimeMs,
 			ttlMin: this.#ttlMin,
 			personalMessageSignature: this.#personalMessageSignature,
@@ -185,6 +203,7 @@ export class SessionKey {
 		const instance = new SessionKey({
 			address: data.address,
 			packageId: data.packageId,
+			mvrName: data.mvrName,
 			ttlMin: data.ttlMin,
 			signer,
 			suiClient,

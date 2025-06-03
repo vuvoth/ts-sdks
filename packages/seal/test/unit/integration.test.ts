@@ -262,6 +262,60 @@ describe('Integration test', () => {
 		expect(decryptedData).toEqual(data);
 	});
 
+	it('test getDerivedKeys with MVR name', { timeout: 12000 }, async () => {
+		// Both whitelists contain address 0xb743cafeb5da4914cef0cf0a32400c9adfedc5cdb64209f9e740e56d23065100
+		const packageId = '0xc5ce2742cac46421b62028557f1d7aea8a4c50f651379a79afdf12cd88628807';
+		const whitelistId = '0x61543d5b7692c36161fecb0e7bece1a4622b8514d5d17e6f216ac04f5423dccc';
+		const data = new Uint8Array([1, 2, 3]);
+		const mvrName = '@pkg/seal-demo-1234';
+
+		const client = new SealClient({
+			suiClient,
+			serverConfigs: objectIds,
+			verifyKeyServers: false,
+		});
+
+		const txBytes = await constructTxBytes(packageId, 'allowlist', suiClient, [whitelistId]);
+
+		const sessionKey = new SessionKey({
+			address: suiAddress,
+			packageId,
+			ttlMin: 10,
+			signer: keypair,
+			suiClient,
+			mvrName,
+		});
+
+		const derivedKeys = await client.getDerivedKeys({
+			id: whitelistId,
+			txBytes,
+			sessionKey,
+			threshold: 2,
+		});
+
+		expect(derivedKeys).toHaveLength(2);
+
+		const { encryptedObject: encryptedBytes } = await client.encrypt({
+			threshold: 2,
+			packageId,
+			id: whitelistId,
+			data,
+		});
+		const encryptedObject = EncryptedObject.parse(encryptedBytes);
+
+		// Map to the format used for the key cache
+		const fullId = createFullId(packageId, whitelistId);
+		const keys = new Map<KeyCacheKey, G1Element>();
+		derivedKeys.forEach((value, s) => {
+			keys.set(`${fullId}:${s}`, G1Element.fromBytes(fromHex(value.toString())));
+		});
+		const decryptedData = await decrypt({
+			encryptedObject,
+			keys,
+		});
+		expect(decryptedData).toEqual(data);
+	});
+
 	it('client extension', { timeout: 12000 }, async () => {
 		const whitelistId = '0xaae704d2280f2c3d24fc08972bb31f2ef1f1c968784935434c3296be5bfd9d5b';
 		const data = new Uint8Array([1, 2, 3]);
