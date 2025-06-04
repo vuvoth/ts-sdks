@@ -58,17 +58,17 @@
 	"homepage": "https://github.com/mystenlabs/ts-sdks#readme",
 	"devDependencies": {
 		"@mysten/build-scripts": "workspace:*",
-		"@types/node": "^22.13.17",
-		"dotenv": "^16.4.5",
-		"typescript": "^5.8.2",
-		"vitest": "^3.1.1"
+		"@types/node": "^22.15.29",
+		"dotenv": "^16.5.0",
+		"typescript": "^5.8.3",
+		"vitest": "^3.2.1"
 	},
 	"dependencies": {
 		"@google-cloud/kms": "^4.5.0",
 		"@mysten/ledgerjs-hw-app-sui": "workspace:*",
 		"@mysten/sui": "workspace:*",
-		"@noble/curves": "^1.8.1",
-		"@noble/hashes": "^1.7.1",
+		"@noble/curves": "^1.9.1",
+		"@noble/hashes": "^1.8.0",
 		"asn1-ts": "^8.0.2"
 	},
 	"engines": {

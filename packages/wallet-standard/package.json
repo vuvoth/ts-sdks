@@ -34,11 +34,11 @@
 	},
 	"dependencies": {
 		"@mysten/sui": "workspace:*",
-		"@wallet-standard/core": "1.1.0"
+		"@wallet-standard/core": "1.1.1"
 	},
 	"devDependencies": {
 		"@mysten/build-scripts": "workspace:*",
-		"typescript": "^5.8.2",
+		"typescript": "^5.8.3",
 		"typescript-json-schema": "^0.65.1"
 	}
 }

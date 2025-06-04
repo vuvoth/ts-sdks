@@ -46,22 +46,22 @@
 	"devDependencies": {
 		"@mysten/build-scripts": "workspace:*",
 		"@mysten/dapp-kit": "workspace:*",
-		"@tanstack/react-query": "^5.71.3",
-		"@types/node": "^22.13.17",
+		"@tanstack/react-query": "^5.80.2",
+		"@types/node": "^22.15.29",
 		"@types/react": "^18.3.3",
 		"@types/react-dom": "^18.3.0",
-		"@vitejs/plugin-react-swc": "^3.7.0",
+		"@vitejs/plugin-react-swc": "^3.10.1",
 		"react": "^18.3.1",
 		"react-dom": "^18.3.1",
-		"typescript": "^5.8.2",
-		"vite": "^6.2.5"
+		"typescript": "^5.8.3",
+		"vite": "^6.3.5"
 	},
 	"dependencies": {
 		"@mysten/signers": "workspace:*",
 		"@mysten/sui": "workspace:*",
 		"@mysten/wallet-standard": "workspace:*",
 		"@nanostores/react": "^1.0.0",
-		"idb-keyval": "^6.2.1",
+		"idb-keyval": "^6.2.2",
 		"mitt": "^3.0.1",
 		"nanostores": "^1.0.1"
 	},

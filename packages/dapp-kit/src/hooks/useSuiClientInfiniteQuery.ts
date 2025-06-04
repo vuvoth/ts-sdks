@@ -42,13 +42,7 @@ export type UseSuiClientInfiniteQueryOptions<
 	TData,
 > = PartialBy<
 	Omit<
-		UseInfiniteQueryOptions<
-			SuiRpcPaginatedMethods[T]['result'],
-			Error,
-			TData,
-			SuiRpcPaginatedMethods[T]['result'],
-			unknown[]
-		>,
+		UseInfiniteQueryOptions<SuiRpcPaginatedMethods[T]['result'], Error, TData, unknown[]>,
 		'queryFn' | 'initialPageParam' | 'getNextPageParam'
 	>,
 	'queryKey'

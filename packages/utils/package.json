@@ -45,10 +45,10 @@
 	"homepage": "https://github.com/MystenLabs/ts-sdks#readme",
 	"devDependencies": {
 		"@mysten/build-scripts": "workspace:*",
-		"typescript": "^5.8.2",
-		"vitest": "^3.1.1"
+		"typescript": "^5.8.3",
+		"vitest": "^3.2.1"
 	},
 	"dependencies": {
-		"@scure/base": "^1.2.4"
+		"@scure/base": "^1.2.6"
 	}
 }

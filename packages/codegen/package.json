@@ -53,7 +53,7 @@
 	"homepage": "https://github.com/mystenlabs/sui#readme",
 	"devDependencies": {
 		"@mysten/build-scripts": "workspace:*",
-		"vitest": "^3.1.1"
+		"vitest": "^3.2.1"
 	},
 	"dependencies": {
 		"@mysten/bcs": "workspace:*",
@@ -61,7 +61,7 @@
 		"@mysten/sui": "workspace:*",
 		"@stricli/auto-complete": "^1.1.2",
 		"@stricli/core": "^1.1.2",
-		"@types/node": "^22.13.17",
-		"typescript": "^5.8.2"
+		"@types/node": "^22.15.29",
+		"typescript": "^5.8.3"
 	}
 }
