@@ -41,8 +41,8 @@ export interface DeserializedModule {
 		module: number;
 		abilities: number;
 		type_parameters: Array<{
-			constraints: 0;
-			is_phantom: false;
+			constraints: number;
+			is_phantom: boolean;
 		}>;
 	}>;
 	function_handles: Array<{
@@ -51,8 +51,8 @@ export interface DeserializedModule {
 		parameters: number;
 		return_: number;
 		type_parameters: Array<{
-			constraints: 0;
-			is_phantom: false;
+			constraints: number;
+			is_phantom: boolean;
 		}>;
 	}>;
 	field_handles: Array<{

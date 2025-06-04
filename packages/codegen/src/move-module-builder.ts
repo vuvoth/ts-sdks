@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { FileBuilder } from './file-builder.js';
-import type { DeserializedModule, TypeSignature } from './types.js';
+import type { DeserializedModule, TypeSignature } from './types/deserialized.js';
 import { readFile } from 'node:fs/promises';
 import { deserialize } from '@mysten/move-bytecode-template';
 import { normalizeSuiAddress, SUI_FRAMEWORK_ADDRESS } from '@mysten/sui/utils';

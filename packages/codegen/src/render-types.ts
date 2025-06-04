@@ -3,7 +3,7 @@
 
 import { normalizeSuiAddress } from '@mysten/sui/utils';
 
-import type { DeserializedModule, TypeSignature } from './types.js';
+import type { DeserializedModule, TypeSignature } from './types/deserialized.js';
 
 const MOVE_STDLIB_ADDRESS = normalizeSuiAddress('0x1');
 const SUI_FRAMEWORK_ADDRESS = normalizeSuiAddress('0x2');
