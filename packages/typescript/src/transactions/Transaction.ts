@@ -166,6 +166,7 @@ export class Transaction {
 
 		tx.#inputSection = tx.#data.inputs.slice();
 		tx.#commandSection = tx.#data.commands.slice();
+		tx.#availableResults = new Set(tx.#commandSection.map((_, i) => i));
 
 		return tx;
 	}
@@ -191,6 +192,7 @@ export class Transaction {
 
 		newTransaction.#inputSection = newTransaction.#data.inputs.slice();
 		newTransaction.#commandSection = newTransaction.#data.commands.slice();
+		newTransaction.#availableResults = new Set(newTransaction.#commandSection.map((_, i) => i));
 
 		return newTransaction;
 	}
@@ -769,6 +771,7 @@ export class Transaction {
 		this.#data.inputs = orderedInputs;
 		this.#commandSection = filteredCommands;
 		this.#inputSection = orderedInputs;
+		this.#availableResults = new Set(filteredCommands.map((_, i) => i));
 
 		function getOriginalIndex(index: number): number {
 			const command = unorderedCommands[index];
