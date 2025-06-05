@@ -11,7 +11,7 @@ import { Transaction } from '@mysten/sui/transactions';
 const tx = new Transaction();
 ```
 
-You can then add transactions to the transaction .
+You can then add commands to the transaction .
 
 ```tsx
 // create a new coin with balance 100, based on the coins used as gas payment
@@ -22,8 +22,8 @@ const [coin] = tx.splitCoins(tx.gas, [100]);
 tx.transferObjects([coin], '0xSomeSuiAddress');
 ```
 
-You can attach multiple transactions of the same type to a transaction, as well. For example, to get
-a list of transfers and iterate over them to transfer coins to each of them:
+You can attach multiple commands of the same type to a transaction, as well. For example, to get a
+list of transfers and iterate over them to transfer coins to each of them:
 
 ```tsx
 interface Transfer {
@@ -42,7 +42,7 @@ const coins = tx.splitCoins(
 	transfers.map((transfer) => transfer.amount),
 );
 
-// next, create a transfer transaction for each coin
+// next, create a transfer command for each coin
 transfers.forEach((transfer, index) => {
 	tx.transferObjects([coins[index]], transfer.to);
 });
@@ -84,11 +84,11 @@ of the transaction.
 
 ## Transactions
 
-Programmable Transactions have two key concepts: inputs and transactions.
+Programmable Transactions have two key concepts: inputs and commands.
 
-Transactions are steps of execution in the transaction. Each Transaction in a Transaction takes a
-set of inputs, and produces results. The inputs for a transaction depend on the kind of transaction.
-Sui supports following transactions:
+Commands are steps of execution in the transaction. Each command in a Transaction takes a set of
+inputs, and produces results. The inputs for a transaction depend on the kind of command. Sui
+supports following commands:
 
 - `tx.splitCoins(coin, amounts)` - Creates new coins with the defined amounts, split from the
   provided coin. Returns the coins so that it can be used in subsequent transactions.
@@ -107,16 +107,16 @@ Sui supports following transactions:
 - `tx.publish(modules, dependencies)` - Publishes a Move package. Returns the upgrade capability
   object.
 
-## Passing inputs to a transaction
+## Passing inputs to a command
 
-Transaction inputs can be provided in a number of different ways, depending on the transaction, and
-the type of value being provided.
+Command inputs can be provided in a number of different ways, depending on the command, and the type
+of value being provided.
 
 #### JavaScript values
 
-For specific transaction arguments (`amounts` in `splitCoins`, and `address` in `transferObjects`)
-the expected type is known ahead of time, and you can directly pass raw javascript values when
-calling the transaction method. appropriate Move type automatically.
+For specific command arguments (`amounts` in `splitCoins`, and `address` in `transferObjects`) the
+expected type is known ahead of time, and you can directly pass raw javascript values when calling
+the command method. appropriate Move type automatically.
 
 ```ts
 // the amount to split off the gas coin is provided as a pure javascript number
@@ -239,8 +239,8 @@ tx.object.option({
 
 #### Transaction results
 
-You can also use the result of a transaction as an argument in a subsequent transactions. Each
-transaction method on the transaction builder returns a reference to the transaction result.
+You can also use the result of a command as an argument in a subsequent commands. Each method on the
+transaction builder returns a reference to the transaction result.
 
 ```tsx
 // split a coin object off of the gas object
@@ -249,8 +249,8 @@ const [coin] = tx.splitCoins(tx.gas, [100]);
 tx.transferObjects([coin], address);
 ```
 
-When a transaction returns multiple results, you can access the result at a specific index either
-using destructuring, or array indexes.
+When a command returns multiple results, you can access the result at a specific index either using
+destructuring, or array indexes.
 
 ```tsx
 // destructuring (preferred, as it gives you logical local names)
