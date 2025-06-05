@@ -10,10 +10,11 @@ import { verifyPersonalMessageSignature } from '@mysten/sui/verify';
 import { generateSecretKey, toPublicKey, toVerificationKey } from './elgamal.js';
 import {
 	ExpiredSessionKeyError,
+	InvalidPackageError,
 	InvalidPersonalMessageSignatureError,
 	UserError,
 } from './error.js';
-import type { ZkLoginCompatibleClient } from '@mysten/sui/zklogin';
+import type { SealCompatibleClient } from './types.js';
 
 export const RequestFormat = bcs.struct('RequestFormat', {
 	ptb: bcs.vector(bcs.U8),
@@ -49,8 +50,11 @@ export class SessionKey {
 	#sessionKey: Ed25519Keypair;
 	#personalMessageSignature?: string;
 	#signer?: Signer;
-	#suiClient: ZkLoginCompatibleClient;
+	#suiClient: SealCompatibleClient;
 
+	/**
+	 * @deprecated - Use `await SessionKey.create()` instead.
+	 */
 	constructor({
 		address,
 		packageId,
@@ -64,7 +68,7 @@ export class SessionKey {
 		mvrName?: string;
 		ttlMin: number;
 		signer?: Signer;
-		suiClient: ZkLoginCompatibleClient;
+		suiClient: SealCompatibleClient;
 	}) {
 		if (mvrName && !isValidNamedPackage(mvrName)) {
 			throw new UserError(`Invalid package name ${mvrName}`);
@@ -78,7 +82,6 @@ export class SessionKey {
 		if (signer && signer.getPublicKey().toSuiAddress() !== address) {
 			throw new UserError('Signer address does not match session key address');
 		}
-		// TODO: Verify that the given package is the first version of the package.
 
 		this.#address = address;
 		this.#packageId = packageId;
@@ -90,6 +93,32 @@ export class SessionKey {
 		this.#suiClient = suiClient;
 	}
 
+	static async create({
+		address,
+		packageId,
+		ttlMin,
+		signer,
+		suiClient,
+	}: {
+		address: string;
+		packageId: string;
+		ttlMin: number;
+		signer?: Signer;
+		suiClient: SealCompatibleClient;
+	}): Promise<SessionKey> {
+		const packageObj = await suiClient.core.getObject({ objectId: packageId });
+		if (String(packageObj.object.version) !== '1') {
+			throw new InvalidPackageError(`Package ${packageId} is not the first version`);
+		}
+
+		return new SessionKey({
+			address,
+			packageId,
+			ttlMin,
+			signer,
+			suiClient,
+		});
+	}
 	isExpired(): boolean {
 		// Allow 10 seconds for clock skew
 		return this.#creationTimeMs + this.#ttlMin * 60 * 1000 - 10_000 < Date.now();
@@ -197,7 +226,7 @@ export class SessionKey {
 	 */
 	static import(
 		data: SessionKeyType,
-		suiClient: ZkLoginCompatibleClient,
+		suiClient: SealCompatibleClient,
 		signer?: Signer,
 	): SessionKey {
 		const instance = new SessionKey({
