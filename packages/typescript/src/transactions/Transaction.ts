@@ -43,8 +43,16 @@ export type AsyncTransactionThunk<
 	T extends TransactionResultArgument | void = TransactionResultArgument | void,
 > = (tx: Transaction) => Promise<T | void>;
 
-function createTransactionResult(index: number, length = Infinity): TransactionResult {
-	const baseResult = { $kind: 'Result' as const, Result: index };
+function createTransactionResult(
+	index: number | (() => number),
+	length = Infinity,
+): TransactionResult {
+	const baseResult = {
+		$kind: 'Result' as const,
+		get Result() {
+			return typeof index === 'function' ? index() : index;
+		},
+	};
 
 	const nestedResults: {
 		$kind: 'NestedResult';
@@ -58,7 +66,9 @@ function createTransactionResult(index: number, length = Infinity): TransactionR
 	} =>
 		(nestedResults[resultIndex] ??= {
 			$kind: 'NestedResult' as const,
-			NestedResult: [index, resultIndex],
+			get NestedResult() {
+				return [typeof index === 'function' ? index() : index, resultIndex] as [number, number];
+			},
 		});
 
 	return new Proxy(baseResult, {
@@ -454,6 +464,7 @@ export class Transaction {
 					name: 'AsyncTransactionThunk',
 					inputs: {},
 					data: {
+						resultIndex: this.#data.commands.length,
 						result: null as TransactionResult | null,
 					},
 				},
@@ -464,7 +475,7 @@ export class Transaction {
 					placeholder.$Intent.data.result = result;
 				}),
 			);
-			const txResult = createTransactionResult(this.#data.commands.length - 1);
+			const txResult = createTransactionResult(() => placeholder.$Intent.data.resultIndex);
 			this.#added.set(command, txResult);
 			return txResult;
 		} else {
@@ -815,6 +826,16 @@ export class Transaction {
 
 			return arg;
 		});
+
+		for (const [i, cmd] of unorderedCommands.entries()) {
+			if (cmd.$Intent?.name === 'AsyncTransactionThunk') {
+				try {
+					cmd.$Intent.data.resultIndex = getOriginalIndex(i);
+				} catch (e) {
+					// If async thunk did not return a result, this will error, but is safe to ignore
+				}
+			}
+		}
 	}
 
 	async prepareForSerialization(options: SerializeTransactionOptions) {

@@ -1091,7 +1091,7 @@ describe('Transaction.add with async functions', () => {
 			      "TransferObjects": {
 			        "objects": [
 			          {
-			            "Result": 1
+			            "Result": 0
 			          }
 			        ],
 			        "address": {
@@ -1128,7 +1128,7 @@ describe('Transaction.add with async functions', () => {
 
 		const restoredTransaction = Transaction.from(json);
 
-		restoredTransaction.transferObjects([result, { Result: 0 }], '0x0');
+		restoredTransaction.transferObjects([result, result[1], { Result: 0 }], '0x0');
 
 		restoredTransaction.moveCall({
 			target: '0x1::test::another_call',
@@ -1176,7 +1176,13 @@ describe('Transaction.add with async functions', () => {
 			      "TransferObjects": {
 			        "objects": [
 			          {
-			            "Result": 1
+			            "Result": 0
+			          },
+			          {
+			            "NestedResult": [
+			              0,
+			              1
+			            ]
 			          },
 			          {
 			            "Result": 0
@@ -1215,7 +1221,7 @@ describe('Transaction.add with async functions', () => {
 
 		const restoredTransaction = Transaction.fromKind(bytes);
 
-		restoredTransaction.transferObjects([result, { Result: 0 }], '0x0');
+		restoredTransaction.transferObjects([result, result[1], { Result: 0 }], '0x0');
 
 		restoredTransaction.moveCall({
 			target: '0x1::test::another_call',
@@ -1254,7 +1260,13 @@ describe('Transaction.add with async functions', () => {
 			      "TransferObjects": {
 			        "objects": [
 			          {
-			            "Result": 1
+			            "Result": 0
+			          },
+			          {
+			            "NestedResult": [
+			              0,
+			              1
+			            ]
 			          },
 			          {
 			            "Result": 0
