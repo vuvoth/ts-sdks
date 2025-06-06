@@ -4,22 +4,62 @@
 import '@webcomponents/scoped-custom-element-registry';
 
 import { ScopedRegistryHost } from '@lit-labs/scoped-registry-mixin';
-import { html } from 'lit';
-import { customElement } from 'lit/decorators.js';
+import { html, nothing } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
 import { storeProperty } from '../utils/lit.js';
 import { WalletList } from './internal/wallet-list.js';
 import { getDefaultInstance } from '../core/index.js';
 import type { DAppKit } from '../core/index.js';
 import { BaseModal } from './internal/base-modal.js';
+import type { UiWallet } from '@wallet-standard/ui';
+import { closeIcon } from './internal/icons/close-icon.js';
+import { backIcon } from './internal/icons/back-icon.js';
+import type { WalletSelectedEvent } from './internal/wallet-list-item.js';
+import { ConnectionStatus } from './internal/connection-status.js';
+import {
+	isWalletStandardError,
+	WALLET_STANDARD_ERROR__USER__REQUEST_REJECTED,
+} from '@mysten/wallet-standard';
+import { styles } from './dapp-kit-connect-modal.styles.js';
+import { Button } from './internal/button.js';
+import { iconButtonStyles } from './styles/icon-button.js';
+
+type ModalViewState =
+	| { view: 'wallet-selection' }
+	| { view: 'connecting'; wallet: UiWallet }
+	| { view: 'error'; wallet: UiWallet; error: unknown };
+
+export type DAppKitConnectModalOptions = {
+	filterFn?: (value: UiWallet, index: number, array: UiWallet[]) => boolean;
+	sortFn?: (a: UiWallet, b: UiWallet) => number;
+};
 
 @customElement('mysten-dapp-kit-connect-modal')
-export class DAppKitConnectModal extends ScopedRegistryHost(BaseModal) {
+export class DAppKitConnectModal
+	extends ScopedRegistryHost(BaseModal)
+	implements DAppKitConnectModalOptions
+{
+	static override styles = [styles, iconButtonStyles];
+
 	static elementDefinitions = {
 		'wallet-list': WalletList,
+		'internal-button': Button,
+		'connection-status': ConnectionStatus,
 	};
 
 	@storeProperty()
 	instance?: DAppKit;
+
+	@state()
+	private _state: ModalViewState = { view: 'wallet-selection' };
+
+	@property({ attribute: false })
+	filterFn: DAppKitConnectModalOptions['filterFn'];
+
+	@property({ attribute: false })
+	sortFn?: DAppKitConnectModalOptions['sortFn'];
+
+	#abortController?: AbortController;
 
 	override connectedCallback() {
 		super.connectedCallback();
@@ -27,14 +67,144 @@ export class DAppKitConnectModal extends ScopedRegistryHost(BaseModal) {
 	}
 
 	override render() {
-		return html`<dialog @click=${this.handleDialogClick}>
-			<div @click=${this.handleContentClick}>
-				<div>
-					hello
-					<button @click=${this.close}>cancel</button>
+		const showBackButton = this._state.view === 'connecting' || this._state.view === 'error';
+		const wallets = this.#getWallets();
+
+		return html`<dialog @click=${this.handleDialogClick} @close=${this.#resetSelection}>
+			<div class="content" @click=${this.handleContentClick}>
+				<div class="connect-header">
+					${showBackButton
+						? html`<button
+								class="icon-button back-button"
+								aria-label="Go back"
+								@click=${this.#resetSelection}
+							>
+								${backIcon}
+							</button>`
+						: nothing}
+					<h2 class="title">${this.#getModalTitle(wallets)}</h2>
+					<button
+						class="icon-button close-button"
+						aria-label="Close"
+						@click=${() => this.close('cancel')}
+					>
+						${closeIcon}
+					</button>
 				</div>
+				${this.#renderModalView(wallets)}
 			</div>
 		</dialog>`;
+	}
+
+	#renderModalView(wallets: UiWallet[]) {
+		switch (this._state.view) {
+			case 'wallet-selection':
+				return html`<wallet-list
+					.wallets=${wallets}
+					@wallet-selected=${async (event: WalletSelectedEvent) => {
+						this.#attemptConnect(event.detail.wallet);
+					}}
+				></wallet-list>`;
+			case 'connecting':
+				return html`<connection-status
+					.title=${'Awaiting your approval...'}
+					.copy=${`Accept the request from ${this._state.wallet.name} in order to proceed.`}
+					.wallet=${this._state.wallet}
+				>
+					<internal-button
+						slot="call-to-action"
+						.variant=${'secondary'}
+						@click=${this.#resetSelection}
+					>
+						Cancel
+					</internal-button>
+				</connection-status>`;
+			case 'error':
+				const { wallet, error } = this._state;
+				const wasRequestCancelled = isWalletStandardError(
+					error,
+					WALLET_STANDARD_ERROR__USER__REQUEST_REJECTED,
+				);
+
+				return html`<connection-status
+					.title=${wasRequestCancelled ? 'Request canceled' : 'Connection failed'}
+					.copy=${wasRequestCancelled
+						? `You canceled the request.`
+						: 'Something went wrong. Please try again.'}
+					.wallet=${wallet}
+				>
+					<internal-button
+						slot="call-to-action"
+						@click=${() => {
+							this.#attemptConnect(wallet);
+						}}
+					>
+						Retry
+					</internal-button>
+				</connection-status>`;
+			default:
+				throw new Error(`Encountered unknown view state: ${this._state}`);
+		}
+	}
+
+	#getModalTitle(wallets: UiWallet[]) {
+		switch (this._state.view) {
+			case 'wallet-selection':
+				return wallets.length > 0 ? 'Connect a Wallet' : 'No Wallets Installed';
+			case 'connecting':
+			case 'error':
+				return this._state.wallet.name;
+			default:
+				throw new Error(`Encountered unknown view state: ${this._state}`);
+		}
+	}
+
+	async #attemptConnect(wallet: UiWallet) {
+		let delayTimeout: number | undefined;
+
+		try {
+			const abortPromise = new Promise((_, reject) => {
+				this.#abortController = new AbortController();
+				this.#abortController.signal.addEventListener(
+					'abort',
+					() => reject(new DOMException('Aborted', 'AbortError')),
+					{ once: true },
+				);
+			});
+
+			// Connection attempts can sometimes be instantaneous when accounts are
+			// already authorized or the wallet isn't setup yet, so we'll introduce
+			// a tiny delay to prevent the UI flickering on the loading state.
+			delayTimeout = setTimeout(() => {
+				this._state = { view: 'connecting', wallet };
+			}, 100);
+
+			await Promise.race([abortPromise, this.instance!.connectWallet({ wallet })]);
+			this.close('successful-connection');
+		} catch (error) {
+			if (error instanceof Error && error.name === 'AbortError') {
+				this._state = { view: 'wallet-selection' };
+			} else {
+				this._state = { view: 'error', wallet, error };
+			}
+		} finally {
+			clearTimeout(delayTimeout);
+		}
+	}
+
+	#resetSelection() {
+		if (this._state.view === 'connecting') {
+			this.#abortController?.abort('cancelled');
+		} else {
+			this._state = { view: 'wallet-selection' };
+		}
+	}
+
+	#getWallets() {
+		const wallets = this.instance!.stores.$wallets.get();
+		const filtered = this.filterFn ? wallets.filter(this.filterFn) : wallets;
+		const sorted = this.sortFn ? filtered.toSorted(this.sortFn) : filtered;
+		return sorted;
 	}
 }
 

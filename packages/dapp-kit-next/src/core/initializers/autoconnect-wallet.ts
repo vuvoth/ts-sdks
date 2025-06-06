@@ -20,27 +20,29 @@ export function autoConnectWallet({
 	storageKey: string;
 }) {
 	onMount($compatibleWallets, () => {
-		return $compatibleWallets.listen(async (wallets, oldWallets) => {
-			if (oldWallets.length > wallets.length) return;
+		return $compatibleWallets.listen(
+			async (wallets, oldWallets: readonly UiWallet[] | undefined) => {
+				if (oldWallets && oldWallets.length > wallets.length) return;
 
-			const connection = $baseConnection.get();
-			if (connection.status !== 'disconnected') return;
+				const connection = $baseConnection.get();
+				if (connection.status !== 'disconnected') return;
 
-			const savedWalletAccount = await task(() => {
-				return getSavedWalletAccount({
-					storage,
-					storageKey,
-					wallets,
+				const savedWalletAccount = await task(() => {
+					return getSavedWalletAccount({
+						storage,
+						storageKey,
+						wallets,
+					});
 				});
-			});
 
-			if (savedWalletAccount) {
-				$baseConnection.set({
-					status: 'connected',
-					currentAccount: savedWalletAccount,
-				});
-			}
-		});
+				if (savedWalletAccount) {
+					$baseConnection.set({
+						status: 'connected',
+						currentAccount: savedWalletAccount,
+					});
+				}
+			},
+		);
 	});
 }
 
