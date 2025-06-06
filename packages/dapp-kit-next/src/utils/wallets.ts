@@ -9,8 +9,7 @@ import {
 	WALLET_STANDARD_ERROR__FEATURES__WALLET_ACCOUNT_CHAIN_UNSUPPORTED,
 	WalletStandardError,
 } from '@mysten/wallet-standard';
-import type { Wallet } from '@mysten/wallet-standard';
-import type { UiWallet, UiWalletAccount } from '@wallet-standard/ui';
+import type { UiWallet, UiWalletAccount, UiWalletHandle } from '@wallet-standard/ui';
 import { getWalletAccountFeature, uiWalletAccountBelongsToUiWallet } from '@wallet-standard/ui';
 import { getWalletForHandle_DO_NOT_USE_OR_YOU_WILL_BE_FIRED as getWalletForHandle } from '@wallet-standard/ui-registry';
 import { ChainNotSupportedError, DAppKitError, FeatureNotSupportedError } from './errors.js';
@@ -30,8 +29,8 @@ export function getAssociatedWalletOrThrow(account: UiWalletAccount, wallets: Ui
 	return wallet;
 }
 
-export function getWalletUniqueIdentifier(wallet: UiWallet | Wallet) {
-	const underlyingWallet = '~uiWalletHandle' in wallet ? getWalletForHandle(wallet) : wallet;
+export function getWalletUniqueIdentifier(walletHandle: UiWalletHandle) {
+	const underlyingWallet = getWalletForHandle(walletHandle);
 	return underlyingWallet.id ?? underlyingWallet.name;
 }
 

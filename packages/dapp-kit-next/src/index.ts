@@ -7,3 +7,5 @@ export { createDAppKit, getDefaultInstance } from './core/index.js';
 export type { DAppKit } from './core/index.js';
 
 export type { StateStorage } from './utils/storage.js';
+
+export { getWalletUniqueIdentifier } from './utils/wallets.js';

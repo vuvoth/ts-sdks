@@ -5,7 +5,6 @@ import { onMount } from 'nanostores';
 import type { DAppKitStores } from '../store.js';
 import type { StateStorage } from '../../utils/storage.js';
 import type { UiWalletAccount } from '@wallet-standard/ui';
-import { getWalletForHandle_DO_NOT_USE_OR_YOU_WILL_BE_FIRED as getWalletForHandle } from '@wallet-standard/ui-registry';
 import { getWalletUniqueIdentifier } from '../../utils/wallets.js';
 
 /**
@@ -32,7 +31,6 @@ export function syncStateToStorage({
 }
 
 export function getSavedAccountStorageKey(account: UiWalletAccount) {
-	const underlyingWallet = getWalletForHandle(account);
-	const walletIdentifier = getWalletUniqueIdentifier(underlyingWallet);
+	const walletIdentifier = getWalletUniqueIdentifier(account);
 	return `${walletIdentifier.replace(':', '_')}:${account.address}`;
 }
