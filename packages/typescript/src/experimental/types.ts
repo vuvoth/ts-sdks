@@ -260,6 +260,25 @@ export namespace Experimental_SuiClientTypes {
 		) => Promise<ZkLoginVerifyResponse>;
 	}
 
+	/** Name service methods */
+	export interface ResolveNameServiceNamesOptions extends CoreClientMethodOptions {
+		address: string;
+		cursor?: string | null | undefined;
+		limit?: number | null | undefined;
+	}
+
+	export interface ResolveNameServiceNamesResponse {
+		data: string[];
+		hasNextPage: boolean;
+		nextCursor: string | null;
+	}
+
+	export interface TransportMethods {
+		resolveNameServiceNames?: (
+			options: ResolveNameServiceNamesOptions,
+		) => Promise<ResolveNameServiceNamesResponse>;
+	}
+
 	/** ObjectOwner types */
 
 	export interface AddressOwner {

@@ -250,6 +250,12 @@ export class JSONRpcTransport extends Experimental_CoreClient {
 		};
 	}
 
+	resolveNameServiceNames(
+		options: Experimental_SuiClientTypes.ResolveNameServiceNamesOptions,
+	): Promise<Experimental_SuiClientTypes.ResolveNameServiceNamesResponse> {
+		return this.#jsonRpcClient.resolveNameServiceNames(options);
+	}
+
 	resolveTransactionPlugin() {
 		return resolveTransactionPlugin(this.#jsonRpcClient);
 	}

@@ -5368,6 +5368,15 @@ export type GetReferenceGasPriceQueryVariables = Exact<{ [key: string]: never; }
 
 export type GetReferenceGasPriceQuery = { __typename?: 'Query', epoch?: { __typename?: 'Epoch', referenceGasPrice?: any | null } | null };
 
+export type ResolveNameServiceNamesQueryVariables = Exact<{
+  address: Scalars['SuiAddress']['input'];
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  cursor?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type ResolveNameServiceNamesQuery = { __typename?: 'Query', address?: { __typename?: 'Address', suinsRegistrations: { __typename?: 'SuinsRegistrationConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'SuinsRegistration', domain: string }> } } | null };
+
 export type GetOwnedObjectsQueryVariables = Exact<{
   owner: Scalars['SuiAddress']['input'];
   limit?: InputMaybe<Scalars['Int']['input']>;
@@ -5758,6 +5767,21 @@ export const GetReferenceGasPriceDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GetReferenceGasPriceQuery, GetReferenceGasPriceQueryVariables>;
+export const ResolveNameServiceNamesDocument = new TypedDocumentString(`
+    query resolveNameServiceNames($address: SuiAddress!, $limit: Int, $cursor: String) {
+  address(address: $address) {
+    suinsRegistrations(first: $limit, after: $cursor) {
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      nodes {
+        domain
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<ResolveNameServiceNamesQuery, ResolveNameServiceNamesQueryVariables>;
 export const GetOwnedObjectsDocument = new TypedDocumentString(`
     query getOwnedObjects($owner: SuiAddress!, $limit: Int, $cursor: String, $filter: ObjectFilter) {
   address(address: $owner) {

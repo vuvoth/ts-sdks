@@ -20,6 +20,7 @@ import {
 	GetReferenceGasPriceDocument,
 	GetTransactionBlockDocument,
 	MultiGetObjectsDocument,
+	ResolveNameServiceNamesDocument,
 	VerifyZkLoginSignatureDocument,
 	ZkLoginIntentScope,
 } from '../../graphql/generated/queries.js';
@@ -339,6 +340,29 @@ export class GraphQLTransport extends Experimental_CoreClient {
 		return {
 			success: result.success,
 			errors: result.errors,
+		};
+	}
+
+	async resolveNameServiceNames(
+		options: Experimental_SuiClientTypes.ResolveNameServiceNamesOptions,
+	): Promise<Experimental_SuiClientTypes.ResolveNameServiceNamesResponse> {
+		const suinsRegistrations = await this.#graphqlQuery(
+			{
+				query: ResolveNameServiceNamesDocument,
+				signal: options.signal,
+				variables: {
+					address: options.address,
+					cursor: options.cursor,
+					limit: options.limit,
+				},
+			},
+			(result) => result.address?.suinsRegistrations,
+		);
+
+		return {
+			hasNextPage: suinsRegistrations.pageInfo.hasNextPage,
+			nextCursor: suinsRegistrations.pageInfo.endCursor ?? null,
+			data: suinsRegistrations.nodes.map((node) => node.domain) ?? [],
 		};
 	}
 
