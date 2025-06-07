@@ -79,9 +79,8 @@ const walletAccountFeatures = [
 	'sui:signAndExecuteTransactionBlock',
 ] as const;
 
-async function getAccountsFromSession(session: string) {
-	const { payload } = await decodeJwtSession(session);
-
+function getAccountsFromSession(session: string) {
+	const { payload } = decodeJwtSession(session);
 	return payload.accounts.map((account) => {
 		return new ReadonlyWalletAccount({
 			address: account.address,
@@ -176,7 +175,7 @@ export class SlushWallet implements Wallet {
 		metadata: WalletMetadata;
 	}) {
 		this.#id = metadata.id;
-		this.#accounts = [];
+		this.#accounts = this.#getPreviouslyAuthorizedAccounts();
 		this.#events = mitt();
 		this.#origin = origin || DEFAULT_SLUSH_ORIGIN;
 		this.#name = name;
@@ -279,16 +278,6 @@ export class SlushWallet implements Wallet {
 
 	#connect: StandardConnectMethod = async (input) => {
 		if (input?.silent) {
-			try {
-				const accounts = await getAccountsFromSession(getSessionFromStorage());
-
-				if (accounts.length) {
-					this.#setAccounts(accounts);
-				}
-			} catch (error) {
-				// Do nothing
-			}
-
 			return { accounts: this.accounts };
 		}
 
@@ -298,10 +287,18 @@ export class SlushWallet implements Wallet {
 		});
 
 		setSessionToStorage(response.session);
-		this.#setAccounts(await getAccountsFromSession(response.session));
+		this.#setAccounts(getAccountsFromSession(response.session));
 
 		return { accounts: this.accounts };
 	};
+
+	#getPreviouslyAuthorizedAccounts() {
+		try {
+			return getAccountsFromSession(getSessionFromStorage());
+		} catch (error) {
+			return [];
+		}
+	}
 
 	#disconnect: StandardDisconnectMethod = async () => {
 		localStorage.removeItem(SLUSH_SESSION_KEY);
