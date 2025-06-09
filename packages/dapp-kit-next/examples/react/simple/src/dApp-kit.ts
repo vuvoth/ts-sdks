@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { createDAppKit } from '@mysten/dapp-kit-next';
+import { createDAppKit } from '@mysten/dapp-kit-react';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 
 export const dAppKit = createDAppKit({
@@ -12,7 +12,7 @@ export const dAppKit = createDAppKit({
 	},
 });
 
-declare module '@mysten/dapp-kit-next' {
+declare module '@mysten/dapp-kit-react' {
 	interface Register {
 		dAppKit: typeof dAppKit;
 	}

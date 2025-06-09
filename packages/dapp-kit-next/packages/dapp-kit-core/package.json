@@ -1,5 +1,5 @@
 {
-	"name": "@mysten/dapp-kit-next",
+	"name": "@mysten/dapp-kit-core",
 	"author": "Mysten Labs <build@mystenlabs.com>",
 	"description": "Framework-agnostic toolkit for building decentralized applications on Sui.",
 	"homepage": "https://sdk.mystenlabs.com/typescript",

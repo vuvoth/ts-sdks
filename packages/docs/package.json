@@ -17,7 +17,8 @@
 	"dependencies": {
 		"@mysten/bcs": "workspace:*",
 		"@mysten/dapp-kit": "workspace:*",
-		"@mysten/dapp-kit-next": "workspace:*",
+		"@mysten/dapp-kit-core": "workspace:*",
+		"@mysten/dapp-kit-react": "workspace:*",
 		"@mysten/deepbook": "workspace:*",
 		"@mysten/deepbook-v3": "workspace:*",
 		"@mysten/enoki": "workspace:*",
