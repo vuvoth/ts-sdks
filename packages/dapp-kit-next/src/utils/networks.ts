@@ -1,12 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import type {
-	Experimental_BaseClient,
-	Experimental_SuiClientTypes,
-} from '@mysten/sui/experimental';
+import type { Experimental_SuiClientTypes } from '@mysten/sui/experimental';
 import type { IdentifierString } from '@mysten/wallet-standard';
 import { DAppKitError } from './errors.js';
+import type { DAppKitCompatibleClient } from '../core/types.js';
 
 type NonEmptyArray<T> = readonly [T, ...T[]] | readonly [...T[], T] | readonly [T, ...T[], T];
 
@@ -18,13 +16,13 @@ export function getChain(network: Experimental_SuiClientTypes.Network): Identifi
 
 export function createNetworkConfig<TNetworks extends Networks>(
 	networks: TNetworks,
-	createClient: (network: TNetworks[number]) => Experimental_BaseClient,
+	createClient: (network: TNetworks[number]) => DAppKitCompatibleClient,
 ) {
 	if (networks.length === 0) {
 		throw new DAppKitError('You must specify at least one Sui network for your application.');
 	}
 
-	const networkConfig = new Map<TNetworks[number], Experimental_BaseClient>();
+	const networkConfig = new Map<TNetworks[number], DAppKitCompatibleClient>();
 	function getClient<T extends TNetworks[number]>(network: T | TNetworks[number]) {
 		if (networkConfig.has(network)) {
 			return networkConfig.get(network)!;

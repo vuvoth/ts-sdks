@@ -7,7 +7,7 @@ import { getChain } from '../utils/networks.js';
 import type { Networks } from '../utils/networks.js';
 import { getAssociatedWalletOrThrow, requiredWalletFeatures } from '../utils/wallets.js';
 import { publicKeyFromSuiBytes } from '@mysten/sui/verify';
-import type { Experimental_BaseClient } from '@mysten/sui/experimental';
+import type { DAppKitCompatibleClient } from './types.js';
 
 type WalletConnection =
 	| {
@@ -28,7 +28,7 @@ export function createStores<TNetworks extends Networks>({
 	getClient,
 }: {
 	defaultNetwork: TNetworks[number];
-	getClient: (network: TNetworks[number]) => Experimental_BaseClient;
+	getClient: (network: TNetworks[number]) => DAppKitCompatibleClient;
 }) {
 	const $baseConnection = map<WalletConnection>({
 		status: 'disconnected',

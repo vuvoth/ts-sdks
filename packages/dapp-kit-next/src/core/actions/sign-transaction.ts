@@ -41,9 +41,9 @@ export function signTransactionCreator({ $connection, $currentClient }: DAppKitS
 						return transaction;
 					}
 
-					// TODO: Fix passing through the client and supported intents for plugins.
+					// TODO: Fix passing through supported intents for plugins.
 					transaction.setSenderIfNotSet(account.address);
-					return await transaction.toJSON();
+					return await transaction.toJSON({ client: suiClient });
 				},
 			},
 			account: getWalletAccountForUiWalletAccount(account),

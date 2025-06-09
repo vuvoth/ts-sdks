@@ -1,9 +1,15 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Experimental_BaseClient } from '@mysten/sui/experimental';
+import type { ClientWithExtensions, Experimental_SuiClientTypes } from '@mysten/sui/experimental';
 import type { Networks } from '../utils/networks.js';
 import type { StateStorage } from '../utils/storage.js';
+
+export type DAppKitCompatibleClient = ClientWithExtensions<{
+	core: {
+		resolveNameServiceNames: Experimental_SuiClientTypes.TransportMethods['resolveNameServiceNames'];
+	};
+}>;
 
 export type CreateDAppKitOptions<TNetworks extends Networks> = {
 	/**
@@ -21,9 +27,9 @@ export type CreateDAppKitOptions<TNetworks extends Networks> = {
 	 * Creates a new client instance for the given network.
 	 *
 	 * @param network - A supported network identifier as defined by the `networks` field.
-	 * @returns An `Experimental_BaseClient` that’s pre-configured to interact with the specified network.
+	 * @returns A `DAppKitCompatibleClient` that’s pre-configured to interact with the specified network.
 	 */
-	createClient: (network: TNetworks[number]) => Experimental_BaseClient;
+	createClient: (network: TNetworks[number]) => DAppKitCompatibleClient;
 
 	/**
 	 * The name of the network to use by default.
