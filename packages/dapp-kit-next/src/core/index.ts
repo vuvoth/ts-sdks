@@ -9,9 +9,9 @@ import { autoConnectWallet } from './initializers/autoconnect-wallet.js';
 import { createInMemoryStorage, DEFAULT_STORAGE_KEY, getDefaultStorage } from '../utils/storage.js';
 import { syncStateToStorage } from './initializers/sync-state-to-storage.js';
 import { manageWalletConnection } from './initializers/manage-connection.js';
+import { createNetworkConfig } from '../utils/networks.js';
 import type { Networks } from '../utils/networks.js';
 import type { CreateDAppKitOptions } from './types.js';
-import type { Experimental_BaseClient } from '@mysten/sui/experimental';
 import { switchNetworkCreator } from './actions/switch-network.js';
 import { connectWalletCreator } from './actions/connect-wallet.js';
 import { disconnectWalletCreator } from './actions/disconnect-wallet.js';
@@ -26,7 +26,7 @@ export type DAppKit<TNetworks extends Networks = Networks> = ReturnType<
 
 export function createDAppKit<TNetworks extends Networks>(
 	options: CreateDAppKitOptions<TNetworks>,
-) {
+): DAppKit<TNetworks> {
 	const instance = createDAppKitInstance(options);
 
 	globalThis.__DEFAULT_DAPP_KIT_INSTANCE__ ||= instance as DAppKit;
@@ -56,17 +56,7 @@ export function createDAppKitInstance<TNetworks extends Networks>({
 		throw new DAppKitError('You must specify at least one Sui network for your application.');
 	}
 
-	const networkConfig = new Map<TNetworks[number], Experimental_BaseClient>();
-	const getClient = (network: TNetworks[number]) => {
-		if (networkConfig.has(network)) {
-			return networkConfig.get(network)!;
-		}
-
-		const client = createClient(network);
-		networkConfig.set(network, client);
-		return client;
-	};
-
+	const { networkConfig, getClient } = createNetworkConfig(networks, createClient);
 	const stores = createStores({ defaultNetwork, getClient });
 
 	storage ||= createInMemoryStorage();
@@ -80,6 +70,7 @@ export function createDAppKitInstance<TNetworks extends Networks>({
 	}
 
 	return {
+		networkConfig,
 		getClient,
 		signTransaction: signTransactionCreator(stores),
 		signAndExecuteTransaction: signAndExecuteTransactionCreator(stores),

@@ -9,7 +9,6 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { storeProperty } from '../utils/lit.js';
 import { WalletList } from './internal/wallet-list.js';
 import { getDefaultInstance } from '../core/index.js';
-import type { DAppKit } from '../core/index.js';
 import { BaseModal } from './internal/base-modal.js';
 import type { UiWallet } from '@wallet-standard/ui';
 import { closeIcon } from './internal/icons/close-icon.js';
@@ -23,6 +22,7 @@ import {
 import { styles } from './dapp-kit-connect-modal.styles.js';
 import { Button } from './internal/button.js';
 import { iconButtonStyles } from './styles/icon-button.js';
+import type { RegisteredDAppKit } from '../types.js';
 
 type ModalViewState =
 	| { view: 'wallet-selection' }
@@ -48,7 +48,7 @@ export class DAppKitConnectModal
 	};
 
 	@storeProperty()
-	instance?: DAppKit;
+	instance?: RegisteredDAppKit;
 
 	@state()
 	private _state: ModalViewState = { view: 'wallet-selection' };
