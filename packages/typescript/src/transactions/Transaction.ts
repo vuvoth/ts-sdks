@@ -16,7 +16,7 @@ import { Argument, NormalizedCallArg, ObjectRef, TransactionExpiration } from '.
 import { serializeV1TransactionData } from './data/v1.js';
 import { SerializedTransactionDataV2 } from './data/v2.js';
 import { Inputs } from './Inputs.js';
-import { resolveTransactionPlugin } from './resolve.js';
+import { needsTransactionResolution, resolveTransactionPlugin } from './resolve.js';
 import type {
 	BuildTransactionOptions,
 	SerializeTransactionOptions,
@@ -664,8 +664,17 @@ export class Transaction {
 
 	async toJSON(options: SerializeTransactionOptions = {}): Promise<string> {
 		await this.prepareForSerialization(options);
+		const fullyResolved = this.isFullyResolved();
 		return JSON.stringify(
-			parse(SerializedTransactionDataV2, this.#data.snapshot()),
+			parse(
+				SerializedTransactionDataV2,
+				fullyResolved
+					? {
+							...this.#data.snapshot(),
+							digest: this.#data.getDigest(),
+						}
+					: this.#data.snapshot(),
+			),
 			(_key, value) => (typeof value === 'bigint' ? value.toString() : value),
 			2,
 		);
@@ -676,6 +685,37 @@ export class Transaction {
 		const { signer, ...buildOptions } = options;
 		const bytes = await this.build(buildOptions);
 		return signer.signTransaction(bytes);
+	}
+
+	/**
+	 *  Ensures that:
+	 *  - All objects have been fully resolved to a specific version
+	 *  - All pure inputs have been serialized to bytes
+	 *  - All async thunks have been fully resolved
+	 *  - All transaction intents have been resolved
+	 * 	- The gas payment, budget, and price have been set
+	 *  - The transaction sender has been set
+	 *
+	 *  When true, the transaction will always be built to the same bytes and digest (unless the transaction is mutated)
+	 */
+	isFullyResolved() {
+		if (!this.#data.sender) {
+			return false;
+		}
+
+		if (this.#pendingPromises.size > 0) {
+			return false;
+		}
+
+		if (this.#data.commands.some((cmd) => cmd.$Intent)) {
+			return false;
+		}
+
+		if (needsTransactionResolution(this.#data, {})) {
+			return false;
+		}
+
+		return true;
 	}
 
 	/** Build the transaction to BCS bytes. */

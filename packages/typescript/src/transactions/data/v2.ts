@@ -141,6 +141,7 @@ export const SerializedTransactionDataV2 = object({
 	gasData: GasData,
 	inputs: array(CallArg),
 	commands: array(Command),
+	digest: optional(nullable(string())),
 });
 
 export type SerializedTransactionDataV2 = InferOutput<typeof SerializedTransactionDataV2>;
