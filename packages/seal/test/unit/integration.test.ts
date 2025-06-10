@@ -123,11 +123,11 @@ describe('Integration test', () => {
 		// Object ids pointing to ci key servers' urls
 		objectIds = [
 			{
-				objectId: '0x5ff11892a21430921fa7b1e3e0eb63d6d25dff2e0c8eeb6b5a79b37c974e355e',
+				objectId: '0x2304dd255b13eaf5cb471bd5188df946a64f1715ee2b7b02fecf306bd12ceebc',
 				weight: 1,
 			},
 			{
-				objectId: '0xe015d62f26a7877de22e6d3c763e97c1aa9a8d064cd79a1bf8fc6b435f7a50b4',
+				objectId: '0x81aeaa8c25d2c912e1dc23b4372305b7a602c4ec4cc3e510963bc635e500aa37',
 				weight: 1,
 			},
 		];
@@ -360,11 +360,11 @@ describe('Integration test', () => {
 
 		objectIds = [
 			{
-				objectId: '0x5ff11892a21430921fa7b1e3e0eb63d6d25dff2e0c8eeb6b5a79b37c974e355e',
+				objectId: '0x2304dd255b13eaf5cb471bd5188df946a64f1715ee2b7b02fecf306bd12ceebc',
 				weight: 2,
 			},
 			{
-				objectId: '0xe015d62f26a7877de22e6d3c763e97c1aa9a8d064cd79a1bf8fc6b435f7a50b4',
+				objectId: '0x81aeaa8c25d2c912e1dc23b4372305b7a602c4ec4cc3e510963bc635e500aa37',
 				weight: 1,
 			},
 		];
@@ -428,11 +428,11 @@ describe('Integration test', () => {
 		// client with different weights should fail even though the threshold could be achieved
 		objectIds = [
 			{
-				objectId: '0x5ff11892a21430921fa7b1e3e0eb63d6d25dff2e0c8eeb6b5a79b37c974e355e',
+				objectId: '0x2304dd255b13eaf5cb471bd5188df946a64f1715ee2b7b02fecf306bd12ceebc',
 				weight: 1,
 			},
 			{
-				objectId: '0xe015d62f26a7877de22e6d3c763e97c1aa9a8d064cd79a1bf8fc6b435f7a50b4',
+				objectId: '0x81aeaa8c25d2c912e1dc23b4372305b7a602c4ec4cc3e510963bc635e500aa37',
 				weight: 1,
 			},
 		];
@@ -560,11 +560,11 @@ describe('Integration test', () => {
 		global.fetch = globalFetch;
 		objectIds = [
 			{
-				objectId: '0x5ff11892a21430921fa7b1e3e0eb63d6d25dff2e0c8eeb6b5a79b37c974e355e',
+				objectId: '0x2304dd255b13eaf5cb471bd5188df946a64f1715ee2b7b02fecf306bd12ceebc',
 				weight: 3,
 			},
 			{
-				objectId: '0xe015d62f26a7877de22e6d3c763e97c1aa9a8d064cd79a1bf8fc6b435f7a50b4',
+				objectId: '0x81aeaa8c25d2c912e1dc23b4372305b7a602c4ec4cc3e510963bc635e500aa37',
 				weight: 2,
 			},
 		];

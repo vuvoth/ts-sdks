@@ -3,7 +3,8 @@
 
 import { fromBase64 } from '@mysten/bcs';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { bcs } from '@mysten/sui/bcs';
 
 import { GeneralError } from '../../src/error.js';
 import {
@@ -18,34 +19,12 @@ import { Version } from '../../src/utils.js';
 const pk = fromBase64(
 	'oEC1VIuwQo+6FZiVwHCAy/3HbvAbuIyiztXIWwd4LgmXCh9WhOKg3T0+Mb62y9fqAsSaN5SybG09n/3JnkmEzJgdDXLpM8KvMwkha/cBHp6Cx7aCdogvGLoOp/RadyHb',
 );
-const id = '0xb35a7228d8cf224ad1e828c0217c95a5153bafc2906d6f9c178197dce26fbcf8';
+const id = '0x73d05d62c18d9374e3ea529e8e0ed6161da1a141a94d3f76ae3fe4e99356db75';
 const keyType = 0;
 const url = 'https://seal-key-server-testnet-1.mystenlabs.com';
-const name = 'mysten-testnet-1';
+const name = 'mysten-testnet-v1-1';
 
 describe('key-server tests', () => {
-	beforeEach(() => {
-		vi.mock('@mysten/sui.js', () => ({
-			SuiClient: vi.fn(() => ({
-				getObject: vi.fn().mockResolvedValue({
-					data: {
-						content: {
-							fields: {
-								id: {
-									id,
-								},
-								name,
-								url,
-								key_type: keyType,
-								pk,
-							},
-						},
-					},
-				}),
-			})),
-		}));
-	});
-
 	afterEach(() => {
 		vi.clearAllMocks();
 	});
@@ -53,22 +32,48 @@ describe('key-server tests', () => {
 	it('test fixed getAllowedlistedKeyServers', async () => {
 		// These should be updated when new key servers are added.
 		expect(getAllowlistedKeyServers('testnet')).toEqual([
-			'0xb35a7228d8cf224ad1e828c0217c95a5153bafc2906d6f9c178197dce26fbcf8',
-			'0x2d6cde8a9d9a65bde3b0a346566945a63b4bfb70e9a06c41bdb70807e2502b06',
+			'0x73d05d62c18d9374e3ea529e8e0ed6161da1a141a94d3f76ae3fe4e99356db75',
+			'0xf5d14a81a982144ae441cd7d64b09027f116a468bd36e7eca494f750591623c8',
 		]);
 	});
 
-	it('test retrieveKeyServers (mocked)', async () => {
-		const keyServers = await retrieveKeyServers({
-			objectIds: [id],
-			client: new SuiClient({ url: getFullnodeUrl('testnet') }),
+	it('test retrieveKeyServers with invalid version', async () => {
+		const mockGetObject = vi.fn().mockImplementation(() => {
+			const keyServerMove = bcs.struct('KeyServer', {
+				id: bcs.Address,
+				firstVersion: bcs.u64(),
+				lastVersion: bcs.u64(),
+			});
+
+			const serialized = keyServerMove.serialize({
+				id,
+				firstVersion: BigInt(2),
+				lastVersion: BigInt(5),
+			});
+
+			return {
+				object: {
+					content: serialized.toBytes(),
+				},
+			};
 		});
-		expect(keyServers.length).toEqual(1);
-		expect(keyServers[0].objectId).toEqual(id);
-		expect(keyServers[0].name).toEqual(name);
-		expect(keyServers[0].keyType).toEqual(0);
-		expect(keyServers[0].url).toEqual(url);
-		expect(keyServers[0].pk).toEqual(new Uint8Array(pk));
+
+		// Mock SuiClient
+		const mockSuiClient = {
+			core: {
+				getObject: mockGetObject,
+				getDynamicField: vi.fn(),
+			},
+		} as unknown as SuiClient;
+
+		await expect(
+			retrieveKeyServers({
+				objectIds: [id],
+				client: mockSuiClient,
+			}),
+		).rejects.toThrow(
+			'Key server 0x73d05d62c18d9374e3ea529e8e0ed6161da1a141a94d3f76ae3fe4e99356db75 supports versions between 2 and 5 (inclusive), but SDK expects version 1',
+		);
 	});
 
 	it('test verifyKeyServerInfo (mocked)', async () => {
