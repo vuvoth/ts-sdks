@@ -5,6 +5,7 @@ import './global.css';
 import { RootProvider } from 'fumadocs-ui/provider';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import CloudFlareAnalytics from '@/components/CloudFlareAnalytics';
 
 export const metadata: Metadata = {
 	title: {
@@ -40,6 +41,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 			</head>
 			<body className="flex flex-col min-h-screen">
 				<RootProvider>{children}</RootProvider>
+				<CloudFlareAnalytics />
 			</body>
 		</html>
 	);
