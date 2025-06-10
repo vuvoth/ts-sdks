@@ -111,7 +111,7 @@ export namespace Experimental_SuiClientTypes {
 		digest: string;
 		owner: ObjectOwner;
 		type: string;
-		content: Uint8Array;
+		content: PromiseLike<Uint8Array>;
 	}
 
 	export interface CoinResponse extends ObjectResponse {

@@ -93,6 +93,7 @@ export abstract class Experimental_CoreClient
 		}
 
 		const fieldType = parseStructTag(fieldObject.type);
+		const content = await fieldObject.content;
 
 		return {
 			dynamicField: {
@@ -112,7 +113,7 @@ export abstract class Experimental_CoreClient
 						typeof fieldType.typeParams[1] === 'string'
 							? fieldType.typeParams[1]
 							: normalizeStructTag(fieldType.typeParams[1]),
-					bcs: fieldObject.content.slice(SUI_ADDRESS_LENGTH + options.name.bcs.length),
+					bcs: content.slice(SUI_ADDRESS_LENGTH + options.name.bcs.length),
 				},
 			},
 		};

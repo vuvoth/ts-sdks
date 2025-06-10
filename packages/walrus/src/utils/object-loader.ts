@@ -33,7 +33,7 @@ export class SuiObjectDataLoader extends DataLoader<
 		const data = await super.load(id);
 
 		if (schema) {
-			return schema.parse(data.content);
+			return schema.parse(await data.content);
 		}
 
 		return data as T;
@@ -49,13 +49,15 @@ export class SuiObjectDataLoader extends DataLoader<
 			return data as (T | Error)[];
 		}
 
-		return data.map((d) => {
-			if (d instanceof Error) {
-				return d;
-			}
+		return Promise.all(
+			data.map(async (d) => {
+				if (d instanceof Error) {
+					return d;
+				}
 
-			return schema.parse(d.content);
-		});
+				return schema.parse(await d.content);
+			}),
+		);
 	}
 
 	async loadManyOrThrow<T>(ids: string[], schema: BcsType<T, any>): Promise<T[]> {

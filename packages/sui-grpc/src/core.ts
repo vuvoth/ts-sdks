@@ -49,7 +49,7 @@ export class GrpcCoreClient extends Experimental_CoreClient {
 							id: object.objectId!,
 							version: object.version?.toString()!,
 							digest: object.digest!,
-							content: object.bcs?.value!,
+							content: Promise.resolve(object.bcs?.value!),
 							owner: mapOwner(object.owner)!,
 							type: object.objectType!,
 						};
@@ -77,7 +77,9 @@ export class GrpcCoreClient extends Experimental_CoreClient {
 				version: object.version?.toString()!,
 				digest: object.digest!,
 				// TODO: List owned objects doesn't return content right now
-				content: new Uint8Array(),
+				content: Promise.reject(
+					new Error('GRPC does not return object contents when listing owned objects'),
+				),
 				owner: mapOwner(object.owner)!,
 				type: object.objectType!,
 			}),
@@ -106,7 +108,9 @@ export class GrpcCoreClient extends Experimental_CoreClient {
 					version: object.version?.toString()!,
 					digest: object.digest!,
 					// TODO: List owned objects doesn't return content right now
-					content: new Uint8Array(),
+					content: Promise.reject(
+						new Error('GRPC does not return object contents when listing owned objects'),
+					),
 					owner: mapOwner(object.owner)!,
 					type: object.objectType!,
 					balance: object.balance?.toString()!,

@@ -100,12 +100,14 @@ export class JSONRpcTransport extends Experimental_CoreClient {
 					digest: coin.digest,
 					balance: coin.balance,
 					type: `0x2::coin::Coin<${coin.coinType}>`,
-					content: Coin.serialize({
-						id: coin.coinObjectId,
-						balance: {
-							value: coin.balance,
-						},
-					}).toBytes(),
+					content: Promise.resolve(
+						Coin.serialize({
+							id: coin.coinObjectId,
+							balance: {
+								value: coin.balance,
+							},
+						}).toBytes(),
+					),
 					owner: {
 						$kind: 'ObjectOwner' as const,
 						ObjectOwner: options.address,
@@ -267,8 +269,9 @@ function parseObject(object: SuiObjectData): Experimental_SuiClientTypes.ObjectR
 		version: object.version,
 		digest: object.digest,
 		type: object.type!,
-		content:
+		content: Promise.resolve(
 			object.bcs?.dataType === 'moveObject' ? fromBase64(object.bcs.bcsBytes) : new Uint8Array(),
+		),
 		owner: parseOwner(object.owner!),
 	};
 }

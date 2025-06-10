@@ -819,7 +819,7 @@ export class WalrusClient {
 
 		return {
 			digest,
-			storage: Storage().parse(suiBlobObject.content),
+			storage: Storage().parse(await suiBlobObject.content),
 		};
 	}
 
@@ -943,7 +943,7 @@ export class WalrusClient {
 
 		return {
 			digest,
-			blob: Blob().parse(suiBlobObject.content),
+			blob: Blob().parse(await suiBlobObject.content),
 		};
 	}
 
