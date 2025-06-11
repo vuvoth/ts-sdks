@@ -40,7 +40,7 @@ export class BalanceManagerContract {
 	 */
 	createAndShareBalanceManagerWithOwner = (ownerAddress: string) => (tx: Transaction) => {
 		const manager = tx.moveCall({
-			target: `${this.#config.DEEPBOOK_PACKAGE_ID}::balance_manager::new_with_owner`,
+			target: `${this.#config.DEEPBOOK_PACKAGE_ID}::balance_manager::new_with_custom_owner`,
 			arguments: [tx.pure.address(ownerAddress)],
 		});
 
