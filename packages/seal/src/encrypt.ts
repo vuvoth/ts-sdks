@@ -3,7 +3,6 @@
 
 import { fromHex } from '@mysten/bcs';
 import { isValidSuiObjectId } from '@mysten/sui/utils';
-import { split as externalSplit } from 'shamir-secret-sharing';
 
 import type { IBEEncryptions } from './bcs.js';
 import { EncryptedObject } from './bcs.js';
@@ -13,6 +12,7 @@ import { BonehFranklinBLS12381Services } from './ibe.js';
 import { deriveKey, KeyPurpose } from './kdf.js';
 import type { KeyServer } from './key-server.js';
 import { createFullId } from './utils.js';
+import { split } from './shamir.js';
 
 export const MAX_U8 = 255;
 
@@ -63,7 +63,7 @@ export async function encrypt({
 	const baseKey = await encryptionInput.generateKey();
 
 	// Split the key into shares and encrypt each share with the public keys of the key servers.
-	const shares = await split(baseKey, keyServers.length, threshold);
+	const shares = split(baseKey, threshold, keyServers.length);
 
 	// Encrypt the shares with the public keys of the key servers.
 	const fullId = createFullId(packageId, id);
@@ -135,35 +135,4 @@ function encryptBatched(
 				threshold,
 			);
 	}
-}
-
-async function split(
-	secret: Uint8Array,
-	n: number,
-	threshold: number,
-): Promise<{ index: number; share: Uint8Array }[]> {
-	// The externalSplit function is from the 'shamir-secret-sharing' package and requires t > 1 and n >= 2.
-	// So we handle the special cases here.
-	if (n === 0 || threshold === 0 || threshold > n) {
-		throw new Error('Invalid threshold or number of shares');
-	} else if (threshold === 1) {
-		// If the threshold is 1, the secret is not split.
-		const share = secret;
-
-		const result = [];
-		for (let index = 1; index <= n; index++) {
-			// The shared polynomial is a constant in this case, so the index doesn't matter.
-			// To make sure they are unique, we use a counter.
-			result.push({ share, index });
-		}
-		return Promise.resolve(result);
-	}
-
-	return externalSplit(secret, n, threshold).then((share) =>
-		share.map((s) => ({
-			share: s.subarray(0, s.length - 1),
-			// split() returns the share index in the last byte. See https://github.com/privy-io/shamir-secret-sharing/blob/b59534d03e66d44ae36fc074aaf0684aa39c7505/src/index.ts#L247.
-			index: s[s.length - 1],
-		})),
-	);
 }

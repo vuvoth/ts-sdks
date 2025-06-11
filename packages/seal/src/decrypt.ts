@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { fromHex } from '@mysten/bcs';
-import { combine as externalCombine } from 'shamir-secret-sharing';
 
 import type { EncryptedObject } from './bcs.js';
 import type { G1Element } from './bls12381.js';
@@ -12,7 +11,8 @@ import { InvalidCiphertextError, UnsupportedFeatureError } from './error.js';
 import { BonehFranklinBLS12381Services, decryptRandomness, verifyNonce } from './ibe.js';
 import { deriveKey, KeyPurpose } from './kdf.js';
 import type { KeyCacheKey } from './types.js';
-import { createFullId, flatten } from './utils.js';
+import { createFullId } from './utils.js';
+import { combine } from './shamir.js';
 
 export interface DecryptOptions {
 	encryptedObject: typeof EncryptedObject.$inferType;
@@ -67,7 +67,7 @@ export async function decrypt({ encryptedObject, keys }: DecryptOptions): Promis
 	});
 
 	// Combine the decrypted shares into the key.
-	const baseKey = await combine(shares);
+	const baseKey = combine(shares);
 
 	// Decrypt randomness and check validity of the nonce
 	const randomnessKey = deriveKey(
@@ -108,24 +108,4 @@ export async function decrypt({ encryptedObject, keys }: DecryptOptions): Promis
 	} else {
 		throw new InvalidCiphertextError('Invalid ciphertext type');
 	}
-}
-
-/**
- * Helper function that combines the shares into the key.
- * @param shares - The shares to combine.
- * @returns - The combined key.
- */
-async function combine(shares: { index: number; share: Uint8Array }[]): Promise<Uint8Array> {
-	if (shares.length === 0) {
-		throw new Error('Invalid shares length');
-	} else if (shares.length === 1) {
-		// The Shamir secret sharing library expects at least two shares.
-		// If there is only one and the threshold is 1, the reconstructed secret is the same as the share.
-		return Promise.resolve(shares[0].share);
-	}
-
-	// The Shamir secret sharing library expects the index/x-coordinate to be at the end of the share
-	return externalCombine(
-		shares.map(({ index, share }) => flatten([share, new Uint8Array([index])])),
-	);
 }
