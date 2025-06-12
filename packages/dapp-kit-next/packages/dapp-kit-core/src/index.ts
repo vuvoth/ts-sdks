@@ -15,3 +15,4 @@ export type { Register, ResolvedRegister, RegisteredDAppKit } from './types.js';
 export type { StateStorage } from './utils/storage.js';
 
 export { getWalletUniqueIdentifier } from './utils/wallets.js';
+export type { UiWallet, UiWalletAccount } from '@wallet-standard/ui';

@@ -42,7 +42,6 @@
 		"@lit/react": "^1.0.7",
 		"@mysten/dapp-kit-core": "workspace:*",
 		"@nanostores/react": "^1.0.0",
-		"@wallet-standard/ui-core": "^1.0.0",
 		"nanostores": "^1.0.1"
 	},
 	"peerDependencies": {

@@ -1,26 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { useStore } from '@nanostores/react';
-import { dAppKit } from './dApp-kit.js';
+import { ConnectButton } from '@mysten/dapp-kit-react';
 
 function App() {
-	const wallets = useStore(dAppKit.stores.$wallets);
-
-	return (
-		<div>
-			<p>TODO: Flesh this out more / make it more use case specific ^.^</p>
-			{wallets.length > 0 ? (
-				<ul>
-					{wallets.map((wallet) => (
-						<li key={wallet.name}>{wallet.name}</li>
-					))}
-				</ul>
-			) : (
-				<p>No registered wallets</p>
-			)}
-		</div>
-	);
+	return <ConnectButton />;
 }
 
 export default App;
