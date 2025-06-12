@@ -21,30 +21,10 @@ import { signAndExecuteTransactionCreator } from './actions/sign-and-execute-tra
 import { signTransactionCreator } from './actions/sign-transaction.js';
 
 export type DAppKit<TNetworks extends Networks = Networks> = ReturnType<
-	typeof createDAppKitInstance<TNetworks>
+	typeof createDAppKit<TNetworks>
 >;
 
-export function createDAppKit<TNetworks extends Networks>(
-	options: CreateDAppKitOptions<TNetworks>,
-): DAppKit<TNetworks> {
-	const instance = createDAppKitInstance(options);
-
-	globalThis.__DEFAULT_DAPP_KIT_INSTANCE__ ||= instance as DAppKit;
-	if (globalThis.__DEFAULT_DAPP_KIT_INSTANCE__ !== instance) {
-		console.warn('Detected multiple dApp-kit instances. This may cause un-expected behavior.');
-	}
-
-	return instance;
-}
-
-export function getDefaultInstance() {
-	if (!globalThis.__DEFAULT_DAPP_KIT_INSTANCE__) {
-		throw new DAppKitError('dApp-kit has not been initialized yet.');
-	}
-	return globalThis.__DEFAULT_DAPP_KIT_INSTANCE__;
-}
-
-export function createDAppKitInstance<TNetworks extends Networks>({
+export function createDAppKit<TNetworks extends Networks>({
 	autoConnect = true,
 	networks,
 	createClient,

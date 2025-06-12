@@ -4,6 +4,15 @@
 import type { Meta, StoryObj } from '@storybook/web-components';
 import { html } from 'lit';
 import type { DAppKitConnectModal } from './dapp-kit-connect-modal.js';
+import { createDAppKit } from '../core/index.js';
+import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
+
+const dAppKit = createDAppKit({
+	networks: ['testnet'],
+	createClient(network) {
+		return new SuiClient({ network, url: getFullnodeUrl(network) });
+	},
+});
 
 const meta = {
 	title: 'Connect Modal',
@@ -13,6 +22,7 @@ const meta = {
 			?open="${args['open']}"
 			.sortFn=${args['sortFn']}
 			.filterFn=${args['filterFn']}
+			.instance=${dAppKit}
 		></mysten-dapp-kit-connect-modal>
 	`,
 	tags: ['autodocs'],

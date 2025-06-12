@@ -4,6 +4,15 @@
 import type { Meta, StoryObj } from '@storybook/web-components';
 import { html } from 'lit';
 import type { DAppKitConnectButton } from './dapp-kit-connect-button.js';
+import { createDAppKit } from '../core/index.js';
+import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
+
+const dAppKit = createDAppKit({
+	networks: ['testnet'],
+	createClient(network) {
+		return new SuiClient({ network, url: getFullnodeUrl(network) });
+	},
+});
 
 const meta = {
 	title: 'Connect Button',
@@ -11,6 +20,7 @@ const meta = {
 	render: (args) =>
 		html`<mysten-dapp-kit-connect-button
 			.modalOptions=${args['modalOptions']}
+			.instance=${dAppKit}
 		></mysten-dapp-kit-connect-button>`,
 	tags: ['autodocs'],
 } satisfies Meta;
@@ -20,7 +30,10 @@ export default meta;
 export const Default: StoryObj<DAppKitConnectButton> = {};
 
 export const WithCustomLabel: StoryObj<DAppKitConnectButton> = {
-	render: () => html`<mysten-dapp-kit-connect-button>Sign In</mysten-dapp-kit-connect-button>`,
+	render: () =>
+		html`<mysten-dapp-kit-connect-button .instance=${dAppKit}>
+			Sign In
+		</mysten-dapp-kit-connect-button>`,
 };
 
 export const WithCustomTheme: StoryObj<DAppKitConnectButton> = {
@@ -49,7 +62,7 @@ export const WithCustomTheme: StoryObj<DAppKitConnectButton> = {
 					--radius: 1.5rem;
 				}
 			</style>
-			<mysten-dapp-kit-connect-button></mysten-dapp-kit-connect-button>
+			<mysten-dapp-kit-connect-button .instance=${dAppKit}></mysten-dapp-kit-connect-button>
 		</div>
 	`,
 };
