@@ -12,16 +12,25 @@ export const generateCommand = buildCommand({
 				parse: String,
 				brief: 'Output directory',
 			},
-		},
-		positional: {
-			kind: 'array',
-			parameter: {
-				brief: 'Paths to Move modules',
+			built: {
+				kind: 'parsed',
 				parse: String,
+				variadic: true,
+				optional: true,
+				brief: 'path to a built move package',
+			},
+			summary: {
+				kind: 'parsed',
+				parse: String,
+				variadic: true,
+				optional: true,
+				brief: 'path to a move package with a package_summary',
 			},
 		},
 		aliases: {
 			o: 'outputDir',
+			b: 'built',
+			s: 'summary',
 		},
 	},
 	docs: {

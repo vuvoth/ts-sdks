@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 export interface ModuleSummary {
+	id: {
+		address: string;
+		name: string;
+	};
 	doc?: string | null;
 	immediate_dependencies: {
 		address: string;
@@ -31,7 +35,7 @@ export interface FunctionSummary {
 	attributes?: Attribute[];
 	visibility: FunctionVisibility;
 	entry: boolean;
-	_macro?: boolean;
+	macro_?: boolean;
 	type_parameters: DatatypeParameter[];
 	parameters: Parameter[];
 	return_: Type[];
@@ -51,7 +55,7 @@ export interface EnumSummary {
 	doc?: string | null;
 	attributes?: Attribute[];
 	abilities: Ability[];
-	type_parameters: TypeParameter[];
+	type_parameters: DatatypeParameter[];
 	variants: Record<string, Variant>;
 }
 
@@ -100,11 +104,7 @@ export type Type =
 	| 'signer'
 	| '_'
 	| {
-			Datatype: {
-				module: ModuleId;
-				name: string;
-				type_arguments: Type[];
-			};
+			Datatype: Datatype;
 	  }
 	| {
 			vector: Type;
@@ -124,6 +124,17 @@ export type Type =
 	| {
 			fun: [Type[], Type];
 	  };
+
+export interface Datatype {
+	module: ModuleId;
+	name: string;
+	type_arguments: TypeArgument[];
+}
+
+export interface TypeArgument {
+	phantom: boolean;
+	argument: Type;
+}
 
 export interface ModuleId {
 	address: string;

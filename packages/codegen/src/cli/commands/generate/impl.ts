@@ -2,24 +2,29 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { LocalContext } from '../../context.js';
-import { generatePackage } from '../../../index.js';
+import { generateBuiltPackage, generateFromPackageSummary } from '../../../index.js';
 import { basename } from 'node:path';
 
 interface SubdirCommandFlags {
 	outputDir: string;
+	built?: string[];
+	summary?: string[];
 }
 
-export async function generate(
-	this: LocalContext,
-	flags: SubdirCommandFlags,
-	...paths: string[]
-): Promise<void> {
-	for (const path of paths) {
-		const options = {
+export async function generate(this: LocalContext, flags: SubdirCommandFlags): Promise<void> {
+	for (const path of flags.built ?? []) {
+		await generateBuiltPackage({
 			source: path,
 			destination: flags.outputDir,
 			name: basename(path),
-		};
-		await generatePackage(options);
+		});
+	}
+
+	for (const path of flags.summary ?? []) {
+		await generateFromPackageSummary({
+			source: path,
+			destination: flags.outputDir,
+			name: basename(path),
+		});
 	}
 }
