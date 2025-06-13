@@ -8,6 +8,7 @@ import type { TransactionDataBuilder } from './TransactionData.js';
 import type { BcsType } from '@mysten/bcs';
 import { Inputs } from './Inputs.js';
 import { bcs } from '../bcs/index.js';
+import { namedPackagesPlugin } from './plugins/NamedPackagesPlugin.js';
 
 export interface BuildTransactionOptions {
 	client?: ClientWithCoreApi;
@@ -59,9 +60,11 @@ export async function resolveTransactionPlugin(
 	const client = getClient(options);
 	const plugin = client.core.resolveTransactionPlugin();
 
-	return plugin(transactionData, options, async () => {
-		await validate(transactionData);
-		await next();
+	return namedPackagesPlugin()(transactionData, options, async () => {
+		await plugin(transactionData, options, async () => {
+			await validate(transactionData);
+			await next();
+		});
 	});
 }
 
