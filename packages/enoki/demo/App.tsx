@@ -12,7 +12,7 @@ import {
 import { Transaction } from '@mysten/sui/transactions';
 import { useState } from 'react';
 
-import { isEnokiWallet } from '../src/wallet/index.js';
+import { isEnokiWallet, isGoogleWallet } from '../src/wallet/utils.js';
 
 export function App() {
 	const { mutate: connect } = useConnectWallet();
@@ -20,7 +20,7 @@ export function App() {
 	const [result, setResult] = useState<any>();
 
 	const wallets = useWallets().filter(isEnokiWallet);
-	const googleWallet = wallets.find((wallet) => wallet.provider === 'google');
+	const googleWallet = wallets.find(isGoogleWallet);
 
 	const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
 	const { selectNetwork, networks } = useSuiClientContext();
