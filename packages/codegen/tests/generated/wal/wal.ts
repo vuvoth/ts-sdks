@@ -1,6 +1,9 @@
 /**************************************************************
  * THIS FILE IS GENERATED AND SHOULD NOT BE MANUALLY MODIFIED *
  **************************************************************/
+
+/** The WAL token is the native token for the Walrus Protocol. */
+
 import { bcs } from '@mysten/sui/bcs';
 import { type Transaction } from '@mysten/sui/transactions';
 import { normalizeMoveArguments, type RawTransactionArgument } from '../utils/index.js';
@@ -21,7 +24,8 @@ export function TreasuryCapKey() {
 	});
 }
 export function init(packageAddress: string) {
-	function total_supply(options: { arguments: [RawTransactionArgument<string>] }) {
+	/** Get the total supply of the WAL token. */
+	function total_supply(options: { arguments: [treasury: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::wal::ProtectedTreasury`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -31,7 +35,8 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function burn(options: { arguments: [RawTransactionArgument<string>] }) {
+	/** Burns a `Coin<WAL>` from the sender. */
+	function burn(options: { arguments: [treasury: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::wal::ProtectedTreasury`];
 		return (tx: Transaction) =>
 			tx.moveCall({

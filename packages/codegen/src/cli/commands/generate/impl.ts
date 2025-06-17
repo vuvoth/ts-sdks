@@ -9,6 +9,7 @@ interface SubdirCommandFlags {
 	outputDir: string;
 	built?: string[];
 	summary?: string[];
+	noPrune?: boolean;
 }
 
 export async function generate(this: LocalContext, flags: SubdirCommandFlags): Promise<void> {
@@ -25,6 +26,7 @@ export async function generate(this: LocalContext, flags: SubdirCommandFlags): P
 			source: path,
 			destination: flags.outputDir,
 			name: basename(path),
+			noPrune: flags.noPrune,
 		});
 	}
 }

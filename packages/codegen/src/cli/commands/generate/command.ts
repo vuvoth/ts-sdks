@@ -26,6 +26,12 @@ export const generateCommand = buildCommand({
 				optional: true,
 				brief: 'path to a move package with a package_summary',
 			},
+			noPrune: {
+				kind: 'parsed',
+				parse: Boolean,
+				optional: true,
+				brief: 'generate all types and functions in dependencies',
+			},
 		},
 		aliases: {
 			o: 'outputDir',

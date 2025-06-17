@@ -1,27 +1,16 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
-import ts, { SyntaxKind } from 'typescript';
+import { format } from 'prettier';
+import ts from 'typescript';
 
-export function printStatements(statements: ts.Statement[]) {
-	const nodes = ts.factory.createNodeArray(
-		statements.filter((statement) => statement.kind !== SyntaxKind.EmptyStatement),
-	);
-	const printer = ts.createPrinter({});
-	const sourcefile = ts.createSourceFile(
-		'file.ts',
-		'',
-		ts.ScriptTarget.ESNext,
-		false,
-		ts.ScriptKind.TS,
-	);
+export function printNodes(...nodes: ts.Node[]) {
+	const printer = ts.createPrinter({
+		removeComments: false,
+	});
 
-	return printer.printList(ts.ListFormat.SourceFileStatements, nodes, sourcefile);
-}
-
-export function printExpression(expression: ts.Expression) {
-	const statement = ts.factory.createExpressionStatement(expression);
-
-	return printStatements([statement]);
+	return nodes
+		.map((node) => printer.printNode(ts.EmitHint.Unspecified, node, node.getSourceFile()))
+		.join('\n');
 }
 
 type TSTemplateValue = string | number | boolean | ts.Statement[] | ts.Expression;
@@ -30,12 +19,10 @@ export function parseTS(strings: TemplateStringsArray, ...values: TSTemplateValu
 	const source = strings.reduce((acc, str, i) => {
 		if (typeof values[i] === 'object') {
 			if (Array.isArray(values[i])) {
-				return `${acc}${str}${printStatements(values[i])}`;
+				return `${acc}${str}${printNodes(...values[i])}`;
 			}
 
-			if (ts.isExpression(values[i])) {
-				return `${acc}${str}${printExpression(values[i])}`;
-			}
+			return `${acc}${str}${printNodes(values[i])}`;
 		}
 
 		return `${acc}${str}${values[i] ?? ''}`;
@@ -46,38 +33,101 @@ export function parseTS(strings: TemplateStringsArray, ...values: TSTemplateValu
 	const indent = firstLine.match(/^\s*/)?.[0] ?? '';
 	const unIndented = lines.map((line) => line.replace(indent, '')).join('\n');
 
-	const sourceFile = ts.createSourceFile('file.ts', unIndented, ts.ScriptTarget.Latest, false);
-
+	const sourceFile = ts.createSourceFile('file.ts', unIndented, ts.ScriptTarget.Latest, true);
 	return [...sourceFile.statements.values()];
 }
 
-export function mapToObject<T>(
-	items: Iterable<T>,
-	mapper: (item: T) => null | [string, TSTemplateValue],
-) {
-	const fieldProps = [...items]
-		.map(mapper)
-		.filter((value) => value !== null)
-		.map(([key, value]) => {
-			const node = parseTS/* ts */ `({${key}: ${value}})`;
-			if (!node) {
-				throw new Error('Expected node');
-			}
+export async function mapToObject<T>({
+	items,
+	mapper,
+	getComment,
+}: {
+	items: Iterable<T>;
+	mapper: (
+		item: T,
+	) =>
+		| Promise<null | [string, TSTemplateValue | TSTemplateValue]>
+		| null
+		| [string, TSTemplateValue | TSTemplateValue];
+	getComment?: (item: T) => string | null | undefined;
+}) {
+	const fieldProps = await Promise.all(
+		(
+			await Promise.all(
+				[...items].map(async (item) => {
+					const mapped = await mapper(item);
+					if (!mapped) {
+						return null;
+					}
 
-			if (!ts.isExpressionStatement(node[0])) {
-				throw new Error('Expected Expression statement');
-			}
+					const [key, value] = mapped;
+					return [item, key, value] as const;
+				}),
+			)
+		)
+			.filter((value) => value !== null)
+			.map(([item, key, value]) => {
+				const [node] = parseTS/* ts */ `({${key}: ${value}})`;
 
-			if (!ts.isParenthesizedExpression(node[0].expression)) {
-				throw new Error('Expected Parenthesized Expression');
-			}
+				if (!ts.isExpressionStatement(node)) {
+					throw new Error('Expected Expression statement');
+				}
 
-			if (!ts.isObjectLiteralExpression(node[0].expression.expression)) {
-				throw new Error('Expected Object Literal Expression');
-			}
+				if (!ts.isParenthesizedExpression(node.expression)) {
+					throw new Error('Expected Parenthesized Expression');
+				}
 
-			return node[0].expression.expression.properties[0];
-		});
+				if (!ts.isObjectLiteralExpression(node.expression.expression)) {
+					throw new Error('Expected Object Literal Expression');
+				}
+
+				const comment = getComment?.(item);
+				return withComment({ comment }, node.expression.expression.properties[0]);
+			}),
+	);
 
 	return ts.factory.createObjectLiteralExpression(fieldProps, true);
+}
+
+export async function withComment<T extends ts.Node | ts.Node[]>(
+	options:
+		| { comment?: string | null; doc?: never }
+		| { doc?: string | null | undefined; comment?: never },
+	nodes: T,
+): Promise<T> {
+	const comment = options.comment ?? options.doc;
+
+	if (comment) {
+		const firstNode = Array.isArray(nodes) ? nodes[0] : (nodes as ts.Node);
+		ts.addSyntheticLeadingComment(
+			firstNode,
+			ts.SyntaxKind.MultiLineCommentTrivia,
+			await formatComment(comment),
+			true,
+		);
+	}
+
+	return nodes;
+}
+
+export async function formatComment(text: string) {
+	const lines = (
+		await format(text, {
+			printWidth: 80,
+			semi: true,
+			singleQuote: true,
+			tabWidth: 2,
+			trailingComma: 'all',
+			useTabs: true,
+			proseWrap: 'always',
+			parser: 'markdown',
+		})
+	)
+		.trim()
+		.replaceAll('*/', '*\\/')
+		.split('\n');
+
+	if (lines.length === 1) return `* ${lines[0]} `;
+
+	return `*\n ${lines.map((line) => ` * ${line}`).join('\n')}\n `;
 }

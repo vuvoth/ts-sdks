@@ -45,9 +45,12 @@ export function DenyListBlobDeleted() {
 		blob_id: bcs.u256(),
 	});
 }
+/** The persistence type of a blob. Used for storage confirmation. */
 export function BlobPersistenceType() {
 	return bcs.enum('BlobPersistenceType', {
 		Permanent: null,
-		Deletable: bcs.Address,
+		Deletable: bcs.struct('BlobPersistenceType.Deletable', {
+			object_id: bcs.Address,
+		}),
 	});
 }

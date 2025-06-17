@@ -1,12 +1,25 @@
 /**************************************************************
  * THIS FILE IS GENERATED AND SHOULD NOT BE MANUALLY MODIFIED *
  **************************************************************/
+
+/**
+ * A custom priority queue implementation for use in the apportionment algorithm.
+ * This implementation uses a quotient-based priority with a tie-breaker to break
+ * ties when priorities are equal.
+ */
+
 import { bcs, type BcsType } from '@mysten/sui/bcs';
 import { type Transaction } from '@mysten/sui/transactions';
 import { normalizeMoveArguments, type RawTransactionArgument } from '../utils/index.js';
 import * as uq64_64 from './deps/std/uq64_64.js';
+/** Struct representing a priority queue. */
 export function ApportionmentQueue<T extends BcsType<any>>(...typeParameters: [T]) {
 	return bcs.struct('ApportionmentQueue', {
+		/**
+		 * The `entries` vector contains a max heap, where the children of the node at
+		 * index `i` are at indices `2 * i + 1` and `2 * i + 2`. INV: The parent node's
+		 * priority is always higher or equal to its child nodes' priorities.
+		 */
 		entries: bcs.vector(Entry(typeParameters[0])),
 	});
 }
@@ -18,6 +31,7 @@ export function Entry<T extends BcsType<any>>(...typeParameters: [T]) {
 	});
 }
 export function init(packageAddress: string) {
+	/** Create a new priority queue. */
 	function _new(options: { arguments: []; typeArguments: [string] }) {
 		const argumentsTypes = [];
 		return (tx: Transaction) =>
@@ -29,8 +43,9 @@ export function init(packageAddress: string) {
 				typeArguments: options.typeArguments,
 			});
 	}
+	/** Pop the entry with the highest priority value. */
 	function pop_max(options: {
-		arguments: [RawTransactionArgument<string>];
+		arguments: [pq: RawTransactionArgument<string>];
 		typeArguments: [string];
 	}) {
 		const argumentsTypes = [
@@ -45,12 +60,13 @@ export function init(packageAddress: string) {
 				typeArguments: options.typeArguments,
 			});
 	}
+	/** Insert a new entry into the queue. */
 	function insert<T extends BcsType<any>>(options: {
 		arguments: [
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
-			RawTransactionArgument<number | bigint>,
-			RawTransactionArgument<T>,
+			pq: RawTransactionArgument<string>,
+			priority: RawTransactionArgument<string>,
+			tie_breaker: RawTransactionArgument<number | bigint>,
+			value: RawTransactionArgument<T>,
 		];
 		typeArguments: [string];
 	}) {

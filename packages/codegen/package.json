@@ -62,6 +62,7 @@
 		"@stricli/auto-complete": "^1.1.2",
 		"@stricli/core": "^1.1.2",
 		"@types/node": "^22.15.29",
+		"prettier": "^3.5.3",
 		"typescript": "^5.8.3"
 	}
 }

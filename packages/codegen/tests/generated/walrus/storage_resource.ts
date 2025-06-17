@@ -14,7 +14,7 @@ export function Storage() {
 	});
 }
 export function init(packageAddress: string) {
-	function start_epoch(options: { arguments: [RawTransactionArgument<string>] }) {
+	function start_epoch(options: { arguments: [self: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::storage_resource::Storage`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -24,7 +24,7 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function end_epoch(options: { arguments: [RawTransactionArgument<string>] }) {
+	function end_epoch(options: { arguments: [self: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::storage_resource::Storage`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -34,7 +34,7 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function size(options: { arguments: [RawTransactionArgument<string>] }) {
+	function size(options: { arguments: [self: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::storage_resource::Storage`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -44,8 +44,17 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/**
+	 * Split the storage object into two based on `split_epoch`
+	 *
+	 * `storage` is modified to cover the period from `start_epoch` to `split_epoch`
+	 * and a new storage object covering `split_epoch` to `end_epoch` is returned.
+	 */
 	function split_by_epoch(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<number>];
+		arguments: [
+			storage: RawTransactionArgument<string>,
+			split_epoch: RawTransactionArgument<number>,
+		];
 	}) {
 		const argumentsTypes = [`${packageAddress}::storage_resource::Storage`, 'u32'];
 		return (tx: Transaction) =>
@@ -56,8 +65,17 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/**
+	 * Split the storage object into two based on `split_size`
+	 *
+	 * `storage` is modified to cover `split_size` and a new object covering
+	 * `storage.storage_size - split_size` is created.
+	 */
 	function split_by_size(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<number | bigint>];
+		arguments: [
+			storage: RawTransactionArgument<string>,
+			split_size: RawTransactionArgument<number | bigint>,
+		];
 	}) {
 		const argumentsTypes = [`${packageAddress}::storage_resource::Storage`, 'u64'];
 		return (tx: Transaction) =>
@@ -68,8 +86,9 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/** Fuse two storage objects that cover adjacent periods with the same storage size. */
 	function fuse_periods(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<string>];
+		arguments: [first: RawTransactionArgument<string>, second: RawTransactionArgument<string>];
 	}) {
 		const argumentsTypes = [
 			`${packageAddress}::storage_resource::Storage`,
@@ -83,8 +102,9 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/** Fuse two storage objects that cover the same period */
 	function fuse_amount(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<string>];
+		arguments: [first: RawTransactionArgument<string>, second: RawTransactionArgument<string>];
 	}) {
 		const argumentsTypes = [
 			`${packageAddress}::storage_resource::Storage`,
@@ -98,8 +118,12 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/**
+	 * Fuse two storage objects that either cover the same period or adjacent periods
+	 * with the same storage size.
+	 */
 	function fuse(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<string>];
+		arguments: [first: RawTransactionArgument<string>, second: RawTransactionArgument<string>];
 	}) {
 		const argumentsTypes = [
 			`${packageAddress}::storage_resource::Storage`,
@@ -113,7 +137,8 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function destroy(options: { arguments: [RawTransactionArgument<string>] }) {
+	/** Destructor for [Storage] objects */
+	function destroy(options: { arguments: [storage: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::storage_resource::Storage`];
 		return (tx: Transaction) =>
 			tx.moveCall({

@@ -1,6 +1,9 @@
 /**************************************************************
  * THIS FILE IS GENERATED AND SHOULD NOT BE MANUALLY MODIFIED *
  **************************************************************/
+
+/** Module: staking */
+
 import { bcs } from '@mysten/sui/bcs';
 import { type Transaction } from '@mysten/sui/transactions';
 import { normalizeMoveArguments, type RawTransactionArgument } from '../utils/index.js';
@@ -14,19 +17,23 @@ export function Staking() {
 	});
 }
 export function init(packageAddress: string) {
+	/**
+	 * Creates a staking pool for the candidate, registers the candidate as a storage
+	 * node.
+	 */
 	function register_candidate(options: {
 		arguments: [
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
-			RawTransactionArgument<number[]>,
-			RawTransactionArgument<number[]>,
-			RawTransactionArgument<number[]>,
-			RawTransactionArgument<number>,
-			RawTransactionArgument<number | bigint>,
-			RawTransactionArgument<number | bigint>,
-			RawTransactionArgument<number | bigint>,
+			staking: RawTransactionArgument<string>,
+			name: RawTransactionArgument<string>,
+			network_address: RawTransactionArgument<string>,
+			metadata: RawTransactionArgument<string>,
+			public_key: RawTransactionArgument<number[]>,
+			network_public_key: RawTransactionArgument<number[]>,
+			proof_of_possession: RawTransactionArgument<number[]>,
+			commission_rate: RawTransactionArgument<number>,
+			storage_price: RawTransactionArgument<number | bigint>,
+			write_price: RawTransactionArgument<number | bigint>,
+			node_capacity: RawTransactionArgument<number | bigint>,
 		];
 	}) {
 		const argumentsTypes = [
@@ -50,11 +57,16 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/**
+	 * Sets next_commission in the staking pool, which will then take effect as
+	 * commission rate one epoch after setting the value (to allow stakers to react to
+	 * setting this).
+	 */
 	function set_next_commission(options: {
 		arguments: [
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
-			RawTransactionArgument<number>,
+			staking: RawTransactionArgument<string>,
+			cap: RawTransactionArgument<string>,
+			commission_rate: RawTransactionArgument<number>,
 		];
 	}) {
 		const argumentsTypes = [
@@ -70,8 +82,12 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/**
+	 * Collects the commission for the node. Transaction sender must be the
+	 * `CommissionReceiver` for the `StakingPool`.
+	 */
 	function collect_commission(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<string>];
+		arguments: [staking: RawTransactionArgument<string>, auth: RawTransactionArgument<string>];
 	}) {
 		const argumentsTypes = [
 			`${packageAddress}::staking::Staking`,
@@ -85,11 +101,12 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/** Sets the commission receiver for the node. */
 	function set_commission_receiver(options: {
 		arguments: [
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
+			staking: RawTransactionArgument<string>,
+			auth: RawTransactionArgument<string>,
+			receiver: RawTransactionArgument<string>,
 		];
 	}) {
 		const argumentsTypes = [
@@ -105,11 +122,12 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/** Sets the governance authorized object for the pool. */
 	function set_governance_authorized(options: {
 		arguments: [
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
+			staking: RawTransactionArgument<string>,
+			auth: RawTransactionArgument<string>,
+			authorized: RawTransactionArgument<string>,
 		];
 	}) {
 		const argumentsTypes = [
@@ -125,7 +143,10 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function compute_next_committee(options: { arguments: [RawTransactionArgument<string>] }) {
+	/** Computes the committee for the next epoch. */
+	function compute_next_committee(options: {
+		arguments: [staking: RawTransactionArgument<string>];
+	}) {
 		const argumentsTypes = [`${packageAddress}::staking::Staking`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -135,11 +156,12 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/** Sets the storage price vote for the pool. */
 	function set_storage_price_vote(options: {
 		arguments: [
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
-			RawTransactionArgument<number | bigint>,
+			self: RawTransactionArgument<string>,
+			cap: RawTransactionArgument<string>,
+			storage_price: RawTransactionArgument<number | bigint>,
 		];
 	}) {
 		const argumentsTypes = [
@@ -155,11 +177,12 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/** Sets the write price vote for the pool. */
 	function set_write_price_vote(options: {
 		arguments: [
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
-			RawTransactionArgument<number | bigint>,
+			self: RawTransactionArgument<string>,
+			cap: RawTransactionArgument<string>,
+			write_price: RawTransactionArgument<number | bigint>,
 		];
 	}) {
 		const argumentsTypes = [
@@ -175,11 +198,12 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/** Sets the node capacity vote for the pool. */
 	function set_node_capacity_vote(options: {
 		arguments: [
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
-			RawTransactionArgument<number | bigint>,
+			self: RawTransactionArgument<string>,
+			cap: RawTransactionArgument<string>,
+			node_capacity: RawTransactionArgument<number | bigint>,
 		];
 	}) {
 		const argumentsTypes = [
@@ -195,7 +219,8 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function node_metadata(options: { arguments: [RawTransactionArgument<string>] }) {
+	/** Get `NodeMetadata` for the given node. */
+	function node_metadata(options: { arguments: [self: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::staking::Staking`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -205,12 +230,16 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/**
+	 * Sets the public key of a node to be used starting from the next epoch for which
+	 * the node is selected.
+	 */
 	function set_next_public_key(options: {
 		arguments: [
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
-			RawTransactionArgument<number[]>,
-			RawTransactionArgument<number[]>,
+			self: RawTransactionArgument<string>,
+			cap: RawTransactionArgument<string>,
+			public_key: RawTransactionArgument<number[]>,
+			proof_of_possession: RawTransactionArgument<number[]>,
 		];
 	}) {
 		const argumentsTypes = [
@@ -227,11 +256,12 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/** Sets the name of a storage node. */
 	function set_name(options: {
 		arguments: [
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
+			self: RawTransactionArgument<string>,
+			cap: RawTransactionArgument<string>,
+			name: RawTransactionArgument<string>,
 		];
 	}) {
 		const argumentsTypes = [
@@ -247,11 +277,12 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/** Sets the network address or host of a storage node. */
 	function set_network_address(options: {
 		arguments: [
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
+			self: RawTransactionArgument<string>,
+			cap: RawTransactionArgument<string>,
+			network_address: RawTransactionArgument<string>,
 		];
 	}) {
 		const argumentsTypes = [
@@ -267,11 +298,12 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/** Sets the public key used for TLS communication for a node. */
 	function set_network_public_key(options: {
 		arguments: [
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
-			RawTransactionArgument<number[]>,
+			self: RawTransactionArgument<string>,
+			cap: RawTransactionArgument<string>,
+			network_public_key: RawTransactionArgument<number[]>,
 		];
 	}) {
 		const argumentsTypes = [
@@ -287,11 +319,12 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/** Sets the metadata of a storage node. */
 	function set_node_metadata(options: {
 		arguments: [
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
+			self: RawTransactionArgument<string>,
+			cap: RawTransactionArgument<string>,
+			metadata: RawTransactionArgument<string>,
 		];
 	}) {
 		const argumentsTypes = [
@@ -307,7 +340,11 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function voting_end(options: { arguments: [RawTransactionArgument<string>] }) {
+	/**
+	 * Ends the voting period and runs the apportionment if the current time allows.
+	 * Permissionless, can be called by anyone. Emits: `EpochParametersSelected` event.
+	 */
+	function voting_end(options: { arguments: [staking: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::staking::Staking`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -317,8 +354,12 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/**
+	 * Initiates the epoch change if the current time allows. Emits: `EpochChangeStart`
+	 * event.
+	 */
 	function initiate_epoch_change(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<string>];
+		arguments: [staking: RawTransactionArgument<string>, system: RawTransactionArgument<string>];
 	}) {
 		const argumentsTypes = [
 			`${packageAddress}::staking::Staking`,
@@ -332,11 +373,15 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/**
+	 * Signals to the contract that the node has received all its shards for the new
+	 * epoch.
+	 */
 	function epoch_sync_done(options: {
 		arguments: [
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
-			RawTransactionArgument<number>,
+			staking: RawTransactionArgument<string>,
+			cap: RawTransactionArgument<string>,
+			epoch: RawTransactionArgument<number>,
 		];
 	}) {
 		const argumentsTypes = [
@@ -352,7 +397,8 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function stake_with_pool(options: { arguments: [RawTransactionArgument<string>] }) {
+	/** Stake `Coin` with the staking pool. */
+	function stake_with_pool(options: { arguments: [staking: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::staking::Staking`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -362,8 +408,16 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/**
+	 * Marks the amount as a withdrawal to be processed and removes it from the stake
+	 * weight of the node. Allows the user to call withdraw_stake after the epoch
+	 * change to the next epoch and shard transfer is done.
+	 */
 	function request_withdraw_stake(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<string>];
+		arguments: [
+			staking: RawTransactionArgument<string>,
+			staked_wal: RawTransactionArgument<string>,
+		];
 	}) {
 		const argumentsTypes = [
 			`${packageAddress}::staking::Staking`,
@@ -377,8 +431,12 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/** Withdraws the staked amount from the staking pool. */
 	function withdraw_stake(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<string>];
+		arguments: [
+			staking: RawTransactionArgument<string>,
+			staked_wal: RawTransactionArgument<string>,
+		];
 	}) {
 		const argumentsTypes = [
 			`${packageAddress}::staking::Staking`,
@@ -392,8 +450,14 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/**
+	 * Allows a node to join the active set if it has sufficient stake. This can be
+	 * useful if another node in the active had its stake reduced to be lower than that
+	 * of the current node. In that case, the current node will be added to the active
+	 * set either the next time stake is added or by calling this function.
+	 */
 	function try_join_active_set(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<string>];
+		arguments: [staking: RawTransactionArgument<string>, cap: RawTransactionArgument<string>];
 	}) {
 		const argumentsTypes = [
 			`${packageAddress}::staking::Staking`,
@@ -407,7 +471,8 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function epoch(options: { arguments: [RawTransactionArgument<string>] }) {
+	/** Returns the current epoch of the staking object. */
+	function epoch(options: { arguments: [staking: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::staking::Staking`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -417,12 +482,20 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/**
+	 * Calculate the rewards for an amount with value `staked_principal`, staked in the
+	 * pool with the given `node_id` between `activation_epoch` and `withdraw_epoch`.
+	 *
+	 * This function can be used with `dev_inspect` to calculate the expected rewards
+	 * for a `StakedWal` object or, more generally, the returns provided by a given
+	 * node over a given period.
+	 */
 	function calculate_rewards(options: {
 		arguments: [
-			RawTransactionArgument<string>,
-			RawTransactionArgument<number | bigint>,
-			RawTransactionArgument<number>,
-			RawTransactionArgument<number>,
+			staking: RawTransactionArgument<string>,
+			staked_principal: RawTransactionArgument<number | bigint>,
+			activation_epoch: RawTransactionArgument<number>,
+			withdraw_epoch: RawTransactionArgument<number>,
 		];
 	}) {
 		const argumentsTypes = [`${packageAddress}::staking::Staking`, 'u64', 'u32', 'u32'];

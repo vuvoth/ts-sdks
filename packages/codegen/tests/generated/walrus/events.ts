@@ -1,6 +1,12 @@
 /**************************************************************
  * THIS FILE IS GENERATED AND SHOULD NOT BE MANUALLY MODIFIED *
  **************************************************************/
+
+/**
+ * Module to emit events. Used to allow filtering all events in the rust client (as
+ * work-around for the lack of composable event filters).
+ */
+
 import { bcs } from '@mysten/sui/bcs';
 export function BlobRegistered() {
 	return bcs.struct('BlobRegistered', {

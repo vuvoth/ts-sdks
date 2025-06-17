@@ -18,13 +18,18 @@ export function InitCap() {
 	});
 }
 export function init(packageAddress: string) {
+	/**
+	 * Function to initialize walrus and share the system and staking objects. This can
+	 * only be called once, after which the `InitCap` is destroyed. TODO: decide what
+	 * to add as system parameters instead of constants.
+	 */
 	function initialize_walrus(options: {
 		arguments: [
-			RawTransactionArgument<string>,
-			RawTransactionArgument<number | bigint>,
-			RawTransactionArgument<number | bigint>,
-			RawTransactionArgument<number>,
-			RawTransactionArgument<number>,
+			init_cap: RawTransactionArgument<string>,
+			epoch_zero_duration: RawTransactionArgument<number | bigint>,
+			epoch_duration: RawTransactionArgument<number | bigint>,
+			n_shards: RawTransactionArgument<number>,
+			max_epochs_ahead: RawTransactionArgument<number>,
 		];
 	}) {
 		const argumentsTypes = [`${packageAddress}::init::InitCap`, 'u64', 'u64', 'u16', 'u32'];
@@ -36,8 +41,15 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/**
+	 * Migrate the staking and system objects to the new package id.
+	 *
+	 * This must be called in the new package after an upgrade is committed to emit an
+	 * event that informs all storage nodes and prevent previous package versions from
+	 * being used.
+	 */
 	function migrate(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<string>];
+		arguments: [staking: RawTransactionArgument<string>, system: RawTransactionArgument<string>];
 	}) {
 		const argumentsTypes = [
 			`${packageAddress}::staking::Staking`,

@@ -1,6 +1,9 @@
 /**************************************************************
  * THIS FILE IS GENERATED AND SHOULD NOT BE MANUALLY MODIFIED *
  **************************************************************/
+
+/** Module: wal_exchange */
+
 import { bcs } from '@mysten/sui/bcs';
 import { type Transaction } from '@mysten/sui/transactions';
 import { normalizeMoveArguments, type RawTransactionArgument } from '../utils/index.js';
@@ -27,8 +30,12 @@ export function ExchangeRate() {
 	});
 }
 export function init(packageAddress: string) {
+	/** Creates a new exchange rate, making sure it is valid. */
 	function new_exchange_rate(options: {
-		arguments: [RawTransactionArgument<number | bigint>, RawTransactionArgument<number | bigint>];
+		arguments: [
+			wal: RawTransactionArgument<number | bigint>,
+			sui: RawTransactionArgument<number | bigint>,
+		];
 	}) {
 		const argumentsTypes = ['u64', 'u64'];
 		return (tx: Transaction) =>
@@ -39,6 +46,10 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/**
+	 * Creates a new shared exchange with a 1:1 exchange rate and returns the
+	 * associated `AdminCap`.
+	 */
 	function _new(options: { arguments: [] }) {
 		const argumentsTypes = [];
 		return (tx: Transaction) =>
@@ -49,7 +60,11 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function new_funded(options: { arguments: [RawTransactionArgument<number | bigint>] }) {
+	/**
+	 * Creates a new shared exchange with a 1:1 exchange rate, funds it with WAL, and
+	 * returns the associated `AdminCap`.
+	 */
+	function new_funded(options: { arguments: [amount: RawTransactionArgument<number | bigint>] }) {
 		const argumentsTypes = ['u64'];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -59,8 +74,12 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/** Adds WAL to the balance stored in the exchange. */
 	function add_wal(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<number | bigint>];
+		arguments: [
+			self: RawTransactionArgument<string>,
+			amount: RawTransactionArgument<number | bigint>,
+		];
 	}) {
 		const argumentsTypes = [`${packageAddress}::wal_exchange::Exchange`, 'u64'];
 		return (tx: Transaction) =>
@@ -71,8 +90,12 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/** Adds SUI to the balance stored in the exchange. */
 	function add_sui(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<number | bigint>];
+		arguments: [
+			self: RawTransactionArgument<string>,
+			amount: RawTransactionArgument<number | bigint>,
+		];
 	}) {
 		const argumentsTypes = [`${packageAddress}::wal_exchange::Exchange`, 'u64'];
 		return (tx: Transaction) =>
@@ -83,7 +106,8 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function add_all_wal(options: { arguments: [RawTransactionArgument<string>] }) {
+	/** Adds WAL to the balance stored in the exchange. */
+	function add_all_wal(options: { arguments: [self: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::wal_exchange::Exchange`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -93,7 +117,8 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function add_all_sui(options: { arguments: [RawTransactionArgument<string>] }) {
+	/** Adds SUI to the balance stored in the exchange. */
+	function add_all_sui(options: { arguments: [self: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::wal_exchange::Exchange`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -103,11 +128,12 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/** Withdraws WAL from the balance stored in the exchange. */
 	function withdraw_wal(options: {
 		arguments: [
-			RawTransactionArgument<string>,
-			RawTransactionArgument<number | bigint>,
-			RawTransactionArgument<string>,
+			self: RawTransactionArgument<string>,
+			amount: RawTransactionArgument<number | bigint>,
+			admin_cap: RawTransactionArgument<string>,
 		];
 	}) {
 		const argumentsTypes = [
@@ -123,11 +149,12 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/** Withdraws SUI from the balance stored in the exchange. */
 	function withdraw_sui(options: {
 		arguments: [
-			RawTransactionArgument<string>,
-			RawTransactionArgument<number | bigint>,
-			RawTransactionArgument<string>,
+			self: RawTransactionArgument<string>,
+			amount: RawTransactionArgument<number | bigint>,
+			admin_cap: RawTransactionArgument<string>,
 		];
 	}) {
 		const argumentsTypes = [
@@ -143,12 +170,13 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/** Sets the exchange rate of the exchange to `wal` WAL = `sui` SUI. */
 	function set_exchange_rate(options: {
 		arguments: [
-			RawTransactionArgument<string>,
-			RawTransactionArgument<number | bigint>,
-			RawTransactionArgument<number | bigint>,
-			RawTransactionArgument<string>,
+			self: RawTransactionArgument<string>,
+			wal: RawTransactionArgument<number | bigint>,
+			sui: RawTransactionArgument<number | bigint>,
+			admin_cap: RawTransactionArgument<string>,
 		];
 	}) {
 		const argumentsTypes = [
@@ -165,7 +193,8 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function exchange_all_for_wal(options: { arguments: [RawTransactionArgument<string>] }) {
+	/** Exchanges the provided SUI coin for WAL at the exchange's rate. */
+	function exchange_all_for_wal(options: { arguments: [self: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::wal_exchange::Exchange`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -175,8 +204,15 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/**
+	 * Exchanges `amount_sui` out of the provided SUI coin for WAL at the exchange's
+	 * rate.
+	 */
 	function exchange_for_wal(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<number | bigint>];
+		arguments: [
+			self: RawTransactionArgument<string>,
+			amount_sui: RawTransactionArgument<number | bigint>,
+		];
 	}) {
 		const argumentsTypes = [`${packageAddress}::wal_exchange::Exchange`, 'u64'];
 		return (tx: Transaction) =>
@@ -187,7 +223,8 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function exchange_all_for_sui(options: { arguments: [RawTransactionArgument<string>] }) {
+	/** Exchanges the provided WAL coin for SUI at the exchange's rate. */
+	function exchange_all_for_sui(options: { arguments: [self: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::wal_exchange::Exchange`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -197,8 +234,15 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/**
+	 * Exchanges `amount_wal` out of the provided WAL coin for SUI at the exchange's
+	 * rate.
+	 */
 	function exchange_for_sui(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<number | bigint>];
+		arguments: [
+			self: RawTransactionArgument<string>,
+			amount_wal: RawTransactionArgument<number | bigint>,
+		];
 	}) {
 		const argumentsTypes = [`${packageAddress}::wal_exchange::Exchange`, 'u64'];
 		return (tx: Transaction) =>

@@ -4,12 +4,20 @@
 import { bcs, type BcsType } from '@mysten/sui/bcs';
 import { type Transaction } from '@mysten/sui/transactions';
 import { normalizeMoveArguments, type RawTransactionArgument } from '../utils/index.js';
+/**
+ * Authentication for either a sender or an object. Unlike the `Authorized` type,
+ * it cannot be stored and must be used or ignored in the same transaction.
+ */
 export function Authenticated() {
 	return bcs.enum('Authenticated', {
 		Sender: bcs.Address,
 		Object: bcs.Address,
 	});
 }
+/**
+ * Defines the ways to authorize an action. It can be either an address - checked
+ * with `ctx.sender()`, - or an object - checked with `object::id(..)`.
+ */
 export function Authorized() {
 	return bcs.enum('Authorized', {
 		Address: bcs.Address,
@@ -17,6 +25,7 @@ export function Authorized() {
 	});
 }
 export function init(packageAddress: string) {
+	/** Authenticates the sender as the authorizer. */
 	function authenticate_sender(options: { arguments: [] }) {
 		const argumentsTypes = [];
 		return (tx: Transaction) =>
@@ -27,8 +36,9 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/** Authenticates an object as the authorizer. */
 	function authenticate_with_object<T extends BcsType<any>>(options: {
-		arguments: [RawTransactionArgument<T>];
+		arguments: [obj: RawTransactionArgument<T>];
 		typeArguments: [string];
 	}) {
 		const argumentsTypes = [`${options.typeArguments[0]}`];
@@ -41,7 +51,8 @@ export function init(packageAddress: string) {
 				typeArguments: options.typeArguments,
 			});
 	}
-	function authorized_address(options: { arguments: [RawTransactionArgument<string>] }) {
+	/** Returns the `Authorized` as an address. */
+	function authorized_address(options: { arguments: [addr: RawTransactionArgument<string>] }) {
 		const argumentsTypes = ['address'];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -51,6 +62,7 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/** Returns the `Authorized` as an object. */
 	function authorized_object(options: { arguments: [] }) {
 		const argumentsTypes = [];
 		return (tx: Transaction) =>

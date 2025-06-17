@@ -1,6 +1,9 @@
 /**************************************************************
  * THIS FILE IS GENERATED AND SHOULD NOT BE MANUALLY MODIFIED *
  **************************************************************/
+
+/** Module: extended_field */
+
 import { bcs, type BcsType } from '@mysten/sui/bcs';
 import { type Transaction } from '@mysten/sui/transactions';
 import { normalizeMoveArguments, type RawTransactionArgument } from '../utils/index.js';
@@ -11,13 +14,12 @@ export function ExtendedField() {
 	});
 }
 export function Key() {
-	return bcs.struct('Key', {
-		dummy_field: bcs.bool(),
-	});
+	return bcs.tuple([bcs.bool()], { name: 'Key' });
 }
 export function init(packageAddress: string) {
+	/** Creates a new extended field with the given value. */
 	function _new<T extends BcsType<any>>(options: {
-		arguments: [RawTransactionArgument<T>];
+		arguments: [value: RawTransactionArgument<T>];
 		typeArguments: [string];
 	}) {
 		const argumentsTypes = [`${options.typeArguments[0]}`];
@@ -30,8 +32,9 @@ export function init(packageAddress: string) {
 				typeArguments: options.typeArguments,
 			});
 	}
+	/** Borrows the value stored in the extended field. */
 	function borrow(options: {
-		arguments: [RawTransactionArgument<string>];
+		arguments: [field: RawTransactionArgument<string>];
 		typeArguments: [string];
 	}) {
 		const argumentsTypes = [
@@ -46,8 +49,9 @@ export function init(packageAddress: string) {
 				typeArguments: options.typeArguments,
 			});
 	}
+	/** Borrows the value stored in the extended field mutably. */
 	function borrow_mut(options: {
-		arguments: [RawTransactionArgument<string>];
+		arguments: [field: RawTransactionArgument<string>];
 		typeArguments: [string];
 	}) {
 		const argumentsTypes = [
@@ -62,8 +66,9 @@ export function init(packageAddress: string) {
 				typeArguments: options.typeArguments,
 			});
 	}
+	/** Swaps the value stored in the extended field with the given value. */
 	function swap<T extends BcsType<any>>(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<T>];
+		arguments: [field: RawTransactionArgument<string>, value: RawTransactionArgument<T>];
 		typeArguments: [string];
 	}) {
 		const argumentsTypes = [
@@ -79,8 +84,9 @@ export function init(packageAddress: string) {
 				typeArguments: options.typeArguments,
 			});
 	}
+	/** Destroys the extended field and returns the value stored in it. */
 	function destroy(options: {
-		arguments: [RawTransactionArgument<string>];
+		arguments: [field: RawTransactionArgument<string>];
 		typeArguments: [string];
 	}) {
 		const argumentsTypes = [

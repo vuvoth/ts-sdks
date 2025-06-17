@@ -26,7 +26,7 @@ export function BlobIdDerivation() {
 	});
 }
 export function init(packageAddress: string) {
-	function object_id(options: { arguments: [RawTransactionArgument<string>] }) {
+	function object_id(options: { arguments: [self: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::blob::Blob`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -36,7 +36,7 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function registered_epoch(options: { arguments: [RawTransactionArgument<string>] }) {
+	function registered_epoch(options: { arguments: [self: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::blob::Blob`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -46,7 +46,7 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function blob_id(options: { arguments: [RawTransactionArgument<string>] }) {
+	function blob_id(options: { arguments: [self: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::blob::Blob`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -56,7 +56,7 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function size(options: { arguments: [RawTransactionArgument<string>] }) {
+	function size(options: { arguments: [self: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::blob::Blob`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -66,7 +66,7 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function encoding_type(options: { arguments: [RawTransactionArgument<string>] }) {
+	function encoding_type(options: { arguments: [self: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::blob::Blob`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -76,7 +76,7 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function certified_epoch(options: { arguments: [RawTransactionArgument<string>] }) {
+	function certified_epoch(options: { arguments: [self: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::blob::Blob`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -86,7 +86,7 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function storage(options: { arguments: [RawTransactionArgument<string>] }) {
+	function storage(options: { arguments: [self: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::blob::Blob`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -97,7 +97,7 @@ export function init(packageAddress: string) {
 			});
 	}
 	function encoded_size(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<number>];
+		arguments: [self: RawTransactionArgument<string>, n_shards: RawTransactionArgument<number>];
 	}) {
 		const argumentsTypes = [`${packageAddress}::blob::Blob`, 'u16'];
 		return (tx: Transaction) =>
@@ -108,7 +108,7 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function end_epoch(options: { arguments: [RawTransactionArgument<string>] }) {
+	function end_epoch(options: { arguments: [self: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::blob::Blob`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -118,11 +118,12 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/** Derives the blob_id for a blob given the root_hash, encoding_type and size. */
 	function derive_blob_id(options: {
 		arguments: [
-			RawTransactionArgument<number | bigint>,
-			RawTransactionArgument<number>,
-			RawTransactionArgument<number | bigint>,
+			root_hash: RawTransactionArgument<number | bigint>,
+			encoding_type: RawTransactionArgument<number>,
+			size: RawTransactionArgument<number | bigint>,
 		];
 	}) {
 		const argumentsTypes = ['u256', 'u8', 'u64'];
@@ -134,7 +135,12 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function burn(options: { arguments: [RawTransactionArgument<string>] }) {
+	/**
+	 * Allow the owner of a blob object to destroy it.
+	 *
+	 * This function also burns any [`Metadata`] associated with the blob, if present.
+	 */
+	function burn(options: { arguments: [self: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::blob::Blob`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -144,8 +150,13 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/**
+	 * Adds the metadata dynamic field to the Blob.
+	 *
+	 * Aborts if the metadata is already present.
+	 */
 	function add_metadata(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<string>];
+		arguments: [self: RawTransactionArgument<string>, metadata: RawTransactionArgument<string>];
 	}) {
 		const argumentsTypes = [
 			`${packageAddress}::blob::Blob`,
@@ -159,8 +170,14 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/**
+	 * Adds the metadata dynamic field to the Blob, replacing the existing metadata if
+	 * present.
+	 *
+	 * Returns the replaced metadata if present.
+	 */
 	function add_or_replace_metadata(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<string>];
+		arguments: [self: RawTransactionArgument<string>, metadata: RawTransactionArgument<string>];
 	}) {
 		const argumentsTypes = [
 			`${packageAddress}::blob::Blob`,
@@ -174,7 +191,13 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function take_metadata(options: { arguments: [RawTransactionArgument<string>] }) {
+	/**
+	 * Removes the metadata dynamic field from the Blob, returning the contained
+	 * `Metadata`.
+	 *
+	 * Aborts if the metadata does not exist.
+	 */
+	function take_metadata(options: { arguments: [self: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::blob::Blob`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -184,11 +207,17 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/**
+	 * Inserts a key-value pair into the metadata.
+	 *
+	 * If the key is already present, the value is updated. Creates new metadata on the
+	 * Blob object if it does not exist already.
+	 */
 	function insert_or_update_metadata_pair(options: {
 		arguments: [
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
+			self: RawTransactionArgument<string>,
+			key: RawTransactionArgument<string>,
+			value: RawTransactionArgument<string>,
 		];
 	}) {
 		const argumentsTypes = [
@@ -204,8 +233,13 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/**
+	 * Removes the metadata associated with the given key.
+	 *
+	 * Aborts if the metadata does not exist.
+	 */
 	function remove_metadata_pair(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<string>];
+		arguments: [self: RawTransactionArgument<string>, key: RawTransactionArgument<string>];
 	}) {
 		const argumentsTypes = [
 			`${packageAddress}::blob::Blob`,
@@ -219,8 +253,9 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/** Removes and returns the metadata associated with the given key, if it exists. */
 	function remove_metadata_pair_if_exists(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<string>];
+		arguments: [self: RawTransactionArgument<string>, key: RawTransactionArgument<string>];
 	}) {
 		const argumentsTypes = [
 			`${packageAddress}::blob::Blob`,

@@ -3,7 +3,7 @@
 
 import type ts from 'typescript';
 import { getSafeName } from './render-types.js';
-import { parseTS, printStatements } from './utils.js';
+import { parseTS, printNodes } from './utils.js';
 import { relative, resolve } from 'path';
 
 export class FileBuilder {
@@ -24,7 +24,16 @@ export class FileBuilder {
 		this.starImports.set(getSafeName(name), module);
 	}
 
-	toString(modDir: string, filePath: string) {
+	async getHeader() {
+		return [
+			'/**************************************************************',
+			' * THIS FILE IS GENERATED AND SHOULD NOT BE MANUALLY MODIFIED *',
+			' **************************************************************/',
+			'',
+		].join('\n');
+	}
+
+	async toString(modDir: string, filePath: string) {
 		const importStatements = [...this.imports.entries()].flatMap(
 			([module, names]) =>
 				parseTS`import { ${[...names].join(', ')} } from '${modulePath(module)}'`,
@@ -33,14 +42,7 @@ export class FileBuilder {
 			([name, module]) => parseTS`import * as ${name} from '${modulePath(module)}'`,
 		);
 
-		const header = [
-			'/**************************************************************',
-			' * THIS FILE IS GENERATED AND SHOULD NOT BE MANUALLY MODIFIED *',
-			' **************************************************************/',
-			'',
-		].join('\n');
-
-		return `${header}${printStatements([...importStatements, ...starImportStatements, ...this.statements])}`;
+		return `${await this.getHeader()}${printNodes(...importStatements, ...starImportStatements, ...this.statements)}`;
 
 		function modulePath(mod: string) {
 			if (!mod.startsWith('~root/')) {

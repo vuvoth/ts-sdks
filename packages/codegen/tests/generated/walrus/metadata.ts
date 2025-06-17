@@ -1,6 +1,9 @@
 /**************************************************************
  * THIS FILE IS GENERATED AND SHOULD NOT BE MANUALLY MODIFIED *
  **************************************************************/
+
+/** Contains the metadata for Blobs on Walrus. */
+
 import { bcs } from '@mysten/sui/bcs';
 import { type Transaction } from '@mysten/sui/transactions';
 import { normalizeMoveArguments, type RawTransactionArgument } from '../utils/index.js';
@@ -11,6 +14,7 @@ export function Metadata() {
 	});
 }
 export function init(packageAddress: string) {
+	/** Creates a new instance of Metadata. */
 	function _new(options: { arguments: [] }) {
 		const argumentsTypes = [];
 		return (tx: Transaction) =>
@@ -21,11 +25,16 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/**
+	 * Inserts a key-value pair into the metadata.
+	 *
+	 * If the key is already present, the value is updated.
+	 */
 	function insert_or_update(options: {
 		arguments: [
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
+			self: RawTransactionArgument<string>,
+			key: RawTransactionArgument<string>,
+			value: RawTransactionArgument<string>,
 		];
 	}) {
 		const argumentsTypes = [
@@ -41,8 +50,9 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/** Removes the metadata associated with the given key. */
 	function remove(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<string>];
+		arguments: [self: RawTransactionArgument<string>, key: RawTransactionArgument<string>];
 	}) {
 		const argumentsTypes = [
 			`${packageAddress}::metadata::Metadata`,
@@ -56,8 +66,13 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/**
+	 * Removes the metadata associated with the given key, if it exists.
+	 *
+	 * Optionally returns the previous value associated with the key.
+	 */
 	function remove_if_exists(options: {
-		arguments: [RawTransactionArgument<string>, RawTransactionArgument<string>];
+		arguments: [self: RawTransactionArgument<string>, key: RawTransactionArgument<string>];
 	}) {
 		const argumentsTypes = [
 			`${packageAddress}::metadata::Metadata`,

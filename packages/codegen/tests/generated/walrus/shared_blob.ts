@@ -15,7 +15,8 @@ export function SharedBlob() {
 	});
 }
 export function init(packageAddress: string) {
-	function _new(options: { arguments: [RawTransactionArgument<string>] }) {
+	/** Shares the provided `blob` as a `SharedBlob` with zero funds. */
+	function _new(options: { arguments: [blob: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::blob::Blob`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -25,7 +26,8 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function new_funded(options: { arguments: [RawTransactionArgument<string>] }) {
+	/** Shares the provided `blob` as a `SharedBlob` with funds. */
+	function new_funded(options: { arguments: [blob: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::blob::Blob`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -35,7 +37,8 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
-	function fund(options: { arguments: [RawTransactionArgument<string>] }) {
+	/** Adds the provided `Coin` to the stored funds. */
+	function fund(options: { arguments: [self: RawTransactionArgument<string>] }) {
 		const argumentsTypes = [`${packageAddress}::shared_blob::SharedBlob`];
 		return (tx: Transaction) =>
 			tx.moveCall({
@@ -45,11 +48,16 @@ export function init(packageAddress: string) {
 				arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
 			});
 	}
+	/**
+	 * Extends the lifetime of the wrapped `Blob` by `extended_epochs` epochs if the
+	 * stored funds are sufficient and the new lifetime does not exceed the maximum
+	 * lifetime.
+	 */
 	function extend(options: {
 		arguments: [
-			RawTransactionArgument<string>,
-			RawTransactionArgument<string>,
-			RawTransactionArgument<number>,
+			self: RawTransactionArgument<string>,
+			system: RawTransactionArgument<string>,
+			extended_epochs: RawTransactionArgument<number>,
 		];
 	}) {
 		const argumentsTypes = [
