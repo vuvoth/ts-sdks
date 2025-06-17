@@ -23,18 +23,24 @@ export class SealAPIError extends SealError {
 				return new InvalidPackageError(requestId);
 			case 'NoAccess':
 				return new NoAccessError(requestId);
-			case 'InvalidCertificate':
-				return new ExpiredSessionKeyError(requestId);
-			case 'OldPackageVersion':
-				return new OldPackageError(requestId);
 			case 'InvalidSignature':
 				return new InvalidUserSignatureError(requestId);
 			case 'InvalidSessionSignature':
 				return new InvalidSessionKeySignatureError(requestId);
+			case 'InvalidCertificate':
+				return new ExpiredSessionKeyError(requestId);
 			case 'InvalidSDKVersion':
 				return new InvalidSDKVersionError(requestId);
 			case 'DeprecatedSDKVersion':
 				return new DeprecatedSDKVersionError(requestId);
+			case 'InvalidParameter':
+				return new InvalidParameterError(requestId);
+			case 'InvalidMVRName':
+				return new InvalidMVRNameError(requestId);
+			case 'InvalidServiceId':
+				return new InvalidKeyServerObjectIdError(requestId);
+			case 'UnsupportedPackageId':
+				return new UnsupportedPackageIdError(requestId);
 			case 'Failure':
 				return new InternalError(requestId);
 			default:
@@ -75,9 +81,12 @@ export class InvalidPackageError extends SealAPIError {
 	}
 }
 
-export class OldPackageError extends SealAPIError {
+export class InvalidParameterError extends SealAPIError {
 	constructor(requestId?: string) {
-		super('PTB must call the latest version of the package', requestId);
+		super(
+			'PTB contains an invalid parameter, possibly a newly created object that the FN has not yet seen',
+			requestId,
+		);
 	}
 }
 
@@ -92,6 +101,26 @@ export class InvalidUserSignatureError extends SealAPIError {
 export class InvalidSessionKeySignatureError extends SealAPIError {
 	constructor(requestId?: string) {
 		super('Session key signature is invalid', requestId);
+	}
+}
+
+export class InvalidMVRNameError extends SealAPIError {
+	constructor(requestId?: string) {
+		super('MVR name is invalid or not consistent with the first version of the package', requestId);
+	}
+}
+
+/** Server error indicating that the requested key server object id is invalid */
+export class InvalidKeyServerObjectIdError extends SealAPIError {
+	constructor(requestId?: string) {
+		super('Key server object ID is invalid', requestId);
+	}
+}
+
+/** Server error indicating that the requested package id is not supported (i.e., key server is running in Permissioned mode) */
+export class UnsupportedPackageIdError extends SealAPIError {
+	constructor(requestId?: string) {
+		super('Requested package is not supported', requestId);
 	}
 }
 
