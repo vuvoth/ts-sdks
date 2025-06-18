@@ -31,7 +31,7 @@ export function init(packageAddress: string) {
 			'vector<u8>',
 			'vector<u8>',
 			'vector<u8>',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -62,7 +62,7 @@ export function init(packageAddress: string) {
 			'u8',
 			'u64',
 			'u32',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -79,7 +79,7 @@ export function init(packageAddress: string) {
 			epochs_ahead: RawTransactionArgument<number>,
 		];
 	}) {
-		const argumentsTypes = [`${packageAddress}::system::System`, 'u64', 'u32'];
+		const argumentsTypes = [`${packageAddress}::system::System`, 'u64', 'u32'] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -111,7 +111,7 @@ export function init(packageAddress: string) {
 			'u64',
 			'u8',
 			'bool',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -139,7 +139,7 @@ export function init(packageAddress: string) {
 			'vector<u8>',
 			'vector<u8>',
 			'vector<u8>',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -152,7 +152,10 @@ export function init(packageAddress: string) {
 	function delete_blob(options: {
 		arguments: [self: RawTransactionArgument<string>, blob: RawTransactionArgument<string>];
 	}) {
-		const argumentsTypes = [`${packageAddress}::system::System`, `${packageAddress}::blob::Blob`];
+		const argumentsTypes = [
+			`${packageAddress}::system::System`,
+			`${packageAddress}::blob::Blob`,
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -177,7 +180,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::system::System`,
 			`${packageAddress}::blob::Blob`,
 			`${packageAddress}::storage_resource::Storage`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -201,7 +204,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::system::System`,
 			`${packageAddress}::blob::Blob`,
 			'u32',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -221,7 +224,7 @@ export function init(packageAddress: string) {
 			epochs_ahead: RawTransactionArgument<number>,
 		];
 	}) {
-		const argumentsTypes = [`${packageAddress}::system::System`, 'u32'];
+		const argumentsTypes = [`${packageAddress}::system::System`, 'u32'] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -244,7 +247,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::storage_node::StorageNodeCap`,
 			'u256',
 			'u64',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -269,7 +272,7 @@ export function init(packageAddress: string) {
 			'vector<u8>',
 			'vector<u8>',
 			'vector<u8>',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -292,7 +295,7 @@ export function init(packageAddress: string) {
 			'vector<u8>',
 			'vector<u8>',
 			'vector<u8>',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -303,7 +306,7 @@ export function init(packageAddress: string) {
 	}
 	/** Get epoch. Uses the committee to get the epoch. */
 	function epoch(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::system::System`];
+		const argumentsTypes = [`${packageAddress}::system::System`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -314,7 +317,7 @@ export function init(packageAddress: string) {
 	}
 	/** Accessor for total capacity size. */
 	function total_capacity_size(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::system::System`];
+		const argumentsTypes = [`${packageAddress}::system::System`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -325,7 +328,7 @@ export function init(packageAddress: string) {
 	}
 	/** Accessor for used capacity size. */
 	function used_capacity_size(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::system::System`];
+		const argumentsTypes = [`${packageAddress}::system::System`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -336,7 +339,7 @@ export function init(packageAddress: string) {
 	}
 	/** Accessor for the number of shards. */
 	function n_shards(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::system::System`];
+		const argumentsTypes = [`${packageAddress}::system::System`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,

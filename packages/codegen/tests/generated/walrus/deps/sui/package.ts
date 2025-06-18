@@ -32,26 +32,3 @@ export function UpgradeCap() {
 		policy: bcs.u8(),
 	});
 }
-export function UpgradeTicket() {
-	return bcs.struct('UpgradeTicket', {
-		/** (Immutable) ID of the `UpgradeCap` this originated from. */
-		cap: bcs.Address,
-		/** (Immutable) ID of the package that can be upgraded. */
-		package: bcs.Address,
-		/** (Immutable) The policy regarding what kind of upgrade this ticket permits. */
-		policy: bcs.u8(),
-		/**
-		 * (Immutable) SHA256 digest of the bytecode and transitive dependencies that will
-		 * be used in the upgrade.
-		 */
-		digest: bcs.vector(bcs.u8()),
-	});
-}
-export function UpgradeReceipt() {
-	return bcs.struct('UpgradeReceipt', {
-		/** (Immutable) ID of the `UpgradeCap` this originated from. */
-		cap: bcs.Address,
-		/** (Immutable) ID of the package after it was upgraded. */
-		package: bcs.Address,
-	});
-}

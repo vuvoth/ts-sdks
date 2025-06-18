@@ -126,7 +126,9 @@ export class MoveModuleBuilder extends FileBuilder {
 	}
 
 	async renderBCSTypes() {
-		this.addImport('@mysten/sui/bcs', 'bcs');
+		if (this.hasBcsTypes()) {
+			this.addImport('@mysten/sui/bcs', 'bcs');
+		}
 		await this.renderStructs();
 		await this.renderEnums();
 	}
@@ -201,6 +203,10 @@ export class MoveModuleBuilder extends FileBuilder {
 
 	async renderStructs() {
 		for (const [name, struct] of Object.entries(this.summary.structs)) {
+			if (!this.#includedTypes.has(name)) {
+				continue;
+			}
+
 			this.exports.push(name);
 
 			const params = struct.type_parameters.filter((param) => !param.phantom);
@@ -251,6 +257,9 @@ export class MoveModuleBuilder extends FileBuilder {
 		}
 
 		for (const [name, enumDef] of Object.entries(this.summary.enums)) {
+			if (!this.#includedTypes.has(name)) {
+				continue;
+			}
 			this.exports.push(name);
 
 			const variantsObject = await mapToObject({
@@ -267,13 +276,16 @@ export class MoveModuleBuilder extends FileBuilder {
 										summary: this.summary,
 										typeParameters: enumDef.type_parameters,
 										resolveAddress: (address) => this.#resolveAddress(address),
-										onDependency: (address, mod) =>
-											this.addStarImport(
-												address === this.summary.id.address
-													? `./${mod}.js`
-													: `~root/deps/${address}/${mod}.js`,
-												mod,
-											),
+										onDependency: (address, mod) => {
+											if (address !== this.summary.id.address || mod !== this.summary.id.name) {
+												this.addStarImport(
+													address === this.summary.id.address
+														? `./${mod}.js`
+														: `~root/deps/${address}/${mod}.js`,
+													mod,
+												);
+											}
+										},
 									})
 								: await this.#renderFieldsAsTuple(
 										`${name}.${variantName}`,
@@ -337,7 +349,9 @@ export class MoveModuleBuilder extends FileBuilder {
 			const fnName = getSafeName(name);
 
 			this.addImport('~root/../utils/index.js', 'normalizeMoveArguments');
-			this.addImport('~root/../utils/index.js', 'type RawTransactionArgument');
+			if (parameters.length > 0) {
+				this.addImport('~root/../utils/index.js', 'type RawTransactionArgument');
+			}
 
 			names.push(fnName);
 
@@ -364,14 +378,19 @@ export class MoveModuleBuilder extends FileBuilder {
 				this.addImport('@mysten/sui/bcs', 'type BcsType');
 			}
 
+			const filteredTypeParameters = func.type_parameters.filter(
+				(param, i) =>
+					usedTypeParameters.has(i) || (param.name && usedTypeParameters.has(param.name)),
+			);
+
 			statements.push(
 				...(await withComment(
 					func,
 					parseTS/* ts */ `function
 					${fnName}${
-						usedTypeParameters.size > 0
+						filteredTypeParameters.length > 0
 							? `<
-							${func.type_parameters.map((param, i) => `${param.name ?? `T${i}`} extends BcsType<any>`)}
+							${filteredTypeParameters.map((param, i) => `${param.name ?? `T${i}`} extends BcsType<any>`)}
 						>`
 							: ''
 					}(options: {
@@ -396,7 +415,7 @@ export class MoveModuleBuilder extends FileBuilder {
 							)
 							.map((tag) => (tag.includes('{') ? `\`${tag}\`` : `'${tag}'`))
 							.join(',\n')}
-					]
+					] satisfies string[]
 					return (tx: Transaction) => tx.moveCall({
 						package: packageAddress,
 						module: '${this.summary.id.name}',

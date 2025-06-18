@@ -33,7 +33,7 @@ export function Entry<T extends BcsType<any>>(...typeParameters: [T]) {
 export function init(packageAddress: string) {
 	/** Create a new priority queue. */
 	function _new(options: { arguments: []; typeArguments: [string] }) {
-		const argumentsTypes = [];
+		const argumentsTypes = [] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -50,7 +50,7 @@ export function init(packageAddress: string) {
 	}) {
 		const argumentsTypes = [
 			`${packageAddress}::apportionment_queue::ApportionmentQueue<${options.typeArguments[0]}>`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -75,7 +75,7 @@ export function init(packageAddress: string) {
 			'0x0000000000000000000000000000000000000000000000000000000000000001::uq64_64::UQ64_64',
 			'u64',
 			`${options.typeArguments[0]}`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,

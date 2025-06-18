@@ -48,7 +48,7 @@ export function init(packageAddress: string) {
 			'u64',
 			'u64',
 			'u64',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -73,7 +73,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::staking::Staking`,
 			`${packageAddress}::storage_node::StorageNodeCap`,
 			'u16',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -92,7 +92,7 @@ export function init(packageAddress: string) {
 		const argumentsTypes = [
 			`${packageAddress}::staking::Staking`,
 			`${packageAddress}::auth::Authenticated`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -113,7 +113,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::staking::Staking`,
 			`${packageAddress}::auth::Authenticated`,
 			`${packageAddress}::auth::Authorized`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -134,7 +134,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::staking::Staking`,
 			`${packageAddress}::auth::Authenticated`,
 			`${packageAddress}::auth::Authorized`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -147,7 +147,7 @@ export function init(packageAddress: string) {
 	function compute_next_committee(options: {
 		arguments: [staking: RawTransactionArgument<string>];
 	}) {
-		const argumentsTypes = [`${packageAddress}::staking::Staking`];
+		const argumentsTypes = [`${packageAddress}::staking::Staking`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -168,7 +168,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::staking::Staking`,
 			`${packageAddress}::storage_node::StorageNodeCap`,
 			'u64',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -189,7 +189,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::staking::Staking`,
 			`${packageAddress}::storage_node::StorageNodeCap`,
 			'u64',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -210,7 +210,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::staking::Staking`,
 			`${packageAddress}::storage_node::StorageNodeCap`,
 			'u64',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -221,7 +221,7 @@ export function init(packageAddress: string) {
 	}
 	/** Get `NodeMetadata` for the given node. */
 	function node_metadata(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::staking::Staking`];
+		const argumentsTypes = [`${packageAddress}::staking::Staking`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -247,7 +247,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::storage_node::StorageNodeCap`,
 			'vector<u8>',
 			'vector<u8>',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -268,7 +268,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::staking::Staking`,
 			`${packageAddress}::storage_node::StorageNodeCap`,
 			'0x0000000000000000000000000000000000000000000000000000000000000001::string::String',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -289,7 +289,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::staking::Staking`,
 			`${packageAddress}::storage_node::StorageNodeCap`,
 			'0x0000000000000000000000000000000000000000000000000000000000000001::string::String',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -310,7 +310,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::staking::Staking`,
 			`${packageAddress}::storage_node::StorageNodeCap`,
 			'vector<u8>',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -331,7 +331,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::staking::Staking`,
 			`${packageAddress}::storage_node::StorageNodeCap`,
 			`${packageAddress}::node_metadata::NodeMetadata`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -345,7 +345,7 @@ export function init(packageAddress: string) {
 	 * Permissionless, can be called by anyone. Emits: `EpochParametersSelected` event.
 	 */
 	function voting_end(options: { arguments: [staking: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::staking::Staking`];
+		const argumentsTypes = [`${packageAddress}::staking::Staking`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -364,7 +364,7 @@ export function init(packageAddress: string) {
 		const argumentsTypes = [
 			`${packageAddress}::staking::Staking`,
 			`${packageAddress}::system::System`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -388,7 +388,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::staking::Staking`,
 			`${packageAddress}::storage_node::StorageNodeCap`,
 			'u32',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -399,7 +399,7 @@ export function init(packageAddress: string) {
 	}
 	/** Stake `Coin` with the staking pool. */
 	function stake_with_pool(options: { arguments: [staking: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::staking::Staking`];
+		const argumentsTypes = [`${packageAddress}::staking::Staking`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -422,7 +422,7 @@ export function init(packageAddress: string) {
 		const argumentsTypes = [
 			`${packageAddress}::staking::Staking`,
 			`${packageAddress}::staked_wal::StakedWal`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -441,7 +441,7 @@ export function init(packageAddress: string) {
 		const argumentsTypes = [
 			`${packageAddress}::staking::Staking`,
 			`${packageAddress}::staked_wal::StakedWal`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -462,7 +462,7 @@ export function init(packageAddress: string) {
 		const argumentsTypes = [
 			`${packageAddress}::staking::Staking`,
 			`${packageAddress}::storage_node::StorageNodeCap`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -473,7 +473,7 @@ export function init(packageAddress: string) {
 	}
 	/** Returns the current epoch of the staking object. */
 	function epoch(options: { arguments: [staking: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::staking::Staking`];
+		const argumentsTypes = [`${packageAddress}::staking::Staking`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -498,7 +498,12 @@ export function init(packageAddress: string) {
 			withdraw_epoch: RawTransactionArgument<number>,
 		];
 	}) {
-		const argumentsTypes = [`${packageAddress}::staking::Staking`, 'u64', 'u32', 'u32'];
+		const argumentsTypes = [
+			`${packageAddress}::staking::Staking`,
+			'u64',
+			'u32',
+			'u32',
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,

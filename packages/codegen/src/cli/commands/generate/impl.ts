@@ -12,7 +12,10 @@ interface SubdirCommandFlags {
 	noPrune?: boolean;
 }
 
-export async function generate(this: LocalContext, flags: SubdirCommandFlags): Promise<void> {
+export default async function generate(
+	this: LocalContext,
+	flags: SubdirCommandFlags,
+): Promise<void> {
 	for (const path of flags.built ?? []) {
 		await generateBuiltPackage({
 			source: path,

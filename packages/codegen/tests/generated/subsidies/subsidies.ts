@@ -49,7 +49,7 @@ export function Subsidies() {
 export function init(packageAddress: string) {
 	/** Creates a new `Subsidies` object and an `AdminCap`. */
 	function _new(options: { arguments: [] }) {
-		const argumentsTypes = [];
+		const argumentsTypes = [] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -65,7 +65,7 @@ export function init(packageAddress: string) {
 			initial_system_subsidy_rate: RawTransactionArgument<number>,
 		];
 	}) {
-		const argumentsTypes = ['u16', 'u16'];
+		const argumentsTypes = ['u16', 'u16'] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -81,7 +81,7 @@ export function init(packageAddress: string) {
 	 * nodes.
 	 */
 	function add_funds(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::subsidies::Subsidies`];
+		const argumentsTypes = [`${packageAddress}::subsidies::Subsidies`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -106,7 +106,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::subsidies::Subsidies`,
 			`${packageAddress}::subsidies::AdminCap`,
 			'u16',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -131,7 +131,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::subsidies::Subsidies`,
 			`${packageAddress}::subsidies::AdminCap`,
 			'u16',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -159,7 +159,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::system::System`,
 			`${packageAddress}::blob::Blob`,
 			'u32',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -187,7 +187,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::system::System`,
 			'u64',
 			'u32',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -199,7 +199,7 @@ export function init(packageAddress: string) {
 	function admin_cap_subsidies_id(options: {
 		arguments: [admin_cap: RawTransactionArgument<string>];
 	}) {
-		const argumentsTypes = [`${packageAddress}::subsidies::AdminCap`];
+		const argumentsTypes = [`${packageAddress}::subsidies::AdminCap`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -210,7 +210,7 @@ export function init(packageAddress: string) {
 	}
 	/** Returns the current value of the subsidy pool. */
 	function subsidy_pool_value(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::subsidies::Subsidies`];
+		const argumentsTypes = [`${packageAddress}::subsidies::Subsidies`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -221,7 +221,7 @@ export function init(packageAddress: string) {
 	}
 	/** Returns the current rate for buyer subsidies. */
 	function buyer_subsidy_rate(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::subsidies::Subsidies`];
+		const argumentsTypes = [`${packageAddress}::subsidies::Subsidies`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -232,7 +232,7 @@ export function init(packageAddress: string) {
 	}
 	/** Returns the current rate for storage node subsidies. */
 	function system_subsidy_rate(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::subsidies::Subsidies`];
+		const argumentsTypes = [`${packageAddress}::subsidies::Subsidies`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,

@@ -6,6 +6,7 @@ import { basename, join } from 'node:path';
 import { normalizeSuiAddress } from '@mysten/sui/utils';
 import { MoveModuleBuilder } from './move-module-builder.js';
 import { existsSync, statSync } from 'node:fs';
+import { utilsContent } from './generate-utils.js';
 
 export async function generateBuiltPackage({
 	source,
@@ -21,6 +22,8 @@ export async function generateBuiltPackage({
 		.filter((mod) => mod.endsWith('.mv'));
 
 	const builders = await Promise.all(modules.map((mod) => MoveModuleBuilder.fromBytecodeFile(mod)));
+
+	await generateUtils({ destination });
 
 	for (const builder of builders) {
 		if (!builder.hasTypesOrFunctions()) {
@@ -114,6 +117,8 @@ export async function generateFromPackageSummary({
 		}
 	});
 
+	await generateUtils({ destination });
+
 	await Promise.all(
 		modules.map(async (mod) => {
 			if ((mod.isMainPackage || noPrune) && mod.builder.hasTypesOrFunctions()) {
@@ -143,4 +148,9 @@ export async function generateFromPackageSummary({
 			);
 		}),
 	);
+}
+
+async function generateUtils({ destination }: { destination: string }) {
+	await mkdir(join(destination, 'utils'), { recursive: true });
+	await writeFile(join(destination, 'utils', 'index.ts'), utilsContent);
 }

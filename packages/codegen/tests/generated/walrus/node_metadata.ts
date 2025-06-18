@@ -29,7 +29,7 @@ export function init(packageAddress: string) {
 			'0x0000000000000000000000000000000000000000000000000000000000000001::string::String',
 			'0x0000000000000000000000000000000000000000000000000000000000000001::string::String',
 			'0x0000000000000000000000000000000000000000000000000000000000000001::string::String',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -48,7 +48,7 @@ export function init(packageAddress: string) {
 		const argumentsTypes = [
 			`${packageAddress}::node_metadata::NodeMetadata`,
 			'0x0000000000000000000000000000000000000000000000000000000000000001::string::String',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -67,7 +67,7 @@ export function init(packageAddress: string) {
 		const argumentsTypes = [
 			`${packageAddress}::node_metadata::NodeMetadata`,
 			'0x0000000000000000000000000000000000000000000000000000000000000001::string::String',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -86,7 +86,7 @@ export function init(packageAddress: string) {
 		const argumentsTypes = [
 			`${packageAddress}::node_metadata::NodeMetadata`,
 			'0x0000000000000000000000000000000000000000000000000000000000000001::string::String',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -97,7 +97,7 @@ export function init(packageAddress: string) {
 	}
 	/** Set an extra field of the Validator. */
 	function set_extra_fields(options: { arguments: [metadata: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::node_metadata::NodeMetadata`];
+		const argumentsTypes = [`${packageAddress}::node_metadata::NodeMetadata`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -108,7 +108,7 @@ export function init(packageAddress: string) {
 	}
 	/** Returns the image URL of the Validator. */
 	function image_url(options: { arguments: [metadata: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::node_metadata::NodeMetadata`];
+		const argumentsTypes = [`${packageAddress}::node_metadata::NodeMetadata`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -119,7 +119,7 @@ export function init(packageAddress: string) {
 	}
 	/** Returns the project URL of the Validator. */
 	function project_url(options: { arguments: [metadata: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::node_metadata::NodeMetadata`];
+		const argumentsTypes = [`${packageAddress}::node_metadata::NodeMetadata`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -130,7 +130,7 @@ export function init(packageAddress: string) {
 	}
 	/** Returns the description of the Validator. */
 	function description(options: { arguments: [metadata: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::node_metadata::NodeMetadata`];
+		const argumentsTypes = [`${packageAddress}::node_metadata::NodeMetadata`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -141,7 +141,7 @@ export function init(packageAddress: string) {
 	}
 	/** Returns the extra fields of the Validator. */
 	function extra_fields(options: { arguments: [metadata: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::node_metadata::NodeMetadata`];
+		const argumentsTypes = [`${packageAddress}::node_metadata::NodeMetadata`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,

@@ -22,7 +22,7 @@ export function init(packageAddress: string) {
 		arguments: [value: RawTransactionArgument<T>];
 		typeArguments: [string];
 	}) {
-		const argumentsTypes = [`${options.typeArguments[0]}`];
+		const argumentsTypes = [`${options.typeArguments[0]}`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -39,7 +39,7 @@ export function init(packageAddress: string) {
 	}) {
 		const argumentsTypes = [
 			`${packageAddress}::extended_field::ExtendedField<${options.typeArguments[0]}>`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -56,7 +56,7 @@ export function init(packageAddress: string) {
 	}) {
 		const argumentsTypes = [
 			`${packageAddress}::extended_field::ExtendedField<${options.typeArguments[0]}>`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -74,7 +74,7 @@ export function init(packageAddress: string) {
 		const argumentsTypes = [
 			`${packageAddress}::extended_field::ExtendedField<${options.typeArguments[0]}>`,
 			`${options.typeArguments[0]}`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -91,7 +91,7 @@ export function init(packageAddress: string) {
 	}) {
 		const argumentsTypes = [
 			`${packageAddress}::extended_field::ExtendedField<${options.typeArguments[0]}>`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,

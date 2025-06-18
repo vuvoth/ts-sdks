@@ -37,7 +37,7 @@ export function init(packageAddress: string) {
 			sui: RawTransactionArgument<number | bigint>,
 		];
 	}) {
-		const argumentsTypes = ['u64', 'u64'];
+		const argumentsTypes = ['u64', 'u64'] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -51,7 +51,7 @@ export function init(packageAddress: string) {
 	 * associated `AdminCap`.
 	 */
 	function _new(options: { arguments: [] }) {
-		const argumentsTypes = [];
+		const argumentsTypes = [] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -65,7 +65,7 @@ export function init(packageAddress: string) {
 	 * returns the associated `AdminCap`.
 	 */
 	function new_funded(options: { arguments: [amount: RawTransactionArgument<number | bigint>] }) {
-		const argumentsTypes = ['u64'];
+		const argumentsTypes = ['u64'] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -81,7 +81,7 @@ export function init(packageAddress: string) {
 			amount: RawTransactionArgument<number | bigint>,
 		];
 	}) {
-		const argumentsTypes = [`${packageAddress}::wal_exchange::Exchange`, 'u64'];
+		const argumentsTypes = [`${packageAddress}::wal_exchange::Exchange`, 'u64'] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -97,7 +97,7 @@ export function init(packageAddress: string) {
 			amount: RawTransactionArgument<number | bigint>,
 		];
 	}) {
-		const argumentsTypes = [`${packageAddress}::wal_exchange::Exchange`, 'u64'];
+		const argumentsTypes = [`${packageAddress}::wal_exchange::Exchange`, 'u64'] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -108,7 +108,7 @@ export function init(packageAddress: string) {
 	}
 	/** Adds WAL to the balance stored in the exchange. */
 	function add_all_wal(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::wal_exchange::Exchange`];
+		const argumentsTypes = [`${packageAddress}::wal_exchange::Exchange`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -119,7 +119,7 @@ export function init(packageAddress: string) {
 	}
 	/** Adds SUI to the balance stored in the exchange. */
 	function add_all_sui(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::wal_exchange::Exchange`];
+		const argumentsTypes = [`${packageAddress}::wal_exchange::Exchange`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -140,7 +140,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::wal_exchange::Exchange`,
 			'u64',
 			`${packageAddress}::wal_exchange::AdminCap`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -161,7 +161,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::wal_exchange::Exchange`,
 			'u64',
 			`${packageAddress}::wal_exchange::AdminCap`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -184,7 +184,7 @@ export function init(packageAddress: string) {
 			'u64',
 			'u64',
 			`${packageAddress}::wal_exchange::AdminCap`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -195,7 +195,7 @@ export function init(packageAddress: string) {
 	}
 	/** Exchanges the provided SUI coin for WAL at the exchange's rate. */
 	function exchange_all_for_wal(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::wal_exchange::Exchange`];
+		const argumentsTypes = [`${packageAddress}::wal_exchange::Exchange`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -214,7 +214,7 @@ export function init(packageAddress: string) {
 			amount_sui: RawTransactionArgument<number | bigint>,
 		];
 	}) {
-		const argumentsTypes = [`${packageAddress}::wal_exchange::Exchange`, 'u64'];
+		const argumentsTypes = [`${packageAddress}::wal_exchange::Exchange`, 'u64'] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -225,7 +225,7 @@ export function init(packageAddress: string) {
 	}
 	/** Exchanges the provided WAL coin for SUI at the exchange's rate. */
 	function exchange_all_for_sui(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::wal_exchange::Exchange`];
+		const argumentsTypes = [`${packageAddress}::wal_exchange::Exchange`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -244,7 +244,7 @@ export function init(packageAddress: string) {
 			amount_wal: RawTransactionArgument<number | bigint>,
 		];
 	}) {
-		const argumentsTypes = [`${packageAddress}::wal_exchange::Exchange`, 'u64'];
+		const argumentsTypes = [`${packageAddress}::wal_exchange::Exchange`, 'u64'] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,

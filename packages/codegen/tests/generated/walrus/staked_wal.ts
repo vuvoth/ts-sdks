@@ -44,7 +44,7 @@ export function StakedWalState() {
 export function init(packageAddress: string) {
 	/** Returns the `node_id` of the staked WAL. */
 	function node_id(options: { arguments: [sw: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::staked_wal::StakedWal`];
+		const argumentsTypes = [`${packageAddress}::staked_wal::StakedWal`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -58,7 +58,7 @@ export function init(packageAddress: string) {
 	 * `Coin`.
 	 */
 	function value(options: { arguments: [sw: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::staked_wal::StakedWal`];
+		const argumentsTypes = [`${packageAddress}::staked_wal::StakedWal`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -69,7 +69,7 @@ export function init(packageAddress: string) {
 	}
 	/** Returns the `activation_epoch` of the staked WAL. */
 	function activation_epoch(options: { arguments: [sw: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::staked_wal::StakedWal`];
+		const argumentsTypes = [`${packageAddress}::staked_wal::StakedWal`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -80,7 +80,7 @@ export function init(packageAddress: string) {
 	}
 	/** Returns true if the staked WAL is in the `Staked` state. */
 	function is_staked(options: { arguments: [sw: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::staked_wal::StakedWal`];
+		const argumentsTypes = [`${packageAddress}::staked_wal::StakedWal`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -91,7 +91,7 @@ export function init(packageAddress: string) {
 	}
 	/** Checks whether the staked WAL is in the `Withdrawing` state. */
 	function is_withdrawing(options: { arguments: [sw: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::staked_wal::StakedWal`];
+		const argumentsTypes = [`${packageAddress}::staked_wal::StakedWal`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -105,7 +105,7 @@ export function init(packageAddress: string) {
 	 * Aborts otherwise.
 	 */
 	function withdraw_epoch(options: { arguments: [sw: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::staked_wal::StakedWal`];
+		const argumentsTypes = [`${packageAddress}::staked_wal::StakedWal`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -126,7 +126,7 @@ export function init(packageAddress: string) {
 		const argumentsTypes = [
 			`${packageAddress}::staked_wal::StakedWal`,
 			`${packageAddress}::staked_wal::StakedWal`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -149,7 +149,7 @@ export function init(packageAddress: string) {
 			amount: RawTransactionArgument<number | bigint>,
 		];
 	}) {
-		const argumentsTypes = [`${packageAddress}::staked_wal::StakedWal`, 'u64'];
+		const argumentsTypes = [`${packageAddress}::staked_wal::StakedWal`, 'u64'] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,

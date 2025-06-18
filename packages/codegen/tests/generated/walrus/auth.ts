@@ -27,7 +27,7 @@ export function Authorized() {
 export function init(packageAddress: string) {
 	/** Authenticates the sender as the authorizer. */
 	function authenticate_sender(options: { arguments: [] }) {
-		const argumentsTypes = [];
+		const argumentsTypes = [] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -41,7 +41,7 @@ export function init(packageAddress: string) {
 		arguments: [obj: RawTransactionArgument<T>];
 		typeArguments: [string];
 	}) {
-		const argumentsTypes = [`${options.typeArguments[0]}`];
+		const argumentsTypes = [`${options.typeArguments[0]}`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -53,7 +53,7 @@ export function init(packageAddress: string) {
 	}
 	/** Returns the `Authorized` as an address. */
 	function authorized_address(options: { arguments: [addr: RawTransactionArgument<string>] }) {
-		const argumentsTypes = ['address'];
+		const argumentsTypes = ['address'] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -64,7 +64,7 @@ export function init(packageAddress: string) {
 	}
 	/** Returns the `Authorized` as an object. */
 	function authorized_object(options: { arguments: [] }) {
-		const argumentsTypes = [];
+		const argumentsTypes = [] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,

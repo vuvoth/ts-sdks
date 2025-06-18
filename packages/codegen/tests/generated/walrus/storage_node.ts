@@ -36,7 +36,7 @@ export function StorageNodeCap() {
 export function init(packageAddress: string) {
 	/** Return the node ID of the storage node. */
 	function id(options: { arguments: [cap: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::storage_node::StorageNodeInfo`];
+		const argumentsTypes = [`${packageAddress}::storage_node::StorageNodeInfo`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -47,7 +47,7 @@ export function init(packageAddress: string) {
 	}
 	/** Return the pool ID of the storage node. */
 	function node_id(options: { arguments: [cap: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::storage_node::StorageNodeCap`];
+		const argumentsTypes = [`${packageAddress}::storage_node::StorageNodeCap`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -61,7 +61,7 @@ export function init(packageAddress: string) {
 	 * syncing.
 	 */
 	function last_epoch_sync_done(options: { arguments: [cap: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::storage_node::StorageNodeCap`];
+		const argumentsTypes = [`${packageAddress}::storage_node::StorageNodeCap`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -74,7 +74,7 @@ export function init(packageAddress: string) {
 	function last_event_blob_attestation(options: {
 		arguments: [cap: RawTransactionArgument<string>];
 	}) {
-		const argumentsTypes = [`${packageAddress}::storage_node::StorageNodeCap`];
+		const argumentsTypes = [`${packageAddress}::storage_node::StorageNodeCap`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -85,7 +85,7 @@ export function init(packageAddress: string) {
 	}
 	/** Return the deny list root of the storage node. */
 	function deny_list_root(options: { arguments: [cap: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::storage_node::StorageNodeCap`];
+		const argumentsTypes = [`${packageAddress}::storage_node::StorageNodeCap`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -96,7 +96,7 @@ export function init(packageAddress: string) {
 	}
 	/** Return the deny list sequence number of the storage node. */
 	function deny_list_sequence(options: { arguments: [cap: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::storage_node::StorageNodeCap`];
+		const argumentsTypes = [`${packageAddress}::storage_node::StorageNodeCap`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,

@@ -4,7 +4,7 @@
 import { buildCommand } from '@stricli/core';
 
 export const generateCommand = buildCommand({
-	loader: async () => (await import('./impl')).generate,
+	loader: async () => (await import('./impl.js')).default,
 	parameters: {
 		flags: {
 			outputDir: {

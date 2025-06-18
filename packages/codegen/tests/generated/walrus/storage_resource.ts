@@ -15,7 +15,7 @@ export function Storage() {
 }
 export function init(packageAddress: string) {
 	function start_epoch(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::storage_resource::Storage`];
+		const argumentsTypes = [`${packageAddress}::storage_resource::Storage`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -25,7 +25,7 @@ export function init(packageAddress: string) {
 			});
 	}
 	function end_epoch(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::storage_resource::Storage`];
+		const argumentsTypes = [`${packageAddress}::storage_resource::Storage`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -35,7 +35,7 @@ export function init(packageAddress: string) {
 			});
 	}
 	function size(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::storage_resource::Storage`];
+		const argumentsTypes = [`${packageAddress}::storage_resource::Storage`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -56,7 +56,10 @@ export function init(packageAddress: string) {
 			split_epoch: RawTransactionArgument<number>,
 		];
 	}) {
-		const argumentsTypes = [`${packageAddress}::storage_resource::Storage`, 'u32'];
+		const argumentsTypes = [
+			`${packageAddress}::storage_resource::Storage`,
+			'u32',
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -77,7 +80,10 @@ export function init(packageAddress: string) {
 			split_size: RawTransactionArgument<number | bigint>,
 		];
 	}) {
-		const argumentsTypes = [`${packageAddress}::storage_resource::Storage`, 'u64'];
+		const argumentsTypes = [
+			`${packageAddress}::storage_resource::Storage`,
+			'u64',
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -93,7 +99,7 @@ export function init(packageAddress: string) {
 		const argumentsTypes = [
 			`${packageAddress}::storage_resource::Storage`,
 			`${packageAddress}::storage_resource::Storage`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -109,7 +115,7 @@ export function init(packageAddress: string) {
 		const argumentsTypes = [
 			`${packageAddress}::storage_resource::Storage`,
 			`${packageAddress}::storage_resource::Storage`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -128,7 +134,7 @@ export function init(packageAddress: string) {
 		const argumentsTypes = [
 			`${packageAddress}::storage_resource::Storage`,
 			`${packageAddress}::storage_resource::Storage`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -139,7 +145,7 @@ export function init(packageAddress: string) {
 	}
 	/** Destructor for [Storage] objects */
 	function destroy(options: { arguments: [storage: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::storage_resource::Storage`];
+		const argumentsTypes = [`${packageAddress}::storage_resource::Storage`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,

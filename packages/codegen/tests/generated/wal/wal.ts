@@ -26,7 +26,7 @@ export function TreasuryCapKey() {
 export function init(packageAddress: string) {
 	/** Get the total supply of the WAL token. */
 	function total_supply(options: { arguments: [treasury: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::wal::ProtectedTreasury`];
+		const argumentsTypes = [`${packageAddress}::wal::ProtectedTreasury`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -37,7 +37,7 @@ export function init(packageAddress: string) {
 	}
 	/** Burns a `Coin<WAL>` from the sender. */
 	function burn(options: { arguments: [treasury: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::wal::ProtectedTreasury`];
+		const argumentsTypes = [`${packageAddress}::wal::ProtectedTreasury`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,

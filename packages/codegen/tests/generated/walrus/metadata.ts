@@ -16,7 +16,7 @@ export function Metadata() {
 export function init(packageAddress: string) {
 	/** Creates a new instance of Metadata. */
 	function _new(options: { arguments: [] }) {
-		const argumentsTypes = [];
+		const argumentsTypes = [] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -41,7 +41,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::metadata::Metadata`,
 			'0x0000000000000000000000000000000000000000000000000000000000000001::string::String',
 			'0x0000000000000000000000000000000000000000000000000000000000000001::string::String',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -57,7 +57,7 @@ export function init(packageAddress: string) {
 		const argumentsTypes = [
 			`${packageAddress}::metadata::Metadata`,
 			'0x0000000000000000000000000000000000000000000000000000000000000001::string::String',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -77,7 +77,7 @@ export function init(packageAddress: string) {
 		const argumentsTypes = [
 			`${packageAddress}::metadata::Metadata`,
 			'0x0000000000000000000000000000000000000000000000000000000000000001::string::String',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,

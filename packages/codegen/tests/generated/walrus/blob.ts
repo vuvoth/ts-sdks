@@ -27,7 +27,7 @@ export function BlobIdDerivation() {
 }
 export function init(packageAddress: string) {
 	function object_id(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::blob::Blob`];
+		const argumentsTypes = [`${packageAddress}::blob::Blob`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -37,7 +37,7 @@ export function init(packageAddress: string) {
 			});
 	}
 	function registered_epoch(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::blob::Blob`];
+		const argumentsTypes = [`${packageAddress}::blob::Blob`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -47,7 +47,7 @@ export function init(packageAddress: string) {
 			});
 	}
 	function blob_id(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::blob::Blob`];
+		const argumentsTypes = [`${packageAddress}::blob::Blob`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -57,7 +57,7 @@ export function init(packageAddress: string) {
 			});
 	}
 	function size(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::blob::Blob`];
+		const argumentsTypes = [`${packageAddress}::blob::Blob`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -67,7 +67,7 @@ export function init(packageAddress: string) {
 			});
 	}
 	function encoding_type(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::blob::Blob`];
+		const argumentsTypes = [`${packageAddress}::blob::Blob`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -77,7 +77,7 @@ export function init(packageAddress: string) {
 			});
 	}
 	function certified_epoch(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::blob::Blob`];
+		const argumentsTypes = [`${packageAddress}::blob::Blob`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -87,7 +87,7 @@ export function init(packageAddress: string) {
 			});
 	}
 	function storage(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::blob::Blob`];
+		const argumentsTypes = [`${packageAddress}::blob::Blob`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -99,7 +99,7 @@ export function init(packageAddress: string) {
 	function encoded_size(options: {
 		arguments: [self: RawTransactionArgument<string>, n_shards: RawTransactionArgument<number>];
 	}) {
-		const argumentsTypes = [`${packageAddress}::blob::Blob`, 'u16'];
+		const argumentsTypes = [`${packageAddress}::blob::Blob`, 'u16'] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -109,7 +109,7 @@ export function init(packageAddress: string) {
 			});
 	}
 	function end_epoch(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::blob::Blob`];
+		const argumentsTypes = [`${packageAddress}::blob::Blob`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -126,7 +126,7 @@ export function init(packageAddress: string) {
 			size: RawTransactionArgument<number | bigint>,
 		];
 	}) {
-		const argumentsTypes = ['u256', 'u8', 'u64'];
+		const argumentsTypes = ['u256', 'u8', 'u64'] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -141,7 +141,7 @@ export function init(packageAddress: string) {
 	 * This function also burns any [`Metadata`] associated with the blob, if present.
 	 */
 	function burn(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::blob::Blob`];
+		const argumentsTypes = [`${packageAddress}::blob::Blob`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -161,7 +161,7 @@ export function init(packageAddress: string) {
 		const argumentsTypes = [
 			`${packageAddress}::blob::Blob`,
 			`${packageAddress}::metadata::Metadata`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -182,7 +182,7 @@ export function init(packageAddress: string) {
 		const argumentsTypes = [
 			`${packageAddress}::blob::Blob`,
 			`${packageAddress}::metadata::Metadata`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -198,7 +198,7 @@ export function init(packageAddress: string) {
 	 * Aborts if the metadata does not exist.
 	 */
 	function take_metadata(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::blob::Blob`];
+		const argumentsTypes = [`${packageAddress}::blob::Blob`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -224,7 +224,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::blob::Blob`,
 			'0x0000000000000000000000000000000000000000000000000000000000000001::string::String',
 			'0x0000000000000000000000000000000000000000000000000000000000000001::string::String',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -244,7 +244,7 @@ export function init(packageAddress: string) {
 		const argumentsTypes = [
 			`${packageAddress}::blob::Blob`,
 			'0x0000000000000000000000000000000000000000000000000000000000000001::string::String',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -260,7 +260,7 @@ export function init(packageAddress: string) {
 		const argumentsTypes = [
 			`${packageAddress}::blob::Blob`,
 			'0x0000000000000000000000000000000000000000000000000000000000000001::string::String',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,

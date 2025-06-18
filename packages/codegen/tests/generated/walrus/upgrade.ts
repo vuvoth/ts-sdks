@@ -78,7 +78,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::staking::Staking`,
 			`${packageAddress}::auth::Authenticated`,
 			'vector<u8>',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -99,7 +99,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::upgrade::UpgradeManager`,
 			`${packageAddress}::staking::Staking`,
 			'vector<u8>',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -125,7 +125,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::upgrade::UpgradeManager`,
 			`${packageAddress}::upgrade::EmergencyUpgradeCap`,
 			'vector<u8>',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -153,7 +153,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::upgrade::UpgradeManager`,
 			`${packageAddress}::staking::Staking`,
 			`${packageAddress}::system::System`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -179,7 +179,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::upgrade::UpgradeManager`,
 			`${packageAddress}::staking::Staking`,
 			'vector<vector<u8>>',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -197,7 +197,7 @@ export function init(packageAddress: string) {
 	function burn_emergency_upgrade_cap(options: {
 		arguments: [emergency_upgrade_cap: RawTransactionArgument<string>];
 	}) {
-		const argumentsTypes = [`${packageAddress}::upgrade::EmergencyUpgradeCap`];
+		const argumentsTypes = [`${packageAddress}::upgrade::EmergencyUpgradeCap`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,

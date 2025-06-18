@@ -32,7 +32,13 @@ export function init(packageAddress: string) {
 			max_epochs_ahead: RawTransactionArgument<number>,
 		];
 	}) {
-		const argumentsTypes = [`${packageAddress}::init::InitCap`, 'u64', 'u64', 'u16', 'u32'];
+		const argumentsTypes = [
+			`${packageAddress}::init::InitCap`,
+			'u64',
+			'u64',
+			'u16',
+			'u32',
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -54,7 +60,7 @@ export function init(packageAddress: string) {
 		const argumentsTypes = [
 			`${packageAddress}::staking::Staking`,
 			`${packageAddress}::system::System`,
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,

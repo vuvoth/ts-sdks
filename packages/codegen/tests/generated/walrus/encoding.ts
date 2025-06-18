@@ -1,7 +1,6 @@
 /**************************************************************
  * THIS FILE IS GENERATED AND SHOULD NOT BE MANUALLY MODIFIED *
  **************************************************************/
-import { bcs } from '@mysten/sui/bcs';
 import { type Transaction } from '@mysten/sui/transactions';
 import { normalizeMoveArguments, type RawTransactionArgument } from '../utils/index.js';
 export function init(packageAddress: string) {
@@ -16,7 +15,7 @@ export function init(packageAddress: string) {
 			n_shards: RawTransactionArgument<number>,
 		];
 	}) {
-		const argumentsTypes = ['u64', 'u8', 'u16'];
+		const argumentsTypes = ['u64', 'u8', 'u16'] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,

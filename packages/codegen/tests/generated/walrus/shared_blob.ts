@@ -17,7 +17,7 @@ export function SharedBlob() {
 export function init(packageAddress: string) {
 	/** Shares the provided `blob` as a `SharedBlob` with zero funds. */
 	function _new(options: { arguments: [blob: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::blob::Blob`];
+		const argumentsTypes = [`${packageAddress}::blob::Blob`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -28,7 +28,7 @@ export function init(packageAddress: string) {
 	}
 	/** Shares the provided `blob` as a `SharedBlob` with funds. */
 	function new_funded(options: { arguments: [blob: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::blob::Blob`];
+		const argumentsTypes = [`${packageAddress}::blob::Blob`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -39,7 +39,7 @@ export function init(packageAddress: string) {
 	}
 	/** Adds the provided `Coin` to the stored funds. */
 	function fund(options: { arguments: [self: RawTransactionArgument<string>] }) {
-		const argumentsTypes = [`${packageAddress}::shared_blob::SharedBlob`];
+		const argumentsTypes = [`${packageAddress}::shared_blob::SharedBlob`] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
@@ -64,7 +64,7 @@ export function init(packageAddress: string) {
 			`${packageAddress}::shared_blob::SharedBlob`,
 			`${packageAddress}::system::System`,
 			'u32',
-		];
+		] satisfies string[];
 		return (tx: Transaction) =>
 			tx.moveCall({
 				package: packageAddress,
