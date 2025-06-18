@@ -19,21 +19,17 @@ export function isEnokiWallet(wallet: Wallet | UiWallet) {
 
 export function getWalletMetadata(enokiWallet: Wallet | UiWallet) {
 	if (isWalletHandle(enokiWallet)) {
-		try {
-			const { getMetadata } = getWalletFeature(
-				enokiWallet,
-				EnokiGetMetadata,
-			) as EnokiGetMetadataFeature[typeof EnokiGetMetadata];
+		const { getMetadata } = getWalletFeature(
+			enokiWallet,
+			EnokiGetMetadata,
+		) as EnokiGetMetadataFeature[typeof EnokiGetMetadata];
 
-			return getMetadata();
-		} catch (error) {
-			return null;
-		}
+		return getMetadata();
 	} else if (EnokiGetMetadata in enokiWallet.features) {
 		const walletWithFeature = enokiWallet as WalletWithFeatures<EnokiGetMetadataFeature>;
 		return walletWithFeature.features[EnokiGetMetadata].getMetadata();
 	}
-	return null;
+	throw new Error("The specified wallet isn't an Enoki wallet.");
 }
 
 export function isGoogleWallet(wallet: Wallet | UiWallet) {

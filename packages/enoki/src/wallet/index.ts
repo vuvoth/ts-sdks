@@ -39,6 +39,7 @@ import { INTERNAL_ONLY_EnokiFlow } from './state.js';
 import type { RegisterEnokiWalletsOptions, WalletEventsMap } from './types.js';
 import type { EnokiGetMetadataFeature, EnokiGetMetadataMethod } from './feature.js';
 import { EnokiGetMetadata } from './feature.js';
+import { decodeJwt } from '@mysten/sui/zklogin';
 
 export class EnokiWallet implements Wallet {
 	#events: Emitter<WalletEventsMap>;
@@ -294,8 +295,12 @@ export class EnokiWallet implements Wallet {
 	};
 
 	#getMetadata: EnokiGetMetadataMethod = () => {
+		const session = this.#flow.$zkLoginSession.get();
+		const decodedJwt = session.value?.jwt ? decodeJwt(session.value.jwt) : undefined;
+
 		return {
 			provider: this.#provider,
+			activeSession: decodedJwt ? { decodedJwt } : undefined,
 		};
 	};
 

@@ -99,7 +99,7 @@ export class INTERNAL_ONLY_EnokiFlow {
 		provider: AuthProvider;
 		clientId: string;
 		redirectUrl: string;
-		extraParams?: Record<string, unknown>;
+		extraParams?: Record<string, string>;
 	}) {
 		const ephemeralKeyPair = await WebCryptoSigner.generate();
 		const { nonce, randomness, maxEpoch, estimatedExpiration } =
@@ -118,9 +118,7 @@ export class INTERNAL_ONLY_EnokiFlow {
 			scope: [
 				'openid',
 				// Merge the requested scopes in with the required openid scopes:
-				...(input.extraParams && 'scope' in input.extraParams
-					? (input.extraParams.scope as string[])
-					: []),
+				...(input.extraParams?.scope ? input.extraParams.scope.split(' ') : []),
 			]
 				.filter(Boolean)
 				.join(' '),
