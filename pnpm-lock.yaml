@@ -158,7 +158,7 @@ importers:
         version: link:../bcs
       '@mysten/move-bytecode-template':
         specifier: workspace:*
-        version: link:../move-bytecode-template
+        version: link:../move-bytecode-template/pkg
       '@mysten/sui':
         specifier: workspace:*
         version: link:../typescript
@@ -178,6 +178,9 @@ importers:
         specifier: ^5.8.3
         version: 5.8.3
     devDependencies:
+      '@mysten/build--move-bytecode-template':
+        specifier: workspace:*
+        version: link:../move-bytecode-template
       '@mysten/build-scripts':
         specifier: workspace:*
         version: link:../build-scripts
@@ -1071,6 +1074,8 @@ importers:
       wasm-pack:
         specifier: ^0.13.1
         version: 0.13.1
+
+  packages/move-bytecode-template/pkg: {}
 
   packages/mvr-static:
     dependencies:

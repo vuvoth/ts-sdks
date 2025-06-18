@@ -1,5 +1,4 @@
 {
-	"private": true,
 	"name": "@mysten/codegen",
 	"version": "0.0.0",
 	"description": "typescript codegen for sui move",
@@ -52,6 +51,7 @@
 	},
 	"homepage": "https://github.com/mystenlabs/sui#readme",
 	"devDependencies": {
+		"@mysten/build--move-bytecode-template": "workspace:*",
 		"@mysten/build-scripts": "workspace:*",
 		"vitest": "^3.2.1"
 	},

@@ -15,8 +15,6 @@ packages:
   - '!packages/typescript/utils'
   - '!packages/typescript/bcs'
   - '!packages/enoki/react'
-  - '!packages/move-bytecode-template/pkg'
-  - '!packages/move-bytecode-template/pkg'
   - '!packages/typescript/graphql'
   - '!packages/typescript/keypairs/ed25519'
   - '!packages/typescript/keypairs/secp256k1'
