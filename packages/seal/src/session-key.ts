@@ -96,12 +96,14 @@ export class SessionKey {
 	static async create({
 		address,
 		packageId,
+		mvrName,
 		ttlMin,
 		signer,
 		suiClient,
 	}: {
 		address: string;
 		packageId: string;
+		mvrName?: string;
 		ttlMin: number;
 		signer?: Signer;
 		suiClient: SealCompatibleClient;
@@ -114,6 +116,7 @@ export class SessionKey {
 		return new SessionKey({
 			address,
 			packageId,
+			mvrName,
 			ttlMin,
 			signer,
 			suiClient,
