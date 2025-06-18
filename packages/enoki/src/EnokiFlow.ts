@@ -98,7 +98,7 @@ export class EnokiFlow {
 
 		if (config.experimental_nativeCryptoSigner) {
 			this.#useNativeCryptoSigner = true;
-			this.#idbStore = createStore('enoki', config.apiKey);
+			this.#idbStore = createStore(config.apiKey, 'enoki');
 		} else {
 			this.#useNativeCryptoSigner = false;
 		}
