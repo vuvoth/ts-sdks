@@ -17,7 +17,7 @@ import { Experimental_CoreClient } from '../core.js';
 import { ObjectError } from '../errors.js';
 import type { Experimental_SuiClientTypes } from '../types.js';
 import { parseTransactionBcs, parseTransactionEffectsBcs } from './utils.js';
-import { resolveTransactionPlugin } from './json-rpc-resolver.js';
+import { suiClientResolveTransactionPlugin } from './json-rpc-resolver.js';
 import { TransactionDataBuilder } from '../../transactions/TransactionData.js';
 import { chunk } from '@mysten/utils';
 
@@ -266,7 +266,7 @@ export class JSONRpcTransport extends Experimental_CoreClient {
 	}
 
 	resolveTransactionPlugin() {
-		return resolveTransactionPlugin(this.#jsonRpcClient);
+		return suiClientResolveTransactionPlugin(this.#jsonRpcClient);
 	}
 }
 
