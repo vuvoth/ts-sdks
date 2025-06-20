@@ -46,12 +46,15 @@ import type {
 	CommitteeInfo,
 	ComputeBlobMetadataOptions,
 	DeleteBlobOptions,
+	EncodingType,
 	ExtendBlobOptions,
+	FanOutConfig,
 	GetBlobMetadataOptions,
 	GetCertificationEpochOptions,
 	GetSliversOptions,
 	GetStorageConfirmationOptions,
 	GetVerifiedBlobStatusOptions,
+	ProtocolMessageCertificate,
 	ReadBlobOptions,
 	RegisterBlobOptions,
 	SliversForNode,
@@ -62,6 +65,7 @@ import type {
 	WalrusPackageConfig,
 	WriteBlobAttributesOptions,
 	WriteBlobOptions,
+	WriteBlobToFanOutProxyOptions,
 	WriteEncodedBlobOptions,
 	WriteEncodedBlobToNodesOptions,
 	WriteMetadataOptions,
@@ -85,6 +89,7 @@ import { SuiObjectDataLoader } from './utils/object-loader.js';
 import { shuffle, weightedShuffle } from './utils/randomness.js';
 import { getWasmBindings } from './wasm.js';
 import { chunk } from '@mysten/utils';
+import { FanOutProxyClient } from './fan-out-proxy/client.js';
 
 export class WalrusClient {
 	#storageNodeClient: StorageNodeClient;
@@ -100,6 +105,9 @@ export class WalrusClient {
 	#readCommittee?: CommitteeInfo | Promise<CommitteeInfo> | null;
 
 	#cache: ClientCache;
+
+	#fanOutConfig: FanOutConfig | null = null;
+	#fanOutClient: FanOutProxyClient | null = null;
 
 	constructor(config: WalrusClientConfig) {
 		if (config.network && !config.packageConfig) {
@@ -119,6 +127,10 @@ export class WalrusClient {
 		}
 
 		this.#wasmUrl = config.wasmUrl;
+		this.#fanOutConfig = config.fanOut ?? null;
+		if (this.#fanOutConfig) {
+			this.#fanOutClient = new FanOutProxyClient(this.#fanOutConfig);
+		}
 
 		this.#suiClient =
 			config.suiClient ??
@@ -305,7 +317,7 @@ export class WalrusClient {
 			blobBytes,
 		);
 
-		if (reconstructedBlobMetadata.blob_id !== blobId) {
+		if (reconstructedBlobMetadata.blobId !== blobId) {
 			throw new InconsistentBlobError('The specified blob was encoded incorrectly.');
 		}
 
@@ -322,10 +334,13 @@ export class WalrusClient {
 		}
 
 		const bindings = await this.#wasmBindings();
-		const { blob_id, metadata } = bindings.computeMetadata(shardCount, bytes);
+		const { blobId, metadata, rootHash } = bindings.computeMetadata(shardCount, bytes);
+		let sha256Hash: Promise<Uint8Array> | undefined;
+		const nonce = crypto.getRandomValues(new Uint8Array(32));
 
 		return {
-			blobId: blob_id,
+			rootHash,
+			blobId,
 			metadata: {
 				encodingType: metadata.V1.encoding_type,
 				hashes: Array.from(metadata.V1.hashes).map((hashes) => ({
@@ -333,6 +348,14 @@ export class WalrusClient {
 					secondaryHash: hashes.secondary_hash,
 				})),
 				unencodedLength: metadata.V1.unencoded_length,
+			},
+			nonce,
+			blobDigest: () => {
+				if (!sha256Hash) {
+					sha256Hash = crypto.subtle.digest('SHA-256', bytes).then((hash) => new Uint8Array(hash));
+				}
+
+				return sha256Hash;
 			},
 		};
 	}
@@ -878,6 +901,102 @@ export class WalrusClient {
 		};
 	}
 
+	addAuthPayload({
+		size,
+		blobDigest,
+		nonce,
+	}: {
+		size: number;
+		blobDigest: Uint8Array | (() => Promise<Uint8Array>);
+		nonce: Uint8Array;
+	}) {
+		return async (transaction: Transaction) => {
+			const nonceDigest = await crypto.subtle.digest('SHA-256', nonce);
+			const lengthBytes = bcs.u64().serialize(size).toBytes();
+			const digest = typeof blobDigest === 'function' ? await blobDigest() : blobDigest;
+			const authPayload = new Uint8Array(
+				nonceDigest.byteLength + digest.byteLength + lengthBytes.byteLength,
+			);
+
+			authPayload.set(digest, 0);
+			authPayload.set(new Uint8Array(nonceDigest), digest.byteLength);
+			authPayload.set(lengthBytes, nonceDigest.byteLength + digest.byteLength);
+			transaction.pure(authPayload);
+		};
+	}
+
+	#loadTipConfig() {
+		return this.#cache.read(['fanout-tip-config'], async () => {
+			if (!this.#fanOutConfig?.sendTip || !this.#fanOutClient) {
+				return null;
+			}
+
+			if ('kind' in this.#fanOutConfig.sendTip) {
+				return this.#fanOutConfig.sendTip;
+			}
+
+			const tipConfig = await this.#fanOutClient.tipConfig();
+
+			return {
+				...tipConfig,
+				max: this.#fanOutConfig.sendTip.max,
+			};
+		});
+	}
+
+	async calculateFanOutTip(options: { size: number }) {
+		const systemState = await this.systemState();
+		const encodedSize = encodedBlobLength(options.size, systemState.committee.n_shards);
+		const tipConfig = await this.#loadTipConfig();
+
+		if (!tipConfig) {
+			return 0n;
+		}
+
+		const { max, kind } = tipConfig;
+
+		const amount =
+			'const' in kind
+				? kind.const
+				: BigInt(kind.linear.base) + BigInt(kind.linear.multiplier) * BigInt(encodedSize);
+
+		if (max != null && amount > max) {
+			throw new WalrusClientError(
+				`Tip amount (${amount}) exceeds the maximum allowed tip (${max})`,
+			);
+		}
+
+		return amount;
+	}
+
+	sendFanOutTip({
+		size,
+		blobDigest,
+		nonce,
+	}: {
+		size: number;
+		blobDigest: Uint8Array | (() => Promise<Uint8Array>);
+		nonce: Uint8Array;
+	}) {
+		return async (transaction: Transaction) => {
+			const tipConfig = await this.#loadTipConfig();
+
+			if (tipConfig) {
+				transaction.add(this.addAuthPayload({ size, blobDigest, nonce }));
+				const amount = await this.calculateFanOutTip({ size });
+				const { address } = tipConfig;
+				transaction.transferObjects(
+					[
+						coinWithBalance({
+							balance: amount,
+						}),
+					],
+					address,
+				);
+			}
+		};
+	}
+
 	/**
 	 * Create a transaction that registers a blob
 	 *
@@ -947,6 +1066,74 @@ export class WalrusClient {
 		};
 	}
 
+	async certificateFromConfirmations({
+		confirmations,
+		blobId,
+		deletable,
+		blobObjectId,
+	}: Extract<
+		CertifyBlobOptions,
+		{ confirmations: unknown[] }
+	>): Promise<ProtocolMessageCertificate> {
+		const systemState = await this.systemState();
+		const committee = await this.#getActiveCommittee();
+
+		if (confirmations.length !== systemState.committee.members.length) {
+			throw new WalrusClientError(
+				'Invalid number of confirmations. Confirmations array must contain an entry for each node',
+			);
+		}
+
+		const confirmationMessage = StorageConfirmation.serialize({
+			intent: IntentType.BLOB_CERT_MSG,
+			epoch: systemState.committee.epoch,
+			messageContents: {
+				blobId,
+				blobType: deletable
+					? {
+							Deletable: {
+								objectId: blobObjectId,
+							},
+						}
+					: {
+							Permanent: null,
+						},
+			},
+		}).toBase64();
+
+		const bindings = await this.#wasmBindings();
+		const verifySignature = bindings.getVerifySignature();
+
+		const filteredConfirmations = confirmations
+			.map((confirmation, index) => {
+				const isValid =
+					confirmation?.serializedMessage === confirmationMessage &&
+					verifySignature(
+						confirmation,
+						new Uint8Array(committee.nodes[index].info.public_key.bytes),
+					);
+
+				return isValid
+					? {
+							index,
+							...confirmation,
+						}
+					: null;
+			})
+			.filter((confirmation) => confirmation !== null);
+
+		if (!isQuorum(filteredConfirmations.length, systemState.committee.members.length)) {
+			throw new NotEnoughBlobConfirmationsError(
+				`Too many invalid confirmations received for blob (${filteredConfirmations.length} of ${systemState.committee.members.length})`,
+			);
+		}
+
+		return bindings.combineSignatures(
+			filteredConfirmations,
+			filteredConfirmations.map(({ index }) => index),
+		);
+	}
+
 	/**
 	 * Certify a blob in a transaction
 	 *
@@ -955,65 +1142,18 @@ export class WalrusClient {
 	 * tx.add(client.certifyBlob({ blobId, blobObjectId, confirmations }));
 	 * ```
 	 */
-	certifyBlob({ blobId, blobObjectId, confirmations, deletable }: CertifyBlobOptions) {
+	certifyBlob({ blobId, blobObjectId, confirmations, certificate, deletable }: CertifyBlobOptions) {
 		return async (tx: Transaction) => {
 			const systemState = await this.systemState();
-			const committee = await this.#getActiveCommittee();
-
-			if (confirmations.length !== systemState.committee.members.length) {
-				throw new WalrusClientError(
-					'Invalid number of confirmations. Confirmations array must contain an entry for each node',
-				);
-			}
-
-			const confirmationMessage = StorageConfirmation.serialize({
-				intent: IntentType.BLOB_CERT_MSG,
-				epoch: systemState.committee.epoch,
-				messageContents: {
+			const combinedSignature =
+				certificate ??
+				(await this.certificateFromConfirmations({
+					confirmations,
 					blobId,
-					blobType: deletable
-						? {
-								Deletable: {
-									objectId: blobObjectId,
-								},
-							}
-						: {
-								Permanent: null,
-							},
-				},
-			}).toBase64();
+					deletable,
+					blobObjectId,
+				}));
 
-			const bindings = await this.#wasmBindings();
-			const verifySignature = bindings.getVerifySignature();
-
-			const filteredConfirmations = confirmations
-				.map((confirmation, index) => {
-					const isValid =
-						confirmation?.serializedMessage === confirmationMessage &&
-						verifySignature(
-							confirmation,
-							new Uint8Array(committee.nodes[index].info.public_key.bytes),
-						);
-
-					return isValid
-						? {
-								index,
-								...confirmation,
-							}
-						: null;
-				})
-				.filter((confirmation) => confirmation !== null);
-
-			if (!isQuorum(filteredConfirmations.length, systemState.committee.members.length)) {
-				throw new NotEnoughBlobConfirmationsError(
-					`Too many invalid confirmations received for blob (${filteredConfirmations.length} of ${systemState.committee.members.length})`,
-				);
-			}
-
-			const combinedSignature = bindings.combineSignatures(
-				filteredConfirmations,
-				filteredConfirmations.map(({ index }) => index),
-			);
 			const systemContract = await this.#getSystemContract();
 
 			tx.add(
@@ -1043,14 +1183,11 @@ export class WalrusClient {
 	 */
 	certifyBlobTransaction({
 		transaction = new Transaction(),
-		blobId,
-		blobObjectId,
-		confirmations,
-		deletable,
+		...options
 	}: CertifyBlobOptions & {
 		transaction?: Transaction;
 	}) {
-		transaction.add(this.certifyBlob({ blobId, blobObjectId, confirmations, deletable }));
+		transaction.add(this.certifyBlob(options));
 
 		return transaction;
 	}
@@ -1583,6 +1720,28 @@ export class WalrusClient {
 	}
 
 	/**
+	 * Writes a blob to to a fan out proxy
+	 *
+	 * @usage
+	 * ```ts
+	 * await client.writeBlobToFanOutProxy({ blob, deletable, epochs, signer });
+	 * ```
+	 */
+	async writeBlobToFanOutProxy(options: WriteBlobToFanOutProxyOptions): Promise<{
+		blobId: string;
+		certificate: ProtocolMessageCertificate;
+	}> {
+		if (!this.#fanOutClient) {
+			throw new WalrusClientError('Fan out proxy not configured');
+		}
+
+		return this.#fanOutClient.writeBlob({
+			...options,
+			requiresTip: !!this.#fanOutConfig?.sendTip,
+		});
+	}
+
+	/**
 	 * Write encoded blob to a storage node
 	 *
 	 * @usage
@@ -1631,42 +1790,104 @@ export class WalrusClient {
 		owner,
 		attributes,
 	}: WriteBlobOptions) {
-		const { sliversByNode, blobId, metadata, rootHash } = await this.encodeBlob(blob);
+		if (!this.#fanOutConfig) {
+			const encoded = await this.encodeBlob(blob);
+			const blobId = encoded.blobId;
+			const { sliversByNode, metadata, rootHash } = encoded;
 
-		const suiBlobObject = await this.executeRegisterBlobTransaction({
-			signer,
-			size: blob.length,
-			epochs,
-			blobId,
-			rootHash,
-			deletable,
-			owner: owner ?? signer.toSuiAddress(),
-			attributes,
-		});
+			const suiBlobObject = await this.executeRegisterBlobTransaction({
+				signer,
+				size: blob.length,
+				epochs,
+				blobId,
+				rootHash,
+				deletable,
+				owner: owner ?? signer.toSuiAddress(),
+				attributes,
+			});
 
-		const blobObjectId = suiBlobObject.blob.id.id;
+			const blobObjectId = suiBlobObject.blob.id.id;
 
-		const confirmations = await this.writeEncodedBlobToNodes({
-			blobId,
-			metadata,
-			sliversByNode,
-			deletable,
-			objectId: blobObjectId,
-			signal,
-		});
+			const confirmations = await this.writeEncodedBlobToNodes({
+				blobId,
+				metadata,
+				sliversByNode,
+				deletable,
+				objectId: blobObjectId,
+				signal,
+			});
 
-		await this.executeCertifyBlobTransaction({
-			signer,
-			blobId,
-			blobObjectId,
-			confirmations,
-			deletable,
-		});
+			await this.executeCertifyBlobTransaction({
+				signer,
+				blobId,
+				blobObjectId,
+				confirmations,
+				deletable,
+			});
 
-		return {
-			blobId,
-			blobObject: await this.#objectLoader.load(blobObjectId, Blob()),
-		};
+			return {
+				blobId,
+				blobObject: await this.#objectLoader.load(blobObjectId, Blob()),
+			};
+		} else {
+			const metadata = await this.computeBlobMetadata({
+				bytes: blob,
+			});
+			const blobId = metadata.blobId;
+
+			const transaction = new Transaction();
+
+			transaction.add(
+				this.sendFanOutTip({
+					size: blob.length,
+					blobDigest: metadata.blobDigest,
+					nonce: metadata.nonce,
+				}),
+			);
+
+			const registerResult = await this.executeRegisterBlobTransaction({
+				signer,
+				transaction,
+				size: blob.length,
+				epochs,
+				blobId: metadata.blobId,
+				rootHash: metadata.rootHash,
+				deletable,
+				owner: owner ?? signer.toSuiAddress(),
+				attributes,
+			});
+
+			await this.#suiClient.core.waitForTransaction({
+				digest: registerResult.digest,
+			});
+
+			const result = await this.writeBlobToFanOutProxy({
+				blobId,
+				blob,
+				nonce: metadata.nonce,
+				txDigest: registerResult.digest,
+				signal,
+				deletable,
+				blobObjectId: registerResult.blob.id.id,
+				encodingType: metadata.metadata.encodingType as EncodingType,
+			});
+
+			const certificate = result.certificate;
+			const blobObjectId = registerResult.blob.id.id;
+
+			await this.executeCertifyBlobTransaction({
+				signer,
+				blobId,
+				blobObjectId,
+				certificate,
+				deletable,
+			});
+
+			return {
+				blobId,
+				blobObject: await this.#objectLoader.load(blobObjectId, Blob()),
+			};
+		}
 	}
 
 	async #executeTransaction(transaction: Transaction, signer: Signer, action: string) {

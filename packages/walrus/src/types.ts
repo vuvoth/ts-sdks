@@ -15,6 +15,7 @@ import type {
 	Uploadable,
 } from './storage-node/types.js';
 import type { BlobMetadata, EncodingType } from './utils/bcs.js';
+import type { FanOutProxyClientOptions } from './fan-out-proxy/client.js';
 
 /**
  * Configuration for the Walrus package on sui
@@ -52,9 +53,36 @@ type WalrusNetworkOrPackageConfig =
 			packageConfig: WalrusPackageConfig;
 	  };
 
+export type TipStrategy =
+	| {
+			const: number | bigint;
+	  }
+	| {
+			linear: {
+				base: number | bigint;
+				multiplier: number | bigint;
+			};
+	  };
+
+export type FanOutTipConfig = {
+	address: string;
+	max?: number;
+	kind: TipStrategy;
+};
+
+export interface FanOutConfig extends FanOutProxyClientOptions {
+	sendTip?:
+		| null
+		| FanOutTipConfig
+		| {
+				max: number;
+		  };
+}
+
 interface BaseWalrusClientConfig {
 	storageNodeClientOptions?: StorageNodeClientOptions;
 	wasmUrl?: string;
+	fanOut?: FanOutConfig;
 }
 
 /**
@@ -107,17 +135,25 @@ export interface RegisterBlobOptions extends StorageWithSizeOptions {
 	attributes?: Record<string, string | null>;
 }
 
-export interface CertifyBlobOptions {
+export type CertifyBlobOptions = {
 	blobId: string;
 	blobObjectId: string;
-	/** An array of confirmations.
-	 * These confirmations must be provided in the same order as the nodes in the committee.
-	 * For nodes that have not provided a confirmation you can pass `null` */
-	confirmations: (StorageConfirmation | null)[];
 	deletable: boolean;
-}
+} & (
+	| {
+			/** An array of confirmations.
+			 * These confirmations must be provided in the same order as the nodes in the committee.
+			 * For nodes that have not provided a confirmation you can pass `null` */
+			confirmations: (StorageConfirmation | null)[];
+			certificate?: never;
+	  }
+	| {
+			certificate: ProtocolMessageCertificate;
+			confirmations?: never;
+	  }
+);
 
-type DeletableConfirmationOptions =
+export type DeletableConfirmationOptions =
 	| { deletable: false; objectId?: string }
 	| { deletable: true; objectId: string };
 
@@ -188,6 +224,16 @@ export type WriteEncodedBlobToNodesOptions = {
 } & DeletableConfirmationOptions &
 	WalrusClientRequestOptions;
 
+export type WriteBlobToFanOutProxyOptions = {
+	blobId: string;
+	blob: Uint8Array;
+	nonce: Uint8Array;
+	txDigest: string;
+	blobObjectId: string;
+	deletable: boolean;
+	encodingType?: EncodingType;
+} & WalrusClientRequestOptions;
+
 export type WriteBlobOptions = {
 	blob: Uint8Array;
 	deletable: boolean;
@@ -236,3 +282,9 @@ export type WriteBlobAttributesOptions = {
 );
 
 export type EncodingType = Extract<typeof EncodingType.$inferInput, string>;
+
+export interface ProtocolMessageCertificate {
+	signers: number[];
+	serializedMessage: Uint8Array;
+	signature: Uint8Array;
+}
