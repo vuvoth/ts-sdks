@@ -3,24 +3,44 @@
 
 import type { LocalContext } from '../../context.js';
 import { generateFromPackageSummary } from '../../../index.js';
-import { basename } from 'node:path';
+import { loadConfig } from '../../../config.js';
+import { isValidNamedPackage, isValidSuiObjectId } from '@mysten/sui/utils';
 
 interface SubdirCommandFlags {
-	outputDir: string;
-	summary?: string[];
+	outputDir?: string;
 	noPrune?: boolean;
 }
 
 export default async function generate(
 	this: LocalContext,
 	flags: SubdirCommandFlags,
+	...packages: string[]
 ): Promise<void> {
-	for (const path of flags.summary ?? []) {
+	const config = await loadConfig();
+
+	const normalizedPackages =
+		packages.length > 0
+			? packages.map((p) => {
+					const trimmed = p.trim();
+					if (isValidSuiObjectId(trimmed) || isValidNamedPackage(trimmed)) {
+						return {
+							packageName: isValidSuiObjectId(trimmed) ? trimmed : trimmed.split('/')[1],
+							package: trimmed,
+						};
+					} else {
+						return {
+							packageName: trimmed,
+							path: trimmed,
+						};
+					}
+				})
+			: config.packages;
+
+	for (const pkg of normalizedPackages) {
 		await generateFromPackageSummary({
-			source: path,
-			destination: flags.outputDir,
-			name: basename(path),
-			noPrune: flags.noPrune,
+			package: pkg,
+			prune: !flags.noPrune,
+			outputDir: flags.outputDir ?? config.output,
 		});
 	}
 }

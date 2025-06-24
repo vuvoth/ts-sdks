@@ -6,19 +6,41 @@ import { basename, join } from 'node:path';
 import { MoveModuleBuilder } from './move-module-builder.js';
 import { existsSync, statSync } from 'node:fs';
 import { utilsContent } from './generate-utils.js';
+import { parse } from 'toml';
+import type { PackageConfig } from './config.js';
+export { type SuiCodegenConfig } from './config.js';
 
 export async function generateFromPackageSummary({
-	source,
-	destination,
-	name,
-	noPrune,
+	package: pkg,
+	prune,
+	outputDir,
 }: {
-	source: string;
-	destination: string;
-	name: string;
-	noPrune?: boolean;
+	package: PackageConfig;
+	prune: boolean;
+	outputDir: string;
 }) {
-	const summaryDir = join(source, 'package_summaries');
+	if (!pkg.path) {
+		throw new Error(`On-chain packages are not supported yet (got ${pkg.package})`);
+	}
+
+	const summaryDir = join(pkg.path, 'package_summaries');
+
+	if (!existsSync(summaryDir)) {
+		throw new Error(`Package summary directory not found: ${summaryDir}`);
+	}
+
+	let packageName = pkg.packageName!;
+	try {
+		const packageToml = await readFile(join(pkg.path, 'Move.toml'), 'utf-8');
+		packageName = parse(packageToml).package.name.toLowerCase();
+	} catch (e) {
+		const message = `Package name not found in package.toml for ${pkg.path}`;
+		if (packageName) {
+			console.warn(message);
+		} else {
+			throw new Error(message);
+		}
+	}
 
 	if (!existsSync(summaryDir)) {
 		throw new Error(`Package summary directory not found: ${summaryDir}`);
@@ -38,7 +60,7 @@ export async function generateFromPackageSummary({
 				return Promise.all(
 					modules.map(async (mod) => ({
 						package: pkg,
-						isMainPackage: pkg === name,
+						isMainPackage: pkg === packageName,
 						module: basename(mod, '.json'),
 						builder: await MoveModuleBuilder.fromSummaryFile(
 							join(summaryDir, pkg, mod),
@@ -55,16 +77,16 @@ export async function generateFromPackageSummary({
 	);
 
 	modules.forEach((mod) => {
-		if (mod.isMainPackage || noPrune) {
+		if (mod.isMainPackage || !prune) {
 			mod.builder.includeAllTypes(moduleBuilders);
 		}
 	});
 
-	await generateUtils({ destination });
+	await generateUtils({ outputDir });
 
 	await Promise.all(
 		modules.map(async (mod) => {
-			if ((mod.isMainPackage || noPrune) && mod.builder.hasTypesOrFunctions()) {
+			if ((mod.isMainPackage || !prune) && mod.builder.hasTypesOrFunctions()) {
 				await mod.builder.renderBCSTypes();
 				await mod.builder.renderFunctions();
 			} else if (mod.isMainPackage) {
@@ -76,14 +98,16 @@ export async function generateFromPackageSummary({
 			}
 
 			await mkdir(
-				mod.isMainPackage ? join(destination, name) : join(destination, name, 'deps', mod.package),
+				mod.isMainPackage
+					? join(outputDir, packageName)
+					: join(outputDir, packageName, 'deps', mod.package),
 				{ recursive: true },
 			);
 
 			await writeFile(
 				mod.isMainPackage
-					? join(destination, name, `${mod.module}.ts`)
-					: join(destination, name, 'deps', mod.package, `${mod.module}.ts`),
+					? join(outputDir, packageName, `${mod.module}.ts`)
+					: join(outputDir, packageName, 'deps', mod.package, `${mod.module}.ts`),
 				await mod.builder.toString(
 					'./',
 					mod.isMainPackage ? `./${mod.module}.ts` : `./deps/${mod.package}/${mod.module}.ts`,
@@ -93,7 +117,7 @@ export async function generateFromPackageSummary({
 	);
 }
 
-async function generateUtils({ destination }: { destination: string }) {
-	await mkdir(join(destination, 'utils'), { recursive: true });
-	await writeFile(join(destination, 'utils', 'index.ts'), utilsContent);
+async function generateUtils({ outputDir }: { outputDir: string }) {
+	await mkdir(join(outputDir, 'utils'), { recursive: true });
+	await writeFile(join(outputDir, 'utils', 'index.ts'), utilsContent);
 }

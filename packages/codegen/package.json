@@ -28,6 +28,7 @@
 		"clean": "rm -rf tsconfig.tsbuildinfo ./dist",
 		"dev": "pnpm build --watch",
 		"build": "build-package",
+		"codegen": "pnpm tsx src/bin/cli.ts generate && pnpm lint:fix",
 		"prepublishOnly": "pnpm turbo build",
 		"test:watch": "vitest",
 		"prettier:check": "prettier -c --ignore-unknown .",
@@ -60,7 +61,10 @@
 		"@stricli/auto-complete": "^1.1.2",
 		"@stricli/core": "^1.1.2",
 		"@types/node": "^22.15.29",
+		"cosmiconfig": "^9.0.0",
 		"prettier": "^3.5.3",
-		"typescript": "^5.8.3"
+		"toml": "^3.0.0",
+		"typescript": "^5.8.3",
+		"zod": "^3.25.67"
 	}
 }

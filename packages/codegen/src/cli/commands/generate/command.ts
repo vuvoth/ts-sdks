@@ -6,18 +6,19 @@ import { buildCommand } from '@stricli/core';
 export const generateCommand = buildCommand({
 	loader: async () => (await import('./impl.js')).default,
 	parameters: {
+		positional: {
+			kind: 'array',
+			parameter: {
+				parse: String,
+				brief: 'package name, mvr name, or path to a move package',
+			},
+		},
 		flags: {
 			outputDir: {
 				kind: 'parsed',
 				parse: String,
 				brief: 'Output directory',
-			},
-			summary: {
-				kind: 'parsed',
-				parse: String,
-				variadic: true,
 				optional: true,
-				brief: 'path to a move package with a package_summary',
 			},
 			noPrune: {
 				kind: 'parsed',
@@ -28,7 +29,6 @@ export const generateCommand = buildCommand({
 		},
 		aliases: {
 			o: 'outputDir',
-			s: 'summary',
 		},
 	},
 	docs: {

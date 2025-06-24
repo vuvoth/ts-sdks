@@ -129,5 +129,5 @@ export async function formatComment(text: string) {
 
 	if (lines.length === 1) return `* ${lines[0]} `;
 
-	return `*\n ${lines.map((line) => ` * ${line}`).join('\n')}\n `;
+	return `*\n${lines.map((line) => ` * ${line}`).join('\n')}\n `;
 }
