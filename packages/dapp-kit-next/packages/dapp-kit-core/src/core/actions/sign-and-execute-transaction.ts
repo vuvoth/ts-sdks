@@ -2,18 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { DAppKitStores } from '../store.js';
-import { SuiSignAndExecuteTransaction } from '@mysten/wallet-standard';
+import {
+	SuiSignAndExecuteTransaction,
+	SuiSignAndExecuteTransactionBlock,
+} from '@mysten/wallet-standard';
 import type {
+	SuiSignAndExecuteTransactionBlockFeature,
 	SuiSignAndExecuteTransactionFeature,
 	SuiSignAndExecuteTransactionInput,
 } from '@mysten/wallet-standard';
 import { getWalletAccountForUiWalletAccount_DO_NOT_USE_OR_YOU_WILL_BE_FIRED as getWalletAccountForUiWalletAccount } from '@wallet-standard/ui-registry';
-import { WalletNotConnectedError } from '../../utils/errors.js';
+import { FeatureNotSupportedError, WalletNotConnectedError } from '../../utils/errors.js';
 import { getChain } from '../../utils/networks.js';
-import type { Transaction } from '@mysten/sui/transactions';
-import { getAccountFeature } from '../../utils/wallets.js';
+import { Transaction } from '@mysten/sui/transactions';
+import { tryGetAccountFeature } from '../../utils/wallets.js';
+import { bcs } from '@mysten/sui/bcs';
+import { fromBase64, toBase64 } from '@mysten/utils';
 
-export type signAndExecuteTransactionArgs = {
+export type SignAndExecuteTransactionArgs = {
 	transaction: Transaction | string;
 } & Omit<SuiSignAndExecuteTransactionInput, 'account' | 'chain' | 'transaction'>;
 
@@ -24,36 +30,81 @@ export function signAndExecuteTransactionCreator({ $connection, $currentClient }
 	return async function signAndExecuteTransaction({
 		transaction,
 		...standardArgs
-	}: signAndExecuteTransactionArgs) {
+	}: SignAndExecuteTransactionArgs) {
 		const { account } = $connection.get();
 		if (!account) {
 			throw new WalletNotConnectedError('No wallet is connected.');
 		}
 
+		const underlyingAccount = getWalletAccountForUiWalletAccount(account);
 		const suiClient = $currentClient.get();
 		const chain = getChain(suiClient.network);
 
-		const signAndExecuteTransactionFeature = getAccountFeature({
+		const transactionWrapper = {
+			toJSON: async () => {
+				if (typeof transaction === 'string') {
+					return transaction;
+				}
+
+				// TODO: Fix passing through the supported intents for plugins.
+				transaction.setSenderIfNotSet(account.address);
+				return await transaction.toJSON({ client: suiClient });
+			},
+		};
+
+		const signAndExecuteTransactionFeature = tryGetAccountFeature({
 			account,
 			chain,
 			featureName: SuiSignAndExecuteTransaction,
 		}) as SuiSignAndExecuteTransactionFeature[typeof SuiSignAndExecuteTransaction];
 
-		return await signAndExecuteTransactionFeature.signAndExecuteTransaction({
-			...standardArgs,
-			transaction: {
-				toJSON: async () => {
-					if (typeof transaction === 'string') {
-						return transaction;
-					}
+		if (signAndExecuteTransactionFeature) {
+			return await signAndExecuteTransactionFeature.signAndExecuteTransaction({
+				...standardArgs,
+				account: underlyingAccount,
+				transaction: transactionWrapper,
+				chain,
+			});
+		}
 
-					// TODO: Fix passing through the supported intents for plugins.
-					transaction.setSenderIfNotSet(account.address);
-					return await transaction.toJSON({ client: suiClient });
-				},
-			},
-			account: getWalletAccountForUiWalletAccount(account),
+		const signAndExecuteTransactionBlockFeature = tryGetAccountFeature({
+			account,
 			chain,
-		});
+			featureName: SuiSignAndExecuteTransactionBlock,
+		}) as SuiSignAndExecuteTransactionBlockFeature[typeof SuiSignAndExecuteTransactionBlock];
+
+		if (signAndExecuteTransactionBlockFeature) {
+			const transactionBlock = Transaction.from(await transactionWrapper.toJSON());
+			const { digest, rawEffects, rawTransaction } =
+				await signAndExecuteTransactionBlockFeature.signAndExecuteTransactionBlock({
+					account,
+					chain,
+					transactionBlock,
+					options: {
+						showRawEffects: true,
+						showRawInput: true,
+					},
+				});
+
+			const [
+				{
+					txSignatures: [signature],
+					intentMessage: { value: bcsTransaction },
+				},
+			] = bcs.SenderSignedData.parse(fromBase64(rawTransaction!));
+
+			const bytes = bcs.TransactionData.serialize(bcsTransaction).toBase64();
+
+			return {
+				digest,
+				signature,
+				bytes,
+				effects: toBase64(new Uint8Array(rawEffects!)),
+			};
+		}
+
+		throw new FeatureNotSupportedError(
+			`The account ${account.address} does not support signing and executing transactions.`,
+		);
 	};
 }

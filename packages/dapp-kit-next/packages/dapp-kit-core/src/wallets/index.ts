@@ -49,6 +49,8 @@ export async function registerAdditionalWallets(
 		if (settledResult.status === 'fulfilled') {
 			const { initializer, result } = settledResult.value;
 			initializerMap.set(initializer.id, result.unregister);
+		} else {
+			console.warn(`Skipping wallet initializer: "${settledResult.reason}".`);
 		}
 	}
 }

@@ -2,13 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { DAppKitStores } from '../store.js';
-import { SuiSignTransaction } from '@mysten/wallet-standard';
-import type { SuiSignTransactionFeature, SuiSignTransactionInput } from '@mysten/wallet-standard';
+import { SuiSignTransaction, SuiSignTransactionBlock } from '@mysten/wallet-standard';
+import type {
+	SuiSignTransactionBlockFeature,
+	SuiSignTransactionFeature,
+	SuiSignTransactionInput,
+} from '@mysten/wallet-standard';
 import { getWalletAccountForUiWalletAccount_DO_NOT_USE_OR_YOU_WILL_BE_FIRED as getWalletAccountForUiWalletAccount } from '@wallet-standard/ui-registry';
-import { WalletNotConnectedError } from '../../utils/errors.js';
+import { FeatureNotSupportedError, WalletNotConnectedError } from '../../utils/errors.js';
 import { getChain } from '../../utils/networks.js';
-import type { Transaction } from '@mysten/sui/transactions';
-import { getAccountFeature } from '../../utils/wallets.js';
+import { Transaction } from '@mysten/sui/transactions';
+import { tryGetAccountFeature } from '../../utils/wallets.js';
 
 export type SignTransactionArgs = {
 	transaction: Transaction | string;
@@ -24,30 +28,57 @@ export function signTransactionCreator({ $connection, $currentClient }: DAppKitS
 			throw new WalletNotConnectedError('No wallet is connected.');
 		}
 
+		const underlyingAccount = getWalletAccountForUiWalletAccount(account);
 		const suiClient = $currentClient.get();
 		const chain = getChain(suiClient.network);
 
-		const signTransactionFeature = getAccountFeature({
+		const transactionWrapper = {
+			toJSON: async () => {
+				if (typeof transaction === 'string') {
+					return transaction;
+				}
+
+				// TODO: Fix passing through the supported intents for plugins.
+				transaction.setSenderIfNotSet(account.address);
+				return await transaction.toJSON({ client: suiClient });
+			},
+		};
+
+		const signTransactionFeature = tryGetAccountFeature({
 			account,
 			chain,
 			featureName: SuiSignTransaction,
 		}) as SuiSignTransactionFeature[typeof SuiSignTransaction];
 
-		return await signTransactionFeature.signTransaction({
-			...standardArgs,
-			transaction: {
-				toJSON: async () => {
-					if (typeof transaction === 'string') {
-						return transaction;
-					}
+		if (signTransactionFeature) {
+			return await signTransactionFeature.signTransaction({
+				...standardArgs,
+				transaction: transactionWrapper,
+				account: underlyingAccount,
+				chain,
+			});
+		}
 
-					// TODO: Fix passing through supported intents for plugins.
-					transaction.setSenderIfNotSet(account.address);
-					return await transaction.toJSON({ client: suiClient });
-				},
-			},
-			account: getWalletAccountForUiWalletAccount(account),
+		const signTransactionBlockFeature = tryGetAccountFeature({
+			account,
 			chain,
-		});
+			featureName: SuiSignTransactionBlock,
+		}) as SuiSignTransactionBlockFeature[typeof SuiSignTransactionBlock];
+
+		if (signTransactionBlockFeature) {
+			const transaction = Transaction.from(await transactionWrapper.toJSON());
+			const { transactionBlockBytes, signature } =
+				await signTransactionBlockFeature.signTransactionBlock({
+					transactionBlock: transaction,
+					account: underlyingAccount,
+					chain,
+				});
+
+			return { bytes: transactionBlockBytes, signature };
+		}
+
+		throw new FeatureNotSupportedError(
+			`The account ${account.address} does not support signing transactions.`,
+		);
 	};
 }
