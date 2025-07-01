@@ -4,7 +4,15 @@
 import { FileBuilder } from './file-builder.js';
 import { readFile } from 'node:fs/promises';
 import { getSafeName, renderTypeSignature, SUI_FRAMEWORK_ADDRESS } from './render-types.js';
-import { formatComment, mapToObject, parseTS, withComment } from './utils.js';
+import {
+	camelCase,
+	capitalize,
+	formatComment,
+	isWellKnownObjectParameter,
+	mapToObject,
+	parseTS,
+	withComment,
+} from './utils.js';
 import type { Fields, ModuleSummary, Type, TypeParameter } from './types/summary.js';
 import { join } from 'node:path';
 
@@ -13,25 +21,35 @@ export class MoveModuleBuilder extends FileBuilder {
 	#depsDir = './deps';
 	#addressMappings: Record<string, string>;
 	#includedTypes: Set<string> = new Set();
+	#includedFunctions: Set<string> = new Set();
+	#mvrNameOrAddress?: string;
 
 	constructor({
+		mvrNameOrAddress,
 		summary,
 		addressMappings = {},
 	}: {
 		summary: ModuleSummary;
 		addressMappings?: Record<string, string>;
+		mvrNameOrAddress?: string;
 	}) {
 		super();
 		this.summary = summary;
 		this.#addressMappings = addressMappings;
+		this.#mvrNameOrAddress = mvrNameOrAddress;
 	}
 
-	static async fromSummaryFile(file: string, addressMappings: Record<string, string>) {
+	static async fromSummaryFile(
+		file: string,
+		addressMappings: Record<string, string>,
+		mvrNameOrAddress?: string,
+	) {
 		const summary = JSON.parse(await readFile(file, 'utf-8'));
 
 		return new MoveModuleBuilder({
 			summary,
 			addressMappings,
+			mvrNameOrAddress,
 		});
 	}
 
@@ -47,12 +65,26 @@ export class MoveModuleBuilder extends FileBuilder {
 		return `${await super.getHeader()}\n\n/*${await formatComment(this.summary.doc)}*/\n\n`;
 	}
 
+	includeAllFunctions() {
+		for (const [name, func] of Object.entries(this.summary.functions)) {
+			if (func.visibility !== 'Public' || func.macro_) {
+				continue;
+			}
+
+			const safeName = getSafeName(camelCase(name));
+
+			this.reservedNames.add(safeName);
+			this.#includedFunctions.add(name);
+		}
+	}
+
 	includeType(name: string, moduleBuilders: Record<string, MoveModuleBuilder>) {
 		if (this.#includedTypes.has(name)) {
 			return;
 		}
 
 		this.#includedTypes.add(name);
+		this.reservedNames.add(name);
 
 		const struct = this.summary.structs[name];
 		const enum_ = this.summary.enums[name];
@@ -78,6 +110,8 @@ export class MoveModuleBuilder extends FileBuilder {
 						}
 
 						builder.includeType(name, moduleBuilders);
+
+						return undefined;
 					},
 				});
 			});
@@ -99,6 +133,8 @@ export class MoveModuleBuilder extends FileBuilder {
 							}
 
 							builder.includeType(name, moduleBuilders);
+
+							return undefined;
 						},
 					});
 				});
@@ -150,13 +186,15 @@ export class MoveModuleBuilder extends FileBuilder {
 					resolveAddress: (address) => this.#resolveAddress(address),
 					onDependency: (address, mod) => {
 						if (address !== this.summary.id.address || mod !== this.summary.id.name) {
-							this.addStarImport(
+							return this.addStarImport(
 								address === this.summary.id.address
 									? `./${mod}.js`
 									: join(`~root`, this.#depsDir, `${address}/${mod}.js`),
 								mod,
 							);
 						}
+
+						return undefined;
 					},
 				}),
 			],
@@ -176,11 +214,18 @@ export class MoveModuleBuilder extends FileBuilder {
 				summary: this.summary,
 				typeParameters,
 				resolveAddress: (address) => this.#resolveAddress(address),
-				onDependency: (address, mod) =>
-					this.addStarImport(
-						address === this.summary.id.address ? `./${mod}.js` : `~root/deps/${address}/${mod}.js`,
-						mod,
-					),
+				onDependency: (address, mod) => {
+					if (address !== this.summary.id.address || mod !== this.summary.id.name) {
+						return this.addStarImport(
+							address === this.summary.id.address
+								? `./${mod}.js`
+								: join(`~root`, this.#depsDir, `${address}/${mod}.js`),
+							mod,
+						);
+					}
+
+					return undefined;
+				},
 			}),
 		);
 
@@ -264,13 +309,15 @@ export class MoveModuleBuilder extends FileBuilder {
 										resolveAddress: (address) => this.#resolveAddress(address),
 										onDependency: (address, mod) => {
 											if (address !== this.summary.id.address || mod !== this.summary.id.name) {
-												this.addStarImport(
+												return this.addStarImport(
 													address === this.summary.id.address
 														? `./${mod}.js`
 														: `~root/deps/${address}/${mod}.js`,
 													mod,
 												);
 											}
+
+											return undefined;
 										},
 									})
 								: await this.#renderFieldsAsTuple(
@@ -318,7 +365,6 @@ export class MoveModuleBuilder extends FileBuilder {
 	}
 
 	async renderFunctions() {
-		const statements = [];
 		const names = [];
 
 		if (!this.hasFunctions()) {
@@ -327,15 +373,24 @@ export class MoveModuleBuilder extends FileBuilder {
 		this.addImport('@mysten/sui/transactions', 'type Transaction');
 
 		for (const [name, func] of Object.entries(this.summary.functions)) {
-			if (func.visibility !== 'Public' || func.macro_) {
+			if (func.visibility !== 'Public' || func.macro_ || !this.#includedFunctions.has(name)) {
 				continue;
 			}
 
 			const parameters = func.parameters.filter((param) => !this.isContextReference(param.type_));
-			const fnName = getSafeName(name);
+			const hasAllParameterNames =
+				parameters.length > 0 &&
+				parameters.every(
+					(param, i) => param.name && parameters.findIndex((p) => p.name === param.name) === i,
+				);
+			const fnName = getSafeName(camelCase(name));
+			const requiredParameters = parameters.filter(
+				(param) =>
+					!isWellKnownObjectParameter(param.type_, (address) => this.#resolveAddress(address)),
+			);
 
-			this.addImport('~root/../utils/index.js', 'normalizeMoveArguments');
 			if (parameters.length > 0) {
+				this.addImport('~root/../utils/index.js', 'normalizeMoveArguments');
 				this.addImport('~root/../utils/index.js', 'type RawTransactionArgument');
 			}
 
@@ -343,7 +398,7 @@ export class MoveModuleBuilder extends FileBuilder {
 
 			const usedTypeParameters = new Set<number | string>();
 
-			const argumentsTypes = parameters
+			const argumentsTypes = requiredParameters
 				.map((param) =>
 					renderTypeSignature(param.type_, {
 						format: 'typescriptArg',
@@ -355,7 +410,7 @@ export class MoveModuleBuilder extends FileBuilder {
 				)
 				.map((type, i) =>
 					parameters[i].name
-						? `${parameters[i].name}: RawTransactionArgument<${type}>`
+						? `${camelCase(parameters[i].name)}: RawTransactionArgument<${type}>`
 						: `RawTransactionArgument<${type}>`,
 				)
 				.join(',\n');
@@ -369,27 +424,52 @@ export class MoveModuleBuilder extends FileBuilder {
 					usedTypeParameters.has(i) || (param.name && usedTypeParameters.has(param.name)),
 			);
 
-			statements.push(
+			const genericTypes =
+				filteredTypeParameters.length > 0
+					? `<${filteredTypeParameters.map((param, i) => `${param.name ?? `T${i}`} extends BcsType<any>`).join(', ')}>`
+					: '';
+			const genericTypeArgs =
+				filteredTypeParameters.length > 0
+					? `<${filteredTypeParameters.map((param, i) => `${param.name ?? `T${i}`}`).join(', ')}>`
+					: '';
+
+			const argumentsInterface = this.getUnusedName(
+				`${capitalize(fnName.replace(/^_/, ''))}Arguments`,
+			);
+			if (hasAllParameterNames) {
+				this.statements.push(
+					...parseTS/* ts */ `export interface ${argumentsInterface}${genericTypes} {
+						${argumentsTypes}
+					}`,
+				);
+			}
+
+			const optionsInterface = this.getUnusedName(`${capitalize(fnName.replace(/^_/, ''))}Options`);
+
+			this.statements.push(
+				...parseTS/* ts */ `export interface ${optionsInterface}${genericTypes} {
+					package${this.#mvrNameOrAddress ? '?: string' : ': string'}
+					arguments: ${
+						hasAllParameterNames
+							? `${argumentsInterface}${genericTypeArgs} | [${argumentsTypes}]`
+							: `[${argumentsTypes}]`
+					},
+					${
+						func.type_parameters.length
+							? `typeArguments: [${func.type_parameters.map(() => 'string').join(', ')}]`
+							: ''
+					}
+			}`,
+			);
+
+			this.statements.push(
 				...(await withComment(
 					func,
-					parseTS/* ts */ `function
-					${fnName}${
-						filteredTypeParameters.length > 0
-							? `<
-							${filteredTypeParameters.map((param, i) => `${param.name ?? `T${i}`} extends BcsType<any>`)}
-						>`
-							: ''
-					}(options: {
-						arguments: [
-						${argumentsTypes}],
-
-						${
-							func.type_parameters.length
-								? `typeArguments: [${func.type_parameters.map(() => 'string').join(', ')}]`
-								: ''
-						}
-				}) {
-					const argumentsTypes = [
+					parseTS/* ts */ `export function ${fnName}${genericTypes}(options: ${optionsInterface}${genericTypeArgs}) {
+					const packageAddress = options.package${this.#mvrNameOrAddress ? ` ?? '${this.#mvrNameOrAddress}'` : ''};
+					${
+						parameters.length > 0
+							? `const argumentsTypes = [
 						${parameters
 							.map((param) =>
 								renderTypeSignature(param.type_, {
@@ -401,27 +481,20 @@ export class MoveModuleBuilder extends FileBuilder {
 							)
 							.map((tag) => (tag.includes('{') ? `\`${tag}\`` : `'${tag}'`))
 							.join(',\n')}
-					] satisfies string[]
+					] satisfies string[]\n`
+							: ''
+					}${hasAllParameterNames ? `const parameterNames = ${JSON.stringify(parameters.map((param) => camelCase(param.name!)))}\n` : ''}
 					return (tx: Transaction) => tx.moveCall({
 						package: packageAddress,
 						module: '${this.summary.id.name}',
 						function: '${name}',
-						arguments: normalizeMoveArguments(options.arguments, argumentsTypes),
+						${parameters.length > 0 ? `arguments: normalizeMoveArguments(options.arguments, argumentsTypes${hasAllParameterNames ? `, parameterNames` : ''}),` : ''}
 						${func.type_parameters.length ? 'typeArguments: options.typeArguments' : ''}
 					})
 				}`,
 				)),
 			);
 		}
-
-		this.statements.push(
-			...parseTS/* ts */ `
-			export function init(packageAddress: string) {
-				${statements}
-
-				return { ${names.join(', ')} }
-			}`,
-		);
 	}
 
 	isContextReference(type: Type): boolean {
