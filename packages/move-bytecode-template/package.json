@@ -1,15 +1,25 @@
 {
-	"name": "@mysten/build--move-bytecode-template",
+	"name": "@mysten/move-bytecode-template",
 	"version": "0.1.0",
 	"description": "Move Binary Format implementation in WASM",
-	"type": "module",
-	"private": true,
-	"main": "pkg/move_bytecode_template.js",
-	"types": "pkg/move_bytecode_template.d.ts",
+	"main": "index.js",
+	"types": "./web/walrus_wasm.d.ts",
+	"exports": {
+		".": {
+			"browser": "./web/walrus_wasm.js",
+			"import": "./index.mjs",
+			"require": "./index.js"
+		},
+		"./web/walrus_wasm_bg.wasm": {
+			"browser": "./web/walrus_wasm_bg.wasm",
+			"import": "./web/walrus_wasm_bg.wasm",
+			"require": "./web/walrus_wasm_bg.wasm"
+		}
+	},
 	"scripts": {
-		"build": "wasm-pack build --target nodejs --scope mysten",
-		"build:dev": "wasm-pack build --target nodejs --debug --scope mysten",
-		"build:release": "wasm-pack build --target web --release --scope mysten",
+		"build:wasm": "pnpm build:nodejs && pnpm build:web",
+		"build:nodejs": "wasm-pack build --target nodejs --release --out-dir nodejs --no-pack && rm nodejs/.gitignore",
+		"build:web": "wasm-pack build --target web --release --out-dir web --no-pack && rm web/.gitignore",
 		"test": "vitest run"
 	},
 	"author": "Mysten Labs <build@mystenlabs.com>",

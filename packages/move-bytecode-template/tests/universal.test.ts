@@ -4,7 +4,7 @@
 import { bcs, fromHex, toHex } from '@mysten/bcs';
 import { assert, describe, expect, it } from 'vitest';
 
-import * as template from '../pkg';
+import * as template from '../nodejs/move_bytecode_template.js';
 
 describe('move-binary-template', () => {
 	it('.version() should return 0.1.1', () => {
