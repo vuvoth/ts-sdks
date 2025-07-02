@@ -3,10 +3,10 @@
 import type { Transaction } from '@mysten/sui/transactions';
 export interface PercentageDiscountTypeOptions {
 	package?: string;
-	arguments: [];
+	arguments?: [];
 }
 /** A getter for the percentage discount type. */
-export function percentageDiscountType(options: PercentageDiscountTypeOptions) {
+export function percentageDiscountType(options: PercentageDiscountTypeOptions = {}) {
 	const packageAddress = options.package ?? '@suins/coupons';
 	return (tx: Transaction) =>
 		tx.moveCall({
@@ -17,10 +17,10 @@ export function percentageDiscountType(options: PercentageDiscountTypeOptions) {
 }
 export interface DiscountRuleTypesOptions {
 	package?: string;
-	arguments: [];
+	arguments?: [];
 }
 /** A vector with all the discount rule types. */
-export function discountRuleTypes(options: DiscountRuleTypesOptions) {
+export function discountRuleTypes(options: DiscountRuleTypesOptions = {}) {
 	const packageAddress = options.package ?? '@suins/coupons';
 	return (tx: Transaction) =>
 		tx.moveCall({
@@ -31,9 +31,9 @@ export function discountRuleTypes(options: DiscountRuleTypesOptions) {
 }
 export interface FixedPriceDiscountTypeOptions {
 	package?: string;
-	arguments: [];
+	arguments?: [];
 }
-export function fixedPriceDiscountType(options: FixedPriceDiscountTypeOptions) {
+export function fixedPriceDiscountType(options: FixedPriceDiscountTypeOptions = {}) {
 	const packageAddress = options.package ?? '@suins/coupons';
 	return (tx: Transaction) =>
 		tx.moveCall({

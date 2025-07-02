@@ -15,10 +15,10 @@ export function Metadata() {
 }
 export interface NewOptions {
 	package?: string;
-	arguments: [];
+	arguments?: [];
 }
 /** Creates a new instance of Metadata. */
-export function _new(options: NewOptions) {
+export function _new(options: NewOptions = {}) {
 	const packageAddress = options.package ?? '@local-pkg/walrus';
 	return (tx: Transaction) =>
 		tx.moveCall({

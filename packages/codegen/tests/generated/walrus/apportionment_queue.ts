@@ -32,7 +32,7 @@ export function Entry<T extends BcsType<any>>(...typeParameters: [T]) {
 }
 export interface NewOptions {
 	package?: string;
-	arguments: [];
+	arguments?: [];
 	typeArguments: [string];
 }
 /** Create a new priority queue. */

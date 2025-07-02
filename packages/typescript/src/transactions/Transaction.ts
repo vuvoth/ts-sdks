@@ -26,6 +26,7 @@ import { createObjectMethods } from './object.js';
 import { createPure } from './pure.js';
 import { TransactionDataBuilder } from './TransactionData.js';
 import { getIdFromCallArg } from './utils.js';
+import { namedPackagesPlugin } from './plugins/NamedPackagesPlugin.js';
 
 export type TransactionObjectArgument =
 	| Exclude<InferInput<typeof Argument>, { Input: unknown; type?: 'pure' }>
@@ -733,6 +734,7 @@ export class Transaction {
 			client?: SuiClient;
 		} = {},
 	): Promise<string> {
+		await this.prepareForSerialization(options);
 		await this.#prepareBuild(options);
 		return this.#data.getDigest();
 	}
@@ -901,6 +903,8 @@ export class Transaction {
 
 			steps.push(this.#intentResolvers.get(intent)!);
 		}
+
+		steps.push(namedPackagesPlugin());
 
 		await this.#runPlugins(steps, options);
 	}

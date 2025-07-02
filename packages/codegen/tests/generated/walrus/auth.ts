@@ -26,10 +26,10 @@ export function Authorized() {
 }
 export interface AuthenticateSenderOptions {
 	package?: string;
-	arguments: [];
+	arguments?: [];
 }
 /** Authenticates the sender as the authorizer. */
-export function authenticateSender(options: AuthenticateSenderOptions) {
+export function authenticateSender(options: AuthenticateSenderOptions = {}) {
 	const packageAddress = options.package ?? '@local-pkg/walrus';
 	return (tx: Transaction) =>
 		tx.moveCall({

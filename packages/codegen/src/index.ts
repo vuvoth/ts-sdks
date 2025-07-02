@@ -31,15 +31,18 @@ export async function generateFromPackageSummary({
 
 	let packageName = pkg.packageName!;
 	const mvrNameOrAddress = pkg.package;
-	try {
-		const packageToml = await readFile(join(pkg.path, 'Move.toml'), 'utf-8');
-		packageName = parse(packageToml).package.name.toLowerCase();
-	} catch (e) {
-		const message = `Package name not found in package.toml for ${pkg.path}`;
-		if (packageName) {
-			console.warn(message);
-		} else {
-			throw new Error(message);
+
+	if (!pkg.packageName) {
+		try {
+			const packageToml = await readFile(join(pkg.path, 'Move.toml'), 'utf-8');
+			packageName = parse(packageToml).package.name.toLowerCase();
+		} catch (e) {
+			const message = `Package name not found in package.toml for ${pkg.path}`;
+			if (packageName) {
+				console.warn(message);
+			} else {
+				throw new Error(message);
+			}
 		}
 	}
 
@@ -57,6 +60,7 @@ export async function generateFromPackageSummary({
 	const modules = (
 		await Promise.all(
 			packages.map(async (pkg) => {
+				console.log(packageName, pkg);
 				const modules = await readdir(join(summaryDir, pkg));
 				return Promise.all(
 					modules.map(async (mod) => ({

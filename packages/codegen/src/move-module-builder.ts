@@ -391,7 +391,6 @@ export class MoveModuleBuilder extends FileBuilder {
 
 			if (parameters.length > 0) {
 				this.addImport('~root/../utils/index.js', 'normalizeMoveArguments');
-				this.addImport('~root/../utils/index.js', 'type RawTransactionArgument');
 			}
 
 			names.push(fnName);
@@ -414,6 +413,10 @@ export class MoveModuleBuilder extends FileBuilder {
 						: `RawTransactionArgument<${type}>`,
 				)
 				.join(',\n');
+
+			if (argumentsTypes.length > 0) {
+				this.addImport('~root/../utils/index.js', 'type RawTransactionArgument');
+			}
 
 			if (usedTypeParameters.size > 0) {
 				this.addImport('@mysten/sui/bcs', 'type BcsType');
@@ -445,11 +448,12 @@ export class MoveModuleBuilder extends FileBuilder {
 			}
 
 			const optionsInterface = this.getUnusedName(`${capitalize(fnName.replace(/^_/, ''))}Options`);
+			const requiresOptions = argumentsTypes.length > 0 || func.type_parameters.length > 0;
 
 			this.statements.push(
 				...parseTS/* ts */ `export interface ${optionsInterface}${genericTypes} {
 					package${this.#mvrNameOrAddress ? '?: string' : ': string'}
-					arguments: ${
+					${argumentsTypes.length > 0 ? 'arguments: ' : 'arguments?: '}${
 						hasAllParameterNames
 							? `${argumentsInterface}${genericTypeArgs} | [${argumentsTypes}]`
 							: `[${argumentsTypes}]`
@@ -465,7 +469,7 @@ export class MoveModuleBuilder extends FileBuilder {
 			this.statements.push(
 				...(await withComment(
 					func,
-					parseTS/* ts */ `export function ${fnName}${genericTypes}(options: ${optionsInterface}${genericTypeArgs}) {
+					parseTS/* ts */ `export function ${fnName}${genericTypes}(options: ${optionsInterface}${genericTypeArgs}${requiresOptions ? '' : ' = {}'}) {
 					const packageAddress = options.package${this.#mvrNameOrAddress ? ` ?? '${this.#mvrNameOrAddress}'` : ''};
 					${
 						parameters.length > 0
@@ -488,7 +492,7 @@ export class MoveModuleBuilder extends FileBuilder {
 						package: packageAddress,
 						module: '${this.summary.id.name}',
 						function: '${name}',
-						${parameters.length > 0 ? `arguments: normalizeMoveArguments(options.arguments, argumentsTypes${hasAllParameterNames ? `, parameterNames` : ''}),` : ''}
+						${parameters.length > 0 ? `arguments: normalizeMoveArguments(options.arguments${argumentsTypes.length > 0 ? '' : ' ?? []'} , argumentsTypes${hasAllParameterNames ? `, parameterNames` : ''}),` : ''}
 						${func.type_parameters.length ? 'typeArguments: options.typeArguments' : ''}
 					})
 				}`,

@@ -64,9 +64,9 @@ export function newCouponRules(options: NewCouponRulesOptions) {
 }
 export interface NewEmptyRulesOptions {
 	package?: string;
-	arguments: [];
+	arguments?: [];
 }
-export function newEmptyRules(options: NewEmptyRulesOptions) {
+export function newEmptyRules(options: NewEmptyRulesOptions = {}) {
 	const packageAddress = options.package ?? '@suins/coupons';
 	return (tx: Transaction) =>
 		tx.moveCall({

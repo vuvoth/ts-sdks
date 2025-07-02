@@ -54,13 +54,13 @@ export function newExchangeRate(options: NewExchangeRateOptions) {
 }
 export interface NewOptions {
 	package?: string;
-	arguments: [];
+	arguments?: [];
 }
 /**
  * Creates a new shared exchange with a 1:1 exchange rate and returns the
  * associated `AdminCap`.
  */
-export function _new(options: NewOptions) {
+export function _new(options: NewOptions = {}) {
 	const packageAddress = options.package ?? '@local-pkg/wal_exchange';
 	return (tx: Transaction) =>
 		tx.moveCall({
