@@ -58,7 +58,7 @@ export type AuthProviderOptions = {
 	/**
 	 * Extra parameters to include in the authorization URL.
 	 */
-	extraParams?: Record<string, string>;
+	extraParams?: Record<string, string> | (() => Record<string, string>);
 };
 
 export type RegisterEnokiWalletsOptions = EnokiClientConfig & {

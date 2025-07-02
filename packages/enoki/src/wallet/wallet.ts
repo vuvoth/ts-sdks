@@ -57,7 +57,7 @@ export class EnokiWallet implements Wallet {
 	#provider: AuthProvider;
 	#clientId: string;
 	#redirectUrl: string;
-	#extraParams: Record<string, string> | undefined;
+	#extraParams: Record<string, string> | (() => Record<string, string>) | undefined;
 	#getCurrentNetwork: () => Experimental_SuiClientTypes.Network;
 	#windowFeatures?: string | (() => string);
 
@@ -411,13 +411,16 @@ export class EnokiWallet implements Wallet {
 				ephemeralPublicKey: ephemeralKeyPair.getPublicKey(),
 			});
 
+		const extraParams =
+			typeof this.#extraParams === 'function' ? this.#extraParams() : this.#extraParams;
+
 		const params = new URLSearchParams({
-			...this.#extraParams,
+			...extraParams,
 			nonce,
 			client_id: this.#clientId,
 			redirect_uri: this.#redirectUrl,
 			response_type: 'id_token',
-			scope: ['openid', ...(this.#extraParams?.scope ? this.#extraParams.scope.split(' ') : [])]
+			scope: ['openid', ...(extraParams?.scope ? extraParams.scope.split(' ') : [])]
 				.filter(Boolean)
 				.join(' '),
 		});
