@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/ban-types */
 
 import type { SerializedTransactionDataV2, TransactionPlugin } from '../transactions/index.js';
-import { ClientCache } from './cache.js';
+import type { ClientCache } from './cache.js';
 import type { Experimental_BaseClient } from './client.js';
 
 export type SuiClientRegistration<
