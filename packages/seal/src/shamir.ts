@@ -160,7 +160,7 @@ export class Polynomial {
 				let sum = GF256.zero();
 				for (let j = 0; j <= i; j++) {
 					if (j <= this.degree() && i - j <= other.degree()) {
-						sum = sum.add(this.coefficients[j].mul(other.coefficients[i - j]));
+						sum = sum.add(this.getCoefficient(j).mul(other.getCoefficient(i - j)));
 					}
 				}
 				return sum;
@@ -247,10 +247,10 @@ export class Polynomial {
 	}
 
 	equals(other: Polynomial): boolean {
-		if (this.degree() !== other.degree()) {
+		if (this.coefficients.length !== other.coefficients.length) {
 			return false;
 		}
-		return this.coefficients.every((c, i) => c.equals(other.coefficients[i]));
+		return this.coefficients.every((c, i) => c.equals(other.getCoefficient(i)));
 	}
 }
 
