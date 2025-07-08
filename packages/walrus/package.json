@@ -39,7 +39,7 @@
 	"bugs": {
 		"url": "https://github.com/mystenlabs/ts-sdks/issues"
 	},
-	"homepage": "https://github.com/mystenlabs/ts-sdks#readme",
+	"homepage": "https://sdk.mystenlabs.com/walrus",
 	"devDependencies": {
 		"@hono/node-server": "^1.14.3",
 		"@mysten/build-scripts": "workspace:*",

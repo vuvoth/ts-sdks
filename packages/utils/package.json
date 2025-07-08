@@ -42,7 +42,7 @@
 	"bugs": {
 		"url": "https://github.com/MystenLabs/ts-sdks/issues"
 	},
-	"homepage": "https://github.com/MystenLabs/ts-sdks#readme",
+	"homepage": "https://github.com/MystenLabs/ts-sdks/tree/main/packages/utils#readme",
 	"devDependencies": {
 		"@mysten/build-scripts": "workspace:*",
 		"typescript": "^5.8.3",

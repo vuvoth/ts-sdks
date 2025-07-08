@@ -37,7 +37,7 @@
 	"bugs": {
 		"url": "https://github.com/mystenlabs/ts-sdks/issues"
 	},
-	"homepage": "https://github.com/mystenlabs/ts-sdks#readme",
+	"homepage": "https://github.com/MystenLabs/ts-sdks/tree/main/packages/enoki-connect#readme",
 	"devDependencies": {
 		"@mysten/build-scripts": "workspace:*",
 		"@types/node": "^22.15.29",

@@ -45,7 +45,7 @@
 	"bugs": {
 		"url": "https://github.com/MystenLabs/ts-sdks/issues"
 	},
-	"homepage": "https://github.com/MystenLabs/ts-sdks#readme",
+	"homepage": "https://github.com/MystenLabs/ts-sdks/tree/main/packages/sui-grpc#readme",
 	"devDependencies": {
 		"@mysten/build-scripts": "workspace:*",
 		"@protobuf-ts/plugin": "^2.9.6",

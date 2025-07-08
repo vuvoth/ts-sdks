@@ -22,7 +22,7 @@
 	"publishConfig": {
 		"access": "public"
 	},
-	"homepage": "https://github.com/MystenLabs/ts-sdks/sdk/ledgerjs-hw-app-sui/#readme",
+	"homepage": "https://github.com/MystenLabs/ts-sdks/tree/main/packages/ledgerjs-hw-app-sui#readme",
 	"files": [
 		"CHANGELOG.md",
 		"dist",

@@ -41,7 +41,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/mystenlabs/sui.git"
+		"url": "git+https://github.com/mystenlabs/ts-sdks.git"
 	},
 	"keywords": [
 		"move",
@@ -49,9 +49,9 @@
 		"sui"
 	],
 	"bugs": {
-		"url": "https://github.com/mystenlabs/sui/issues"
+		"url": "https://github.com/mystenlabs/ts-sdks/issues"
 	},
-	"homepage": "https://github.com/mystenlabs/sui#readme",
+	"homepage": "https://github.com/MystenLabs/ts-sdks/blob/main/packages/codegen#readme",
 	"devDependencies": {
 		"@mysten/build-scripts": "workspace:*",
 		"vitest": "^3.2.1"
