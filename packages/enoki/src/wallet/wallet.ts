@@ -437,6 +437,9 @@ export class EnokiWallet implements Wallet {
 				params.set('force_verify', 'true');
 				oauthUrl = `https://id.twitch.tv/oauth2/authorize?${params}`;
 				break;
+			case 'onefc':
+				oauthUrl = `https://login.onepassport.onefc.com/de3ee5c1-5644-4113-922d-e8336569a462/b2c_1a_prod_signupsignin_onesuizklogin/oauth2/v2.0/authorize?${params}`;
+				break;
 			default:
 				throw new Error(`Invalid provider: ${this.#provider}`);
 		}
