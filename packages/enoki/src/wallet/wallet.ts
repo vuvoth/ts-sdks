@@ -33,8 +33,13 @@ import mitt from 'mitt';
 
 import type { AuthProvider } from '../EnokiClient/type.js';
 import type { EnokiWalletOptions, WalletEventsMap, EnokiSessionContext } from './types.js';
-import type { EnokiGetMetadataFeature, EnokiGetMetadataMethod } from './feature.js';
-import { EnokiGetMetadata } from './feature.js';
+import type {
+	EnokiGetMetadataFeature,
+	EnokiGetMetadataMethod,
+	EnokiGetSessionFeature,
+	EnokiGetSessionMethod,
+} from './features.js';
+import { EnokiGetMetadata, EnokiGetSession } from './features.js';
 import type { Experimental_SuiClientTypes } from '@mysten/sui/experimental';
 import { decodeJwt } from '@mysten/sui/zklogin';
 import type { ExportedWebCryptoKeypair } from '@mysten/signers/webcrypto';
@@ -94,7 +99,8 @@ export class EnokiWallet implements Wallet {
 		SuiSignTransactionFeature &
 		SuiSignAndExecuteTransactionFeature &
 		SuiSignPersonalMessageFeature &
-		EnokiGetMetadataFeature {
+		EnokiGetMetadataFeature &
+		EnokiGetSessionFeature {
 		return {
 			[StandardConnect]: {
 				version: '1.0.0',
@@ -123,6 +129,10 @@ export class EnokiWallet implements Wallet {
 			[EnokiGetMetadata]: {
 				version: '1.0.0',
 				getMetadata: this.#getMetadata,
+			},
+			[EnokiGetSession]: {
+				version: '1.0.0',
+				getSession: this.#getSession,
 			},
 		};
 	}
@@ -225,14 +235,16 @@ export class EnokiWallet implements Wallet {
 	};
 
 	#getMetadata: EnokiGetMetadataMethod = () => {
-		const sessionContext = this.#state.getSessionContext(this.#getCurrentNetwork());
-		const session = sessionContext?.$zkLoginSession.get();
-		const decodedJwt = session?.value?.jwt ? decodeJwt(session.value.jwt) : undefined;
-
 		return {
 			provider: this.#provider,
-			activeSession: decodedJwt ? { decodedJwt } : undefined,
 		};
+	};
+
+	#getSession: EnokiGetSessionMethod = async (input) => {
+		const sessionContext = this.#state.getSessionContext(
+			input?.network ?? this.#getCurrentNetwork(),
+		);
+		return await this.#state.getSession(sessionContext);
 	};
 
 	#on: StandardEventsOnMethod = (event, listener) => {

@@ -23,6 +23,7 @@ export {
 	isTwitchWallet,
 	isFacebookWallet,
 	getWalletMetadata,
+	getSession,
 } from './wallet/utils.js';
 export { type RegisterEnokiWalletsOptions } from './wallet/types.js';
 

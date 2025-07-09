@@ -5,8 +5,12 @@ import type { Wallet, WalletWithFeatures } from '@mysten/wallet-standard';
 import type { UiWallet } from '@wallet-standard/ui';
 import { getWalletFeature } from '@wallet-standard/ui';
 import type { EnokiWallet } from './wallet.js';
-import type { EnokiGetMetadataFeature } from './feature.js';
-import { EnokiGetMetadata } from './feature.js';
+import type {
+	EnokiGetMetadataFeature,
+	EnokiGetSessionFeature,
+	EnokiGetSessionInput,
+} from './features.js';
+import { EnokiGetMetadata, EnokiGetSession } from './features.js';
 
 export function isEnokiWallet(wallet: UiWallet): boolean;
 export function isEnokiWallet(wallet: Wallet): wallet is EnokiWallet;
@@ -32,6 +36,25 @@ export function getWalletMetadata(wallet: Wallet | UiWallet) {
 	} else if (EnokiGetMetadata in wallet.features) {
 		const walletWithFeature = wallet as WalletWithFeatures<EnokiGetMetadataFeature>;
 		return walletWithFeature.features[EnokiGetMetadata].getMetadata();
+	}
+	return null;
+}
+
+export async function getSession(wallet: Wallet | UiWallet, input?: EnokiGetSessionInput) {
+	if (isWalletHandle(wallet)) {
+		try {
+			const { getSession } = getWalletFeature(
+				wallet,
+				EnokiGetSession,
+			) as EnokiGetSessionFeature[typeof EnokiGetSession];
+
+			return await getSession(input);
+		} catch (error) {
+			return null;
+		}
+	} else if (EnokiGetSession in wallet.features) {
+		const walletWithFeature = wallet as WalletWithFeatures<EnokiGetSessionFeature>;
+		return await walletWithFeature.features[EnokiGetSession].getSession(input);
 	}
 	return null;
 }
