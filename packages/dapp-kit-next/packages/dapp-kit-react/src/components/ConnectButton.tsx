@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { createComponent } from '@lit/react';
-import { DAppKitConnectButton as ConnectButtonElement } from '@mysten/dapp-kit-core';
+import { DAppKitConnectButton as ConnectButtonElement } from '@mysten/dapp-kit-core/web';
 import { useDAppKit } from '../hooks/useDAppKit.js';
 import type { ComponentProps } from 'react';
 

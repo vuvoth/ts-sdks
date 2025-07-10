@@ -4,6 +4,8 @@
 import { createDAppKit } from '@mysten/dapp-kit-core';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 
+import '@mysten/dapp-kit-core/web';
+
 const connectButton = document.querySelector('mysten-dapp-kit-connect-button');
 connectButton!.instance = createDAppKit({
 	enableBurnerWallet: import.meta.env.DEV,

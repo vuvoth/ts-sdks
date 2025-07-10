@@ -3,8 +3,9 @@
 
 import type { Preview } from '@storybook/web-components';
 
-import '../src/components/dapp-kit-connect-button.js';
-import '../src/components/dapp-kit-connect-modal.js';
+import '@webcomponents/scoped-custom-element-registry';
+import '../src/web/dapp-kit-connect-button.js';
+import '../src/web/dapp-kit-connect-modal.js';
 
 const preview: Preview = {
 	parameters: {

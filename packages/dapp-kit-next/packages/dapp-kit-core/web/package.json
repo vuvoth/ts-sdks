@@ -1,0 +1,6 @@
+{
+	"name": "web",
+	"private": true,
+	"import": "../dist/esm/web/index.js",
+	"main": "../dist/cjs/web/index.js"
+}
