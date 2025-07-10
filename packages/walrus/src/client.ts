@@ -985,7 +985,7 @@ export class WalrusClient {
 			'const' in kind
 				? kind.const
 				: BigInt(kind.linear.base) +
-					BigInt(kind.linear.perEncodedKb) * (BigInt(encodedSize) / 1024n);
+					BigInt(kind.linear.perEncodedKib) * ((BigInt(encodedSize) + 1023n) / 1024n); // Compute the ceiling of the division.
 
 		if (max != null && amount > max) {
 			throw new WalrusClientError(

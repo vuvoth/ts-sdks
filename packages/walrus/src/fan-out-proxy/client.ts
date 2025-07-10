@@ -81,7 +81,7 @@ export class FanOutProxyClient {
 					  }
 					| {
 							base: number;
-							encoded_size_mul_per_kb: number;
+							encoded_size_mul_per_kib: number;
 					  };
 			};
 		};
@@ -100,7 +100,7 @@ export class FanOutProxyClient {
 			kind: {
 				linear: {
 					base: data.send_tip.kind.base,
-					perEncodedKb: data.send_tip.kind.encoded_size_mul_per_kb,
+					perEncodedKib: data.send_tip.kind.encoded_size_mul_per_kib,
 				},
 			},
 		};
