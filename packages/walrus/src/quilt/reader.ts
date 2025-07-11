@@ -2,17 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { bcs } from '@mysten/bcs';
-import { QuiltIndexV1, QuiltPatchBlobHeader, QuiltPatchTags } from '../utils/bcs.js';
-import { parseQuiltPatchId, QUILT_PATCH_BLOB_HEADER_SIZE } from '../utils/quilts.js';
+import { QuiltIndexV1, QuiltPatchBlobHeader, QuiltPatchId, QuiltPatchTags } from '../utils/bcs.js';
+import { HAS_TAGS_FLAG, parseQuiltPatchId, QUILT_PATCH_BLOB_HEADER_SIZE } from '../utils/quilts.js';
 import type { WalrusClient } from '../client.js';
-import { getSourceSymbols } from '../utils/index.js';
-
-const HAS_TAGS_FLAG = 1 << 0;
+import { getSourceSymbols, urlSafeBase64 } from '../utils/index.js';
 
 export interface QuiltReaderOptions {
 	client: WalrusClient;
 	blobId: string;
 	numShards: number;
+	fullBlob?: Uint8Array;
 }
 
 export class QuiltReader {
@@ -23,10 +22,11 @@ export class QuiltReader {
 	#blobBytes: Uint8Array | Promise<Uint8Array> | null = null;
 	#columnSize: number | Promise<number> | null = null;
 
-	constructor({ client, blobId, numShards }: QuiltReaderOptions) {
+	constructor({ client, blobId, numShards, fullBlob }: QuiltReaderOptions) {
 		this.#client = client;
 		this.blobId = blobId;
 		this.#numShards = numShards;
+		this.#blobBytes = fullBlob ?? null;
 	}
 
 	// TODO: We should handle retries and epoch changes
@@ -116,10 +116,14 @@ export class QuiltReader {
 
 		let bytesRead = 0;
 
-		function addSlice(col: number, row: number, skip: number, take: number) {
-			const baseIndex = row * rowSize + col * symbolSize;
-			const startIndex = baseIndex + skip;
-			const endIndex = Math.min(baseIndex + symbolSize, startIndex + take, blob.length);
+		while (bytesRead < length) {
+			const baseIndex = currentRow * rowSize + currentCol * symbolSize;
+			const startIndex = baseIndex + remainingOffset;
+			const endIndex = Math.min(
+				baseIndex + symbolSize,
+				startIndex + length - bytesRead,
+				blob.length,
+			);
 
 			if (startIndex >= blob.length) {
 				throw new Error('Index out of bounds');
@@ -129,10 +133,7 @@ export class QuiltReader {
 			const subArray = blob.subarray(startIndex, endIndex);
 			result.set(subArray, bytesRead);
 			bytesRead += size;
-		}
 
-		while (bytesRead < length) {
-			addSlice(currentCol, currentRow, remainingOffset, length - bytesRead);
 			remainingOffset = 0;
 
 			currentRow = (currentRow + 1) % nRows;
@@ -188,13 +189,12 @@ export class QuiltReader {
 
 		offset += identifierLength;
 
-		let tags: Map<string, string> | null = null;
+		let tags: Record<string, string> | null = null;
 		if (blobHeader.mask & HAS_TAGS_FLAG) {
 			const tagsSize = new DataView(firstSliver.buffer, offset, 2).getUint16(0, true);
 			offset += 2;
 
 			tags = QuiltPatchTags.parse(firstSliver.subarray(offset, offset + tagsSize));
-
 			blobSize -= tagsSize + 2;
 			offset += tagsSize;
 		}
@@ -296,9 +296,23 @@ export class QuiltReader {
 		const indexSlivers = Math.ceil(indexSize / (await this.#getColumnSize()));
 		const index = QuiltIndexV1.parse(indexBytes);
 
-		return index.patches.map((patch, i) => ({
-			startIndex: i === 0 ? indexSlivers : index.patches[i - 1].endIndex,
-			...patch,
-		}));
+		return index.patches.map((patch, i) => {
+			const startIndex = i === 0 ? indexSlivers : index.patches[i - 1].endIndex;
+
+			return {
+				startIndex: i === 0 ? indexSlivers : index.patches[i - 1].endIndex,
+				patchId: urlSafeBase64(
+					QuiltPatchId.serialize({
+						quiltId: this.blobId,
+						patchId: {
+							version: 1,
+							startIndex,
+							endIndex: patch.endIndex,
+						},
+					}).toBytes(),
+				),
+				...patch,
+			};
+		});
 	}
 }

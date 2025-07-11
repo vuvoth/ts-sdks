@@ -4,7 +4,7 @@
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 
 import { WalrusClient } from '../../src/client.js';
-import { QuiltReader } from '../../src/read/quilt.js';
+import { QuiltReader } from '../../src/quilt/reader.js';
 
 const client = new SuiClient({
 	url: getFullnodeUrl('testnet'),
@@ -14,13 +14,13 @@ const client = new SuiClient({
 (async function main() {
 	const reader = new QuiltReader({
 		client: client.walrus,
-		blobId: 'NqQqVflKKk2ekbO9WsCsMYeOTWUMvOV4cvpvoD7mUKg',
+		blobId: 'nBENQqV1TwBw2BtW3T2h_jHPd49KeVaYGGd84D9JuRk',
 		numShards: 1000,
 	});
-	const data = await reader.readByPatchId('NqQqVflKKk2ekbO9WsCsMYeOTWUMvOV4cvpvoD7mUKgBAQAOAA');
+	const data = await reader.readByPatchId('nBENQqV1TwBw2BtW3T2h_jHPd49KeVaYGGd84D9JuRkBAQACAA');
 	console.log(data.identifier);
 	console.log(data.tags);
-	console.log(new TextDecoder().decode(data.blobContents));
+	console.log('content:', new TextDecoder().decode(data.blobContents));
 	const metadata = await reader.readIndex();
 	console.log(metadata);
 
@@ -28,8 +28,8 @@ const client = new SuiClient({
 
 	const index = await reader.readIndex();
 	console.log(index);
-	const data2 = await reader.readByPatchId('NqQqVflKKk2ekbO9WsCsMYeOTWUMvOV4cvpvoD7mUKgBAQAOAA');
+	const data2 = await reader.readByPatchId('nBENQqV1TwBw2BtW3T2h_jHPd49KeVaYGGd84D9JuRkBAgADAA');
 	console.log(data2.identifier);
 	console.log(data2.tags);
-	console.log(new TextDecoder().decode(data2.blobContents));
+	console.log('content:', new TextDecoder().decode(data2.blobContents));
 })();

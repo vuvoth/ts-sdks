@@ -10,6 +10,13 @@ export const QUILT_VERSION_BYTES_LENGTH = 1;
 export const QUILT_INDEX_PREFIX_SIZE = QUILT_VERSION_BYTES_LENGTH + QUILT_INDEX_SIZE_BYTES_LENGTH;
 export const QUILT_PATCH_BLOB_HEADER_SIZE = 1 + 4 + 1; // bcs length of QuiltPatchBlobHeader
 
+export const BLOB_IDENTIFIER_SIZE_BYTES_LENGTH = 2;
+export const TAGS_SIZE_BYTES_LENGTH = 2;
+export const MAX_BLOB_IDENTIFIER_BYTES_LENGTH = (1 << (8 * BLOB_IDENTIFIER_SIZE_BYTES_LENGTH)) - 1;
+export const MAX_NUM_SLIVERS_FOR_QUILT_INDEX = 10;
+
+export const HAS_TAGS_FLAG = 1 << 0;
+
 const REQUIRED_ALIGNMENT_BY_ENCODING_TYPE = {
 	RS2: 2,
 	RedStuff: 2,
@@ -44,7 +51,7 @@ export function computeSymbolSize(
 	nColumns: number,
 	nRows: number,
 	maxNumColumnsForQuiltIndex: number,
-	encodingType: EncodingType,
+	encodingType: EncodingType = 'RS2',
 ): number {
 	if (blobsSizes.length > nColumns) {
 		throw new Error('Too many blobs, the number of blobs must be less than the number of columns');
@@ -71,7 +78,9 @@ export function computeSymbolSize(
 		}
 	}
 
-	const symbolSize = Math.ceil(minVal / REQUIRED_ALIGNMENT_BY_ENCODING_TYPE[encodingType]);
+	const symbolSize =
+		Math.ceil(minVal / REQUIRED_ALIGNMENT_BY_ENCODING_TYPE[encodingType]) *
+		REQUIRED_ALIGNMENT_BY_ENCODING_TYPE[encodingType];
 
 	if (!canBlobsFitIntoMatrix(blobsSizes, nColumns, symbolSize * nRows)) {
 		throw new Error('Quilt oversize');

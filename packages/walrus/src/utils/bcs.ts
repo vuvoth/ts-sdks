@@ -149,12 +149,14 @@ export function Field<T0 extends BcsType<any>, T1 extends BcsType<any>>(
 
 export const QuiltPatchTags = bcs.map(bcs.string(), bcs.string()).transform({
 	// tags is a BTreeMap, so we need to sort entries before serializing
-	input: (tags: Map<string, string>) =>
+	input: (tags: Record<string, string> | Map<string, string>) =>
 		new Map(
-			[...tags.entries()].sort(([a], [b]) =>
+			[...(tags instanceof Map ? tags : Object.entries(tags))].sort(([a], [b]) =>
+				// TODO: sorting for map keys should be moved into @mysten/bcs
 				compareBcsBytes(bcs.string().serialize(a).toBytes(), bcs.string().serialize(b).toBytes()),
 			),
 		),
+	output: (tags: Map<string, string>) => Object.fromEntries(tags),
 });
 
 export const QuiltPatchV1 = bcs.struct('QuiltPatchV1', {
@@ -164,11 +166,12 @@ export const QuiltPatchV1 = bcs.struct('QuiltPatchV1', {
 });
 
 function compareBcsBytes(a: Uint8Array, b: Uint8Array) {
-	for (let i = 0; i < a.length; i++) {
-		if (i >= b.length) {
-			return 1;
-		}
+	// sort by length first, because bcs bytes prefix length
+	if (a.length !== b.length) {
+		return a.length - b.length;
+	}
 
+	for (let i = 0; i < a.length; i++) {
 		if (a[i] !== b[i]) {
 			return a[i] - b[i];
 		}
