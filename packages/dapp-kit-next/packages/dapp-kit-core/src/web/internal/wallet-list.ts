@@ -7,10 +7,14 @@ import { html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 import { WalletListItem } from './wallet-list-item.js';
 import { styles } from './wallet-list.styles.js';
+import { Button } from './button.js';
+import { downloadIcon } from './icons/download-icon.js';
+import { arrowRightUpIcon } from './icons/arrow-right-up-icon.js';
 
 export class WalletList extends ScopedRegistryHost(LitElement) {
 	static elementDefinitions = {
 		'wallet-list-item': WalletListItem,
+		'internal-button': Button,
 	};
 
 	static override styles = styles;
@@ -20,7 +24,15 @@ export class WalletList extends ScopedRegistryHost(LitElement) {
 
 	override render() {
 		return this.wallets.length === 0
-			? html`<p class="no-wallets">No wallets available: TODO</p>`
+			? html`<div class="no-wallets-container">
+					<div class="no-wallets-content">
+						${downloadIcon}
+						<h2 class="title">Install a wallet to get started on Sui</h2>
+					</div>
+					<internal-button class="wallet-cta" href="https://sui.io/get-started">
+						Select a wallet to install ${arrowRightUpIcon}
+					</internal-button>
+				</div>`
 			: html`<ul class="wallet-list">
 					${this.wallets.map(
 						(wallet, index) =>

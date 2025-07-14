@@ -120,7 +120,7 @@ export class DAppKitConnectModal
 								${backIcon}
 							</button>`
 						: nothing}
-					<h2 class="title">${this.#getModalTitle(wallets)}</h2>
+					<h2 class="title">${wallets.length > 0 ? 'Connect a wallet' : 'No wallets installed'}</h2>
 					<button
 						class="icon-button close-button"
 						aria-label="Close"
@@ -180,18 +180,6 @@ export class DAppKitConnectModal
 						Retry
 					</internal-button>
 				</connection-status>`;
-			default:
-				throw new Error(`Encountered unknown view state: ${this._state}`);
-		}
-	}
-
-	#getModalTitle(wallets: UiWallet[]) {
-		switch (this._state.view) {
-			case 'wallet-selection':
-				return wallets.length > 0 ? 'Connect Wallet' : 'No Wallets Installed';
-			case 'connecting':
-			case 'error':
-				return this._state.wallet.name;
 			default:
 				throw new Error(`Encountered unknown view state: ${this._state}`);
 		}
