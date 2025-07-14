@@ -129,6 +129,7 @@ async function buildImportDirectories({ exports, sideEffects }: PackageJSON) {
 	}
 
 	const exportDirs = new Set<string>();
+	const workspaceRoot = await getWorkspaceConfigPath();
 	const ignoredWorkspaces = [];
 
 	for (const [exportName, exportMap] of Object.entries(exports)) {
@@ -141,7 +142,7 @@ async function buildImportDirectories({ exports, sideEffects }: PackageJSON) {
 		exportDirs.add(parts[1]);
 
 		if (parts.length >= 2 && !exportDir.endsWith('.css')) {
-			ignoredWorkspaces.push(path.relative(path.resolve(process.cwd(), '../..'), exportDir));
+			ignoredWorkspaces.push(path.relative(path.dirname(workspaceRoot), exportDir));
 		}
 
 		await createEmptyDir(exportDir);
@@ -208,10 +209,7 @@ async function addPackageFiles(paths: string[]) {
 }
 
 async function addIgnoredWorkspaces(paths: string[]) {
-	const workspacePath = await findUp('pnpm-workspace.yaml');
-	if (!workspacePath) {
-		throw new Error('Failed to find `pnpm-workspace.yaml`.');
-	}
+	const workspacePath = await getWorkspaceConfigPath();
 
 	const file = await fs.readFile(workspacePath, 'utf-8');
 	const lines = file.split('\n').filter(Boolean);
@@ -228,4 +226,14 @@ async function addIgnoredWorkspaces(paths: string[]) {
 		lines.push('');
 		await fs.writeFile(workspacePath, lines.join('\n'));
 	}
+}
+
+async function getWorkspaceConfigPath() {
+	const workspacePath = await findUp('pnpm-workspace.yaml');
+
+	if (!workspacePath) {
+		throw new Error('Failed to find `pnpm-workspace.yaml`.');
+	}
+
+	return workspacePath;
 }
