@@ -11,8 +11,8 @@ const client = new SuiClient({
 	network: 'testnet',
 }).$extend(
 	WalrusClient.experimental_asClientExtension({
-		fanOut: {
-			host: 'https://fan-out.testnet.walrus.space',
+		uploadRelay: {
+			host: 'https://upload-relay.testnet.walrus.space',
 			sendTip: {
 				max: 1_000,
 			},

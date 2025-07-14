@@ -102,6 +102,89 @@ const { blobId } = await walrusClient.writeBlob({
 });
 ```
 
+### Writing blobs with an upload relay
+
+Writing blobs directly from a client requires a lot of requests to write data to all of the storage
+nodes. An upload relay can be used to offload the work of these writes to a server, reducing
+complexity for the client.
+
+To use an upload relay, you can add the `uploadRelay` option when creating your `WalrusClient`:
+
+```ts
+const client = new SuiClient({
+	url: getFullnodeUrl('testnet'),
+	network: 'testnet',
+}).$extend(
+	WalrusClient.experimental_asClientExtension({
+		uploadRelay: {
+			host: 'https://upload-relay.testnet.walrus.space',
+			sendTip: {
+				max: 1_000,
+			},
+		},
+	}),
+);
+```
+
+The `host` option is required, and indicates the url for your upload relay. Upload relays may
+require a tip to be included to cover the cost of writing the blob. You can configure a maximum tip
+(paid in MIST) and the `WalrusClient` will automatically determine the required tip for your upload
+relay, or you can manually configure the tip configuration as shown below.
+
+The tip required by an upload relay can be found using the `tip-config` endpoint: (eg.
+`https://upload-relay.testnet.walrus.space/v1/tip-config`) and may either be a `const` or a `linear`
+tip.
+
+### `const` tip
+
+A `const` will send a fixed amount for each blob written to the upload relay.
+
+```ts
+const client = new SuiClient({
+	url: getFullnodeUrl('testnet'),
+	network: 'testnet',
+}).$extend(
+	WalrusClient.experimental_asClientExtension({
+		uploadRelay: {
+			host: 'https://upload-relay.testnet.walrus.space',
+			sendTip: {
+				address: '0x123...',
+				kind: {
+					const: 105,
+				},
+			},
+		},
+	}),
+);
+```
+
+### `linear` tip
+
+A `linear` tip will send a fixed amount for each blob written to the fan out proxy, plus a
+multiplier based on the size of the blob.
+
+```ts
+const client = new SuiClient({
+	url: getFullnodeUrl('testnet'),
+	network: 'testnet',
+}).$extend(
+	WalrusClient.experimental_asClientExtension({
+		uploadRelay: {
+			host: 'https://upload-relay.testnet.walrus.space',
+			sendTip: {
+				address: '0x123...',
+				kind: {
+					linear: {
+						base: 105,
+						multiplier: 10,
+					},
+				},
+			},
+		},
+	}),
+);
+```
+
 ### Full API
 
 For a complete overview of the available methods on the `WalrusClient` you can reference type
