@@ -53,6 +53,14 @@ import { EnokiKeypair } from '../EnokiKeypair.js';
 import { EnokiWalletState } from './state.js';
 import { allTasks } from 'nanostores';
 
+const pkceFlowProviders: Partial<Record<AuthProvider, { tokenEndpoint: string }>> = {
+	playtron: {
+		tokenEndpoint: 'https://oauth2.playtron.one/oauth2/token',
+	},
+};
+
+type PKCEContext = { codeChallenge: string; codeVerifier: string };
+
 export class EnokiWallet implements Wallet {
 	#events: Emitter<WalletEventsMap>;
 	#accounts: ReadonlyWalletAccount[];
@@ -354,7 +362,9 @@ export class EnokiWallet implements Wallet {
 		}
 
 		const sessionContext = this.#state.getSessionContext(network);
-		popup.location = await this.#createAuthorizationURL(sessionContext);
+		const pkceContext = await this.#getPKCEFlowContext();
+
+		popup.location = await this.#createAuthorizationURL(sessionContext, pkceContext);
 
 		return await new Promise<void>((resolve, reject) => {
 			const interval = setInterval(() => {
@@ -364,7 +374,7 @@ export class EnokiWallet implements Wallet {
 						reject(new Error('Popup closed'));
 					}
 
-					if (!popup.location.hash) {
+					if ((!pkceContext && !popup.location.hash) || (pkceContext && !popup.location.search)) {
 						return;
 					}
 				} catch (e) {
@@ -372,10 +382,12 @@ export class EnokiWallet implements Wallet {
 				}
 				clearInterval(interval);
 
-				this.#handleAuthCallback({ hash: popup.location.hash, sessionContext }).then(
-					() => resolve(),
-					reject,
-				);
+				this.#handleAuthCallback({
+					hash: popup.location.hash,
+					sessionContext,
+					search: popup.location.search,
+					pkceContext,
+				}).then(() => resolve(), reject);
 
 				try {
 					popup.close();
@@ -386,7 +398,25 @@ export class EnokiWallet implements Wallet {
 		});
 	}
 
-	async #createAuthorizationURL(sessionContext: EnokiSessionContext) {
+	async #getPKCEFlowContext(): Promise<PKCEContext | undefined> {
+		if (!pkceFlowProviders[this.#provider]) {
+			return;
+		}
+
+		const array = new Uint8Array(64);
+		crypto.getRandomValues(array);
+		const codeVerifier = toBase64(array).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+		const codeChallenge = toBase64(
+			new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(codeVerifier))),
+		)
+			.replace(/=/g, '')
+			.replace(/\+/g, '-')
+			.replace(/\//g, '_');
+
+		return { codeVerifier, codeChallenge };
+	}
+
+	async #createAuthorizationURL(sessionContext: EnokiSessionContext, pkceContext?: PKCEContext) {
 		const ephemeralKeyPair = await WebCryptoSigner.generate();
 		const { nonce, randomness, maxEpoch, estimatedExpiration } =
 			await this.#enokiClient.createZkLoginNonce({
@@ -406,6 +436,13 @@ export class EnokiWallet implements Wallet {
 			scope: ['openid', ...(extraParams?.scope ? extraParams.scope.split(' ') : [])]
 				.filter(Boolean)
 				.join(' '),
+			...(pkceContext
+				? {
+						response_type: 'code',
+						code_challenge_method: 'S256',
+						code_challenge: pkceContext.codeChallenge,
+					}
+				: undefined),
 		});
 
 		let oauthUrl: string;
@@ -422,6 +459,9 @@ export class EnokiWallet implements Wallet {
 				break;
 			case 'onefc':
 				oauthUrl = `https://login.onepassport.onefc.com/de3ee5c1-5644-4113-922d-e8336569a462/b2c_1a_prod_signupsignin_onesuizklogin/oauth2/v2.0/authorize?${params}`;
+				break;
+			case 'playtron':
+				oauthUrl = `https://oauth2.playtron.one/oauth2/auth?${params}`;
 				break;
 			default:
 				throw new Error(`Invalid provider: ${this.#provider}`);
@@ -440,9 +480,13 @@ export class EnokiWallet implements Wallet {
 	async #handleAuthCallback({
 		hash,
 		sessionContext,
+		pkceContext,
+		search,
 	}: {
 		hash: string;
 		sessionContext: EnokiSessionContext;
+		pkceContext?: PKCEContext;
+		search: string;
 	}) {
 		const params = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash);
 		const zkp = await this.#state.getSession(sessionContext);
@@ -453,7 +497,10 @@ export class EnokiWallet implements Wallet {
 			);
 		}
 
-		const jwt = params.get('id_token');
+		const jwt = pkceContext
+			? await this.#pkceTokenExchange(search, pkceContext)
+			: params.get('id_token');
+
 		if (!jwt) {
 			throw new Error('Missing ID Token');
 		}
@@ -466,5 +513,33 @@ export class EnokiWallet implements Wallet {
 		await this.#state.setSession(sessionContext, { ...zkp, jwt });
 
 		return params.get('state');
+	}
+
+	async #pkceTokenExchange(search: string, pkceContext: PKCEContext) {
+		const params = new URLSearchParams(search);
+		const code = params.get('code');
+
+		if (!code) {
+			throw new Error('Missing code');
+		}
+
+		const tokenEndpoint = pkceFlowProviders[this.#provider]?.tokenEndpoint;
+
+		if (!tokenEndpoint) {
+			throw new Error(`PKCE flow not supported for provider: ${this.#provider}`);
+		}
+
+		const response = await fetch(tokenEndpoint, {
+			method: 'POST',
+			body: new URLSearchParams({
+				grant_type: 'authorization_code',
+				client_id: this.#clientId,
+				redirect_uri: this.#redirectUrl,
+				code,
+				code_verifier: pkceContext.codeVerifier,
+			}),
+		});
+
+		return (await response.json()).id_token;
 	}
 }
