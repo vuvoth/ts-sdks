@@ -7,7 +7,7 @@ import { sharedStyles } from '../styles/index.js';
 export const styles = [
 	sharedStyles,
 	css`
-		.item {
+		.wallet-button {
 			transition-property: background-color;
 			transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 			transition-duration: 0.15s;
@@ -21,7 +21,7 @@ export const styles = [
 			padding: 12px;
 		}
 
-		.item:hover {
+		.wallet-button:hover {
 			background-color: oklab(from var(--dapp-kit-secondary) calc(l - 0.01) a b);
 		}
 

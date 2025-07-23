@@ -20,7 +20,12 @@ export class WalletListItem extends LitElement {
 	override render() {
 		return html`
 			<li>
-				<button type="button" @click=${this.#walletClicked} ?autofocus=${this.autofocus}>
+				<button
+					type="button"
+					class="wallet-button"
+					@click=${this.#walletClicked}
+					?autofocus=${this.autofocus}
+				>
 					<img src=${this.wallet.icon} alt=${`${this.wallet.name} logo`} />
 					<p>${this.wallet.name}</p>
 				</button>
