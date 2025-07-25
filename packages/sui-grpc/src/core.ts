@@ -384,14 +384,7 @@ function mapOutputObjectState(
 
 function mapUnchangedSharedObjectKind(
 	kind: UnchangedSharedObject_UnchangedSharedObjectKind | undefined,
-):
-	| null
-	| 'Unknown'
-	| 'ReadOnlyRoot'
-	| 'MutateDeleted'
-	| 'ReadDeleted'
-	| 'Cancelled'
-	| 'PerEpochConfig' {
+): null | Experimental_SuiClientTypes.UnchangedSharedObject['kind'] {
 	if (kind == null) {
 		return null;
 	}
@@ -400,10 +393,10 @@ function mapUnchangedSharedObjectKind(
 			return 'Unknown';
 		case UnchangedSharedObject_UnchangedSharedObjectKind.READ_ONLY_ROOT:
 			return 'ReadOnlyRoot';
-		case UnchangedSharedObject_UnchangedSharedObjectKind.MUTATE_DELETED:
-			return 'MutateDeleted';
-		case UnchangedSharedObject_UnchangedSharedObjectKind.READ_DELETED:
-			return 'ReadDeleted';
+		case UnchangedSharedObject_UnchangedSharedObjectKind.MUTATE_CONSENSUS_STREAM_ENDED:
+			return 'MutateConsensusStreamEnded';
+		case UnchangedSharedObject_UnchangedSharedObjectKind.READ_CONSENSUS_STREAM_ENDED:
+			return 'ReadConsensusStreamEnded';
 		case UnchangedSharedObject_UnchangedSharedObjectKind.CANCELED:
 			return 'Cancelled';
 		case UnchangedSharedObject_UnchangedSharedObjectKind.PER_EPOCH_CONFIG:
