@@ -1,22 +1,25 @@
 /**************************************************************
  * THIS FILE IS GENERATED AND SHOULD NOT BE MANUALLY MODIFIED *
  **************************************************************/
+import { MoveStruct, normalizeMoveArguments, type RawTransactionArgument } from '../utils/index.js';
 import { bcs } from '@mysten/sui/bcs';
 import { type Transaction } from '@mysten/sui/transactions';
-import { normalizeMoveArguments, type RawTransactionArgument } from '../utils/index.js';
 import * as object from './deps/sui/object.js';
 import * as _package from './deps/sui/package.js';
-export function INIT() {
-	return bcs.struct('INIT', {
+const $moduleName = '@local-pkg/walrus::init';
+export const INIT = new MoveStruct({
+	name: `${$moduleName}::INIT`,
+	fields: {
 		dummy_field: bcs.bool(),
-	});
-}
-export function InitCap() {
-	return bcs.struct('InitCap', {
-		id: object.UID(),
-		publisher: _package.Publisher(),
-	});
-}
+	},
+});
+export const InitCap = new MoveStruct({
+	name: `${$moduleName}::InitCap`,
+	fields: {
+		id: object.UID,
+		publisher: _package.Publisher,
+	},
+});
 export interface InitializeWalrusArguments {
 	initCap: RawTransactionArgument<string>;
 	upgradeCap: RawTransactionArgument<string>;

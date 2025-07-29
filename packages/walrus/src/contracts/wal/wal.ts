@@ -3,26 +3,30 @@
 
 /** The WAL token is the native token for the Walrus Protocol. */
 
+import { MoveStruct, normalizeMoveArguments } from '../utils/index.js';
+import type { RawTransactionArgument } from '../utils/index.js';
 import { bcs } from '@mysten/sui/bcs';
 import type { Transaction } from '@mysten/sui/transactions';
-import { normalizeMoveArguments } from '../utils/index.js';
-import type { RawTransactionArgument } from '../utils/index.js';
 import * as object from './deps/sui/object.js';
-export function WAL() {
-	return bcs.struct('WAL', {
+const $moduleName = '@local-pkg/wal::wal';
+export const WAL = new MoveStruct({
+	name: `${$moduleName}::WAL`,
+	fields: {
 		dummy_field: bcs.bool(),
-	});
-}
-export function ProtectedTreasury() {
-	return bcs.struct('ProtectedTreasury', {
-		id: object.UID(),
-	});
-}
-export function TreasuryCapKey() {
-	return bcs.struct('TreasuryCapKey', {
+	},
+});
+export const ProtectedTreasury = new MoveStruct({
+	name: `${$moduleName}::ProtectedTreasury`,
+	fields: {
+		id: object.UID,
+	},
+});
+export const TreasuryCapKey = new MoveStruct({
+	name: `${$moduleName}::TreasuryCapKey`,
+	fields: {
 		dummy_field: bcs.bool(),
-	});
-}
+	},
+});
 export interface TotalSupplyArguments {
 	treasury: RawTransactionArgument<string>;
 }

@@ -10,37 +10,43 @@
  * performed via the `withdraw_stake` method in the `staking_pool`.
  */
 
+import { MoveEnum, MoveStruct, normalizeMoveArguments } from '../utils/index.js';
+import type { RawTransactionArgument } from '../utils/index.js';
 import { bcs } from '@mysten/sui/bcs';
 import type { Transaction } from '@mysten/sui/transactions';
-import { normalizeMoveArguments } from '../utils/index.js';
-import type { RawTransactionArgument } from '../utils/index.js';
 import * as object from './deps/sui/object.js';
 import * as balance from './deps/sui/balance.js';
-export function StakedWal() {
-	return bcs.struct('StakedWal', {
-		id: object.UID(),
-		/** Whether the staked WAL is active or withdrawing. */
-		state: StakedWalState(),
-		/** ID of the staking pool. */
-		node_id: bcs.Address,
-		/** The staked amount. */
-		principal: balance.Balance(),
-		/** The Walrus epoch when the staked WAL was activated. */
-		activation_epoch: bcs.u32(),
-	});
-}
+const $moduleName = '@local-pkg/walrus::staked_wal';
 /**
  * The state of the staked WAL. It can be either `Staked` or `Withdrawing`. The
  * `Withdrawing` state contains the epoch when the staked WAL can be withdrawn.
  */
-export function StakedWalState() {
-	return bcs.enum('StakedWalState', {
+export const StakedWalState = new MoveEnum({
+	name: `${$moduleName}::StakedWalState`,
+	fields: {
 		Staked: null,
-		Withdrawing: bcs.struct('StakedWalState.Withdrawing', {
-			withdraw_epoch: bcs.u32(),
+		Withdrawing: new MoveStruct({
+			name: `StakedWalState.Withdrawing`,
+			fields: {
+				withdraw_epoch: bcs.u32(),
+			},
 		}),
-	});
-}
+	},
+});
+export const StakedWal = new MoveStruct({
+	name: `${$moduleName}::StakedWal`,
+	fields: {
+		id: object.UID,
+		/** Whether the staked WAL is active or withdrawing. */
+		state: StakedWalState,
+		/** ID of the staking pool. */
+		node_id: bcs.Address,
+		/** The staked amount. */
+		principal: balance.Balance,
+		/** The Walrus epoch when the staked WAL was activated. */
+		activation_epoch: bcs.u32(),
+	},
+});
 export interface NodeIdArguments {
 	sw: RawTransactionArgument<string>;
 }

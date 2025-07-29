@@ -3,9 +3,12 @@
 
 /** Functionality for converting Move types into values. Use with care! */
 
+import { MoveStruct } from '../../../utils/index.js';
 import { bcs } from '@mysten/sui/bcs';
-export function TypeName() {
-	return bcs.struct('TypeName', {
+const $moduleName = 'std::type_name';
+export const TypeName = new MoveStruct({
+	name: `${$moduleName}::TypeName`,
+	fields: {
 		/**
 		 * String representation of the type. All types are represented using their source
 		 * syntax: "u8", "u64", "bool", "address", "vector", and so on for primitive types.
@@ -16,5 +19,5 @@ export function TypeName() {
 		 * 32 depending on the Move platform)
 		 */
 		name: bcs.string(),
-	});
-}
+	},
+});

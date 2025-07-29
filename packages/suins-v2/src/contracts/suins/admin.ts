@@ -6,15 +6,17 @@
  * suins admin.
  */
 
+import { MoveStruct, normalizeMoveArguments } from '../utils/index.js';
+import type { RawTransactionArgument } from '../utils/index.js';
 import { bcs } from '@mysten/sui/bcs';
 import type { Transaction } from '@mysten/sui/transactions';
-import { normalizeMoveArguments } from '../utils/index.js';
-import type { RawTransactionArgument } from '../utils/index.js';
-export function Admin() {
-	return bcs.struct('Admin', {
+const $moduleName = '@suins/core::admin';
+export const Admin = new MoveStruct({
+	name: `${$moduleName}::Admin`,
+	fields: {
 		dummy_field: bcs.bool(),
-	});
-}
+	},
+});
 export interface AuthorizeArguments {
 	cap: RawTransactionArgument<string>;
 	suins: RawTransactionArgument<string>;

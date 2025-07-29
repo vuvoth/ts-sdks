@@ -4,18 +4,23 @@
 
 /** Module: extended_field */
 
+import {
+	MoveStruct,
+	MoveTuple,
+	normalizeMoveArguments,
+	type RawTransactionArgument,
+} from '../utils/index.js';
 import { bcs, type BcsType } from '@mysten/sui/bcs';
 import { type Transaction } from '@mysten/sui/transactions';
-import { normalizeMoveArguments, type RawTransactionArgument } from '../utils/index.js';
 import * as object from './deps/sui/object.js';
-export function ExtendedField() {
-	return bcs.struct('ExtendedField', {
-		id: object.UID(),
-	});
-}
-export function Key() {
-	return bcs.tuple([bcs.bool()], { name: 'Key' });
-}
+const $moduleName = '@local-pkg/walrus::extended_field';
+export const ExtendedField = new MoveStruct({
+	name: `${$moduleName}::ExtendedField`,
+	fields: {
+		id: object.UID,
+	},
+});
+export const Key = new MoveTuple({ name: `${$moduleName}::Key`, fields: [bcs.bool()] });
 export interface NewArguments<T extends BcsType<any>> {
 	value: RawTransactionArgument<T>;
 }

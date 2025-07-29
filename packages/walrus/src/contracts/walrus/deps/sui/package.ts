@@ -8,18 +8,22 @@
  * - Administering package upgrades through upgrade policies.
  */
 
+import { MoveStruct } from '../../../utils/index.js';
 import { bcs } from '@mysten/sui/bcs';
 import * as object from './object.js';
-export function Publisher() {
-	return bcs.struct('Publisher', {
-		id: object.UID(),
+const $moduleName = '0x2::package';
+export const Publisher = new MoveStruct({
+	name: `${$moduleName}::Publisher`,
+	fields: {
+		id: object.UID,
 		package: bcs.string(),
 		module_name: bcs.string(),
-	});
-}
-export function UpgradeCap() {
-	return bcs.struct('UpgradeCap', {
-		id: object.UID(),
+	},
+});
+export const UpgradeCap = new MoveStruct({
+	name: `${$moduleName}::UpgradeCap`,
+	fields: {
+		id: object.UID,
 		/** (Mutable) ID of the package that can be upgraded. */
 		package: bcs.Address,
 		/**
@@ -29,5 +33,5 @@ export function UpgradeCap() {
 		version: bcs.u64(),
 		/** What kind of upgrades are allowed. */
 		policy: bcs.u8(),
-	});
-}
+	},
+});

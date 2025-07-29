@@ -9,12 +9,14 @@
  * https://en.wikipedia.org/wiki/Domain_name#Domain_name_syntax
  */
 
+import { MoveStruct, normalizeMoveArguments } from '../utils/index.js';
+import type { RawTransactionArgument } from '../utils/index.js';
 import { bcs } from '@mysten/sui/bcs';
 import type { Transaction } from '@mysten/sui/transactions';
-import { normalizeMoveArguments } from '../utils/index.js';
-import type { RawTransactionArgument } from '../utils/index.js';
-export function Domain() {
-	return bcs.struct('Domain', {
+const $moduleName = '@suins/core::domain';
+export const Domain = new MoveStruct({
+	name: `${$moduleName}::Domain`,
+	fields: {
 		/**
 		 * Vector of labels that make up a domain.
 		 *
@@ -23,8 +25,8 @@ export function Domain() {
 		 * "pay"].
 		 */
 		labels: bcs.vector(bcs.string()),
-	});
-}
+	},
+});
 export interface NewArguments {
 	domain: RawTransactionArgument<string>;
 }

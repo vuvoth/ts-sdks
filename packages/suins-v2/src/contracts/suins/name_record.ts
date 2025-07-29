@@ -7,13 +7,15 @@
  * stored and managed. SuiNS has no direct and permanent dependency on this module.
  */
 
+import { MoveStruct, normalizeMoveArguments } from '../utils/index.js';
+import type { RawTransactionArgument } from '../utils/index.js';
 import { bcs } from '@mysten/sui/bcs';
 import type { Transaction } from '@mysten/sui/transactions';
-import { normalizeMoveArguments } from '../utils/index.js';
-import type { RawTransactionArgument } from '../utils/index.js';
 import * as vec_map from './deps/sui/vec_map.js';
-export function NameRecord() {
-	return bcs.struct('NameRecord', {
+const $moduleName = '@suins/core::name_record';
+export const NameRecord = new MoveStruct({
+	name: `${$moduleName}::NameRecord`,
+	fields: {
 		/**
 		 * The ID of the `SuinsRegistration` assigned to this record.
 		 *
@@ -30,8 +32,8 @@ export function NameRecord() {
 		target_address: bcs.option(bcs.Address),
 		/** Additional data which may be stored in a record */
 		data: vec_map.VecMap(bcs.string(), bcs.string()),
-	});
-}
+	},
+});
 export interface NewArguments {
 	nftId: RawTransactionArgument<string>;
 	expirationTimestampMs: RawTransactionArgument<number | bigint>;

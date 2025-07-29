@@ -3,9 +3,12 @@
 
 /** This module is deprecated due to our different approach to display. */
 
+import { MoveStruct } from '../utils/index.js';
 import { bcs } from '@mysten/sui/bcs';
-export function UpdateImage() {
-	return bcs.struct('UpdateImage', {
+const $moduleName = '@suins/core::update_image';
+export const UpdateImage = new MoveStruct({
+	name: `${$moduleName}::UpdateImage`,
+	fields: {
 		dummy_field: bcs.bool(),
-	});
-}
+	},
+});

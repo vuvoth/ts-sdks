@@ -8,9 +8,12 @@
  * and `Balance`s.
  */
 
+import { MoveStruct } from '../../../utils/index.js';
 import { bcs } from '@mysten/sui/bcs';
-export function Balance() {
-	return bcs.struct('Balance', {
+const $moduleName = '0x2::balance';
+export const Balance = new MoveStruct({
+	name: `${$moduleName}::Balance`,
+	fields: {
 		value: bcs.u64(),
-	});
-}
+	},
+});

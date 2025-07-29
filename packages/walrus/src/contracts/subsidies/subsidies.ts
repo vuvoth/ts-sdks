@@ -13,25 +13,26 @@
  * - Apply subsidies when reserving storage or extending blob lifetimes.
  */
 
+import { MoveTuple, MoveStruct, normalizeMoveArguments } from '../utils/index.js';
+import type { RawTransactionArgument } from '../utils/index.js';
 import { bcs } from '@mysten/sui/bcs';
 import type { Transaction } from '@mysten/sui/transactions';
-import { normalizeMoveArguments } from '../utils/index.js';
-import type { RawTransactionArgument } from '../utils/index.js';
 import * as object from './deps/sui/object.js';
 import * as balance from './deps/sui/balance.js';
 import * as coin from './deps/sui/coin.js';
-export function V3() {
-	return bcs.tuple([bcs.bool()], { name: 'V3' });
-}
-export function AdminCap() {
-	return bcs.struct('AdminCap', {
-		id: object.UID(),
+const $moduleName = '@local-pkg/walrus_subsidies::subsidies';
+export const V3 = new MoveTuple({ name: `${$moduleName}::V3`, fields: [bcs.bool()] });
+export const AdminCap = new MoveStruct({
+	name: `${$moduleName}::AdminCap`,
+	fields: {
+		id: object.UID,
 		subsidies_id: bcs.Address,
-	});
-}
-export function Subsidies() {
-	return bcs.struct('Subsidies', {
-		id: object.UID(),
+	},
+});
+export const Subsidies = new MoveStruct({
+	name: `${$moduleName}::Subsidies`,
+	fields: {
+		id: object.UID,
 		/**
 		 * The subsidy rate applied to the buyer at the moment of storage purchase in basis
 		 * points.
@@ -43,20 +44,21 @@ export function Subsidies() {
 		 */
 		system_subsidy_rate: bcs.u16(),
 		/** The balance of funds available in the subsidy pool. */
-		subsidy_pool: balance.Balance(),
+		subsidy_pool: balance.Balance,
 		/** Package ID of the subsidies contract. */
 		package_id: bcs.Address,
 		/** The version of the subsidies contract. */
 		version: bcs.u64(),
-	});
-}
-export function CombinedPayment() {
-	return bcs.struct('CombinedPayment', {
-		payment: coin.Coin(),
+	},
+});
+export const CombinedPayment = new MoveStruct({
+	name: `${$moduleName}::CombinedPayment`,
+	fields: {
+		payment: coin.Coin,
 		initial_payment_value: bcs.u64(),
 		initial_pool_value: bcs.u64(),
-	});
-}
+	},
+});
 export interface NewArguments {
 	packageId: RawTransactionArgument<string>;
 }

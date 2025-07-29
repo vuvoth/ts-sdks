@@ -15,15 +15,19 @@
  *   total_staked (#715)
  */
 
+import { MoveStruct } from '../utils/index.js';
 import { bcs } from '@mysten/sui/bcs';
-export function ActiveSetEntry() {
-	return bcs.struct('ActiveSetEntry', {
+const $moduleName = '@local-pkg/walrus::active_set';
+export const ActiveSetEntry = new MoveStruct({
+	name: `${$moduleName}::ActiveSetEntry`,
+	fields: {
 		node_id: bcs.Address,
 		staked_amount: bcs.u64(),
-	});
-}
-export function ActiveSet() {
-	return bcs.struct('ActiveSet', {
+	},
+});
+export const ActiveSet = new MoveStruct({
+	name: `${$moduleName}::ActiveSet`,
+	fields: {
 		/**
 		 * The maximum number of storage nodes in the active set. Potentially remove this
 		 * field.
@@ -35,8 +39,8 @@ export function ActiveSet() {
 		 */
 		threshold_stake: bcs.u64(),
 		/** The list of storage nodes in the active set and their stake. */
-		nodes: bcs.vector(ActiveSetEntry()),
+		nodes: bcs.vector(ActiveSetEntry),
 		/** The total amount of staked WAL in the active set. */
 		total_stake: bcs.u64(),
-	});
-}
+	},
+});

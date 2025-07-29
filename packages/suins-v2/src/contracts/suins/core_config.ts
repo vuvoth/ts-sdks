@@ -10,14 +10,16 @@
  * security risk as it cannot be used.
  */
 
+import { MoveStruct, normalizeMoveArguments } from '../utils/index.js';
+import type { RawTransactionArgument } from '../utils/index.js';
 import { bcs } from '@mysten/sui/bcs';
 import type { Transaction } from '@mysten/sui/transactions';
-import { normalizeMoveArguments } from '../utils/index.js';
-import type { RawTransactionArgument } from '../utils/index.js';
 import * as vec_set from './deps/sui/vec_set.js';
 import * as vec_map from './deps/sui/vec_map.js';
-export function CoreConfig() {
-	return bcs.struct('CoreConfig', {
+const $moduleName = '@suins/core::core_config';
+export const CoreConfig = new MoveStruct({
+	name: `${$moduleName}::CoreConfig`,
+	fields: {
 		/** Public key of the API server. Currently only used for direct setup. */
 		public_key: bcs.vector(bcs.u8()),
 		/**
@@ -34,8 +36,8 @@ export function CoreConfig() {
 		/** Maximum number of years available for a domain. */
 		max_years: bcs.u8(),
 		extra: vec_map.VecMap(bcs.string(), bcs.string()),
-	});
-}
+	},
+});
 export interface NewArguments {
 	publicKey: RawTransactionArgument<number[]>;
 	minLabelLength: RawTransactionArgument<number>;

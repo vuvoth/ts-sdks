@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 export const utilsContent = /* ts */ `
-import { bcs, BcsType, TypeTag, TypeTagSerializer } from '@mysten/sui/bcs';
+import { bcs, BcsType, TypeTag, TypeTagSerializer, BcsStruct, BcsEnum, BcsTuple } from '@mysten/sui/bcs';
 import { normalizeSuiAddress } from '@mysten/sui/utils';
 import { TransactionArgument, isArgument } from '@mysten/sui/transactions';
 
@@ -132,6 +132,21 @@ export function normalizeMoveArguments(args: unknown[] | object, argTypes: strin
 
 	return normalizedArgs;
 }
+
+export class MoveStruct<
+	T extends Record<string, BcsType<any>>,
+	const Name extends string = string,
+> extends BcsStruct<T, Name> {}
+
+export class MoveEnum<
+	T extends Record<string, BcsType<any> | null>,
+	const Name extends string,
+> extends BcsEnum<T, Name> {}
+
+export class MoveTuple<
+	T extends readonly BcsType<any>[],
+	const Name extends string,
+> extends BcsTuple<T, Name> {}
 
 function stringify(val: unknown) {
 	if (typeof val === 'object') {
