@@ -44,6 +44,7 @@ export class SealClient {
 	#verifyKeyServers: boolean;
 	// A caching map for: fullId:object_id -> partial key.
 	#cachedKeys = new Map<KeyCacheKey, G1Element>();
+	#cachedPublicKeys = new Map<string, G2Element>();
 	#timeout: number;
 	#totalWeight: number;
 
@@ -137,12 +138,18 @@ export class SealClient {
 	 * The function throws an error if the client's key servers are not a subset of
 	 * the encrypted object's key servers or if the threshold cannot be met.
 	 *
+	 * If checkShareConsistency is true, the decrypted shares are checked for consistency, meaning that
+	 * any combination of at least threshold shares should either succesfully combine to the plaintext or fail.
+	 * This is useful in case the encryptor is not trusted and the decryptor wants to ensure all decryptors
+	 * receive the same output (e.g., for onchain encrypted voting).
+	 *
 	 * @param data - The encrypted bytes to decrypt.
 	 * @param sessionKey - The session key to use.
 	 * @param txBytes - The transaction bytes to use (that calls seal_approve* functions).
+	 * @param checkShareConsistency - If true, the shares are checked for consistency.
 	 * @returns - The decrypted plaintext corresponding to ciphertext.
 	 */
-	async decrypt({ data, sessionKey, txBytes }: DecryptOptions) {
+	async decrypt({ data, sessionKey, txBytes, checkShareConsistency }: DecryptOptions) {
 		const encryptedObject = EncryptedObject.parse(data);
 
 		this.#validateEncryptionServices(
@@ -157,6 +164,12 @@ export class SealClient {
 			threshold: encryptedObject.threshold,
 		});
 
+		if (checkShareConsistency) {
+			const publicKeys = await this.getPublicKeys(
+				encryptedObject.services.map(([objectId, _]) => objectId),
+			);
+			return decrypt({ encryptedObject, keys: this.#cachedKeys, publicKeys });
+		}
 		return decrypt({ encryptedObject, keys: this.#cachedKeys });
 	}
 
@@ -192,6 +205,42 @@ export class SealClient {
 			});
 		}
 		return this.#keyServers;
+	}
+
+	/**
+	 * Get the public keys for the given services.
+	 * If all public keys are not in the cache, they are retrieved.
+	 *
+	 * @param services - The services to get the public keys for.
+	 * @returns The public keys for the given services in the same order as the given services.
+	 */
+	async getPublicKeys(services: string[]): Promise<G2Element[]> {
+		const keyServers = await this.getKeyServers();
+
+		// Collect the key servers not already in store or cache.
+		const missingKeyServers = services.filter(
+			(objectId) => !keyServers.has(objectId) && !this.#cachedPublicKeys.has(objectId),
+		);
+
+		// If there are missing key servers, retrieve them and update the cache.
+		if (missingKeyServers.length > 0) {
+			(
+				await retrieveKeyServers({
+					objectIds: missingKeyServers,
+					client: this.#suiClient,
+				})
+			).forEach((keyServer) =>
+				this.#cachedPublicKeys.set(keyServer.objectId, G2Element.fromBytes(keyServer.pk)),
+			);
+		}
+
+		return services.map((objectId) => {
+			const keyServer = keyServers.get(objectId);
+			if (keyServer) {
+				return G2Element.fromBytes(keyServer.pk);
+			}
+			return this.#cachedPublicKeys.get(objectId)!;
+		});
 	}
 
 	/**

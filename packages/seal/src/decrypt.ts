@@ -11,12 +11,13 @@ import { InvalidCiphertextError, UnsupportedFeatureError } from './error.js';
 import { BonehFranklinBLS12381Services, decryptRandomness, verifyNonce } from './ibe.js';
 import { deriveKey, KeyPurpose } from './kdf.js';
 import type { KeyCacheKey } from './types.js';
-import { createFullId } from './utils.js';
-import { combine } from './shamir.js';
+import { createFullId, equals } from './utils.js';
+import { combine, interpolate } from './shamir.js';
 
 export interface DecryptOptions {
 	encryptedObject: typeof EncryptedObject.$inferType;
 	keys: Map<KeyCacheKey, G1Element>;
+	publicKeys?: G2Element[];
 }
 
 /**
@@ -25,9 +26,16 @@ export interface DecryptOptions {
  * otherwise, this will throw an error.
  * Also, it's assumed that the keys were verified by the caller.
  *
+ * If publicKeys are provided, the decrypted shares are checked for consistency, meaning that
+ * any combination of at least threshold shares should either succesfully combine to the plaintext or fail.
+ *
  * @returns - The decrypted plaintext corresponding to ciphertext.
  */
-export async function decrypt({ encryptedObject, keys }: DecryptOptions): Promise<Uint8Array> {
+export async function decrypt({
+	encryptedObject,
+	keys,
+	publicKeys,
+}: DecryptOptions): Promise<Uint8Array> {
 	if (!encryptedObject.encryptedShares.BonehFranklinBLS12381) {
 		throw new UnsupportedFeatureError('Encryption mode not supported');
 	}
@@ -63,14 +71,13 @@ export async function decrypt({ encryptedObject, keys }: DecryptOptions): Promis
 			fromHex(fullId),
 			[objectId, index],
 		);
-		// The Shamir secret sharing library expects the index/x-coordinate to be at the end of the share.
 		return { index, share };
 	});
 
-	// Combine the decrypted shares into the key.
+	// Combine the decrypted shares into the key
 	const baseKey = combine(shares);
 
-	// Decrypt randomness and check validity of the nonce
+	// Decrypt randomness
 	const randomnessKey = deriveKey(
 		KeyPurpose.EncryptedRandomness,
 		baseKey,
@@ -78,27 +85,42 @@ export async function decrypt({ encryptedObject, keys }: DecryptOptions): Promis
 		encryptedObject.threshold,
 		encryptedObject.services.map(([objectIds, _]) => objectIds),
 	);
-	if (
-		!verifyNonce(
-			nonce,
-			decryptRandomness(
-				encryptedObject.encryptedShares.BonehFranklinBLS12381.encryptedRandomness,
-				randomnessKey,
-			),
-		)
-	) {
+	const randomness = decryptRandomness(
+		encryptedObject.encryptedShares.BonehFranklinBLS12381.encryptedRandomness,
+		randomnessKey,
+	);
+
+	// Verify that the nonce was created with the randomness.
+	if (!verifyNonce(nonce, randomness)) {
 		throw new InvalidCiphertextError('Invalid nonce');
 	}
 
-	// Derive the DEM key and decrypt the ciphertext
+	// If public keys are provided, check consistency of the shares.
+	if (publicKeys) {
+		const polynomial = interpolate(shares);
+		const allShares = BonehFranklinBLS12381Services.decryptAllShares(
+			randomness,
+			encryptedShares,
+			encryptedObject.services,
+			publicKeys,
+			nonce,
+			fromHex(fullId),
+		);
+		if (allShares.some(({ index, share }) => !equals(polynomial(index), share))) {
+			throw new InvalidCiphertextError('Invalid shares');
+		}
+	}
+
+	// Derive the DEM key
 	const demKey = deriveKey(
 		KeyPurpose.DEM,
 		baseKey,
-		encryptedObject.encryptedShares.BonehFranklinBLS12381.encryptedShares,
+		encryptedShares,
 		encryptedObject.threshold,
 		encryptedObject.services.map(([objectId, _]) => objectId),
 	);
 
+	// Decrypt the ciphertext
 	if (encryptedObject.ciphertext.Aes256Gcm) {
 		return AesGcm256.decrypt(demKey, encryptedObject.ciphertext);
 	} else if (encryptedObject.ciphertext.Hmac256Ctr) {
