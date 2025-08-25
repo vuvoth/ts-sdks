@@ -654,6 +654,9 @@ importers:
 
   packages/deepbook-v3:
     dependencies:
+      '@mysten/bcs':
+        specifier: workspace:*
+        version: link:../bcs
       '@mysten/sui':
         specifier: workspace:*
         version: link:../typescript
@@ -664,6 +667,9 @@ importers:
       '@mysten/build-scripts':
         specifier: workspace:*
         version: link:../build-scripts
+      '@mysten/codegen':
+        specifier: workspace:*
+        version: link:../codegen
       '@types/node':
         specifier: ^22.15.29
         version: 22.15.29
