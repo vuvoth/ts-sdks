@@ -1,19 +1,13 @@
 {
-	"name": "@mysten/suins",
-	"author": "Mysten Labs <build@mystenlabs.com>",
-	"description": "SuiNS SDK",
-	"version": "0.8.0",
+	"name": "@mysten/walletconnect-wallet",
+	"version": "0.0.0",
+	"description": "Wallet adapter for WalletConnect on Sui",
 	"license": "Apache-2.0",
-	"private": false,
+	"author": "Mysten Labs <build@mystenlabs.com>",
 	"type": "commonjs",
 	"main": "./dist/cjs/index.js",
 	"module": "./dist/esm/index.js",
 	"types": "./dist/cjs/index.d.ts",
-	"keywords": [
-		"Sui",
-		"suins",
-		"mysten"
-	],
 	"exports": {
 		".": {
 			"import": "./dist/esm/index.js",
@@ -23,8 +17,7 @@
 	"sideEffects": false,
 	"files": [
 		"CHANGELOG.md",
-		"dist",
-		"src"
+		"dist"
 	],
 	"scripts": {
 		"clean": "rm -rf tsconfig.tsbuildinfo ./dist",
@@ -35,30 +28,28 @@
 		"eslint:check": "eslint --max-warnings=0 .",
 		"eslint:fix": "pnpm run eslint:check --fix",
 		"lint": "pnpm run eslint:check && pnpm run prettier:check",
-		"lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix",
-		"test:e2e": "vitest run"
-	},
-	"engines": {
-		"node": ">=16"
-	},
-	"dependencies": {
-		"@mysten/sui": "workspace:*",
-		"axios": "^1.12.2",
-		"axios-retry": "^4.5.0"
-	},
-	"devDependencies": {
-		"@mysten/build-scripts": "workspace:*",
-		"@types/tmp": "^0.2.6",
-		"ts-retry-promise": "^0.8.1",
-		"typescript": "^5.9.2",
-		"vite": "^7.1.5",
-		"vitest": "^3.2.4"
+		"lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix"
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/mystenlabs/suins-contracts.git"
+		"url": "git+https://github.com/mystenlabs/ts-sdks.git"
 	},
 	"bugs": {
-		"url": "https://github.com/mystenlabs/suins-contracts/issues"
+		"url": "https://github.com/mystenlabs/ts-sdks/issues"
+	},
+	"homepage": "https://github.com/MystenLabs/ts-sdks/tree/main/packages/walletconnect-wallet#readme",
+	"devDependencies": {
+		"@mysten/build-scripts": "workspace:*",
+		"@types/node": "^22.15.29",
+		"typescript": "^5.9.2",
+		"vitest": "^3.2.4"
+	},
+	"dependencies": {
+		"@mysten/sui": "workspace:*",
+		"@mysten/utils": "workspace:*",
+		"@mysten/wallet-standard": "workspace:*",
+		"@reown/appkit-universal-connector": "1.8.5",
+		"mitt": "^3.0.1",
+		"valibot": "^0.36.0"
 	}
 }
