@@ -8,24 +8,25 @@ import {
 	TESTNET_PAYMENT_KIT_PACKAGE_CONFIG,
 } from './constants.js';
 import type {
-	PaymentKitClientConfig,
 	PaymentKitCompatibleClient,
 	PaymentKitPackageConfig,
+	PaymentKitClientOptions,
 } from './types.js';
+import type { SuiClientRegistration } from '@mysten/sui/experimental';
 
 export class PaymentKitClient {
 	#packageConfig: PaymentKitPackageConfig;
 	// @ts-expect-error - suiClient will be used in a later PR
-	#suiClient: PaymentKitCompatibleClient;
+	#client: PaymentKitCompatibleClient;
 
-	private constructor(config: PaymentKitClientConfig) {
-		if (config.suiClient) {
-			this.#suiClient = config.suiClient;
+	private constructor(options: PaymentKitClientOptions) {
+		if (options.client) {
+			this.#client = options.client;
 		} else {
 			throw new PaymentKitClientError('suiClient must be provided');
 		}
 
-		const network = config.suiClient.network;
+		const network = options.client.network;
 		switch (network) {
 			case 'testnet':
 				this.#packageConfig = TESTNET_PAYMENT_KIT_PACKAGE_CONFIG;
@@ -36,6 +37,19 @@ export class PaymentKitClient {
 			default:
 				throw new PaymentKitClientError(`Unsupported network: ${network}`);
 		}
+	}
+
+	static asClientExtension(): SuiClientRegistration<
+		PaymentKitCompatibleClient,
+		'paymentKit',
+		PaymentKitClient
+	> {
+		return {
+			name: 'paymentKit' as const,
+			register: (client) => {
+				return new PaymentKitClient({ client });
+			},
+		};
 	}
 
 	get packageConfig() {
