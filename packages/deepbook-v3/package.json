@@ -36,7 +36,10 @@
 	},
 	"dependencies": {
 		"@mysten/bcs": "workspace:*",
-		"@mysten/sui": "workspace:*"
+		"@mysten/sui": "workspace:*",
+		"@noble/hashes": "^1.8.0",
+		"axios": "^1.12.2",
+		"axios-retry": "^4.5.0"
 	},
 	"devDependencies": {
 		"@iarna/toml": "^2.2.5",

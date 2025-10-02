@@ -11,9 +11,21 @@ import { DeepBookContract } from './transactions/deepbook.js';
 import { DeepBookAdminContract } from './transactions/deepbookAdmin.js';
 import { FlashLoanContract } from './transactions/flashLoans.js';
 import { GovernanceContract } from './transactions/governance.js';
-import type { BalanceManager, Environment } from './types/index.js';
-import { DEEP_SCALAR, DeepBookConfig, FLOAT_SCALAR } from './utils/config.js';
+import type { BalanceManager, Environment, MarginManager } from './types/index.js';
+import {
+	DEEP_SCALAR,
+	DeepBookConfig,
+	FLOAT_SCALAR,
+	PRICE_INFO_OBJECT_MAX_AGE,
+} from './utils/config.js';
 import type { CoinMap, PoolMap } from './utils/constants.js';
+import { MarginAdminContract } from './transactions/marginAdmin.js';
+import { MarginMaintainerContract } from './transactions/marginMaintainer.js';
+import { MarginPoolContract } from './transactions/marginPool.js';
+import { MarginManagerContract } from './transactions/marginManager.js';
+import { SuiPriceServiceConnection } from './pyth/pyth.js';
+import { SuiPythClient } from './pyth/pyth.js';
+import { PoolProxyContract } from './transactions/poolProxy.js';
 
 /**
  * DeepBookClient class for managing DeepBook operations.
@@ -27,32 +39,46 @@ export class DeepBookClient {
 	deepBookAdmin: DeepBookAdminContract;
 	flashLoans: FlashLoanContract;
 	governance: GovernanceContract;
+	marginAdmin: MarginAdminContract;
+	marginMaintainer: MarginMaintainerContract;
+	marginPool: MarginPoolContract;
+	marginManager: MarginManagerContract;
+	poolProxy: PoolProxyContract;
 
 	/**
 	 * @param {SuiClient} client SuiClient instance
 	 * @param {string} address Address of the client
 	 * @param {Environment} env Environment configuration
 	 * @param {Object.<string, BalanceManager>} [balanceManagers] Optional initial BalanceManager map
+	 * @param {Object.<string, MarginManager>} [marginManagers] Optional initial MarginManager map
 	 * @param {CoinMap} [coins] Optional initial CoinMap
 	 * @param {PoolMap} [pools] Optional initial PoolMap
 	 * @param {string} [adminCap] Optional admin capability
+	 * @param {string} [marginAdminCap] Optional margin admin capability
+	 * @param {string} [marginMaintainerCap] Optional margin maintainer capability
 	 */
 	constructor({
 		client,
 		address,
 		env,
 		balanceManagers,
+		marginManagers,
 		coins,
 		pools,
 		adminCap,
+		marginAdminCap,
+		marginMaintainerCap,
 	}: {
 		client: SuiClient;
 		address: string;
 		env: Environment;
 		balanceManagers?: { [key: string]: BalanceManager };
+		marginManagers?: { [key: string]: MarginManager };
 		coins?: CoinMap;
 		pools?: PoolMap;
 		adminCap?: string;
+		marginAdminCap?: string;
+		marginMaintainerCap?: string;
 	}) {
 		this.client = client;
 		this.#address = normalizeSuiAddress(address);
@@ -60,15 +86,23 @@ export class DeepBookClient {
 			address: this.#address,
 			env,
 			balanceManagers,
+			marginManagers,
 			coins,
 			pools,
 			adminCap,
+			marginAdminCap,
+			marginMaintainerCap,
 		});
 		this.balanceManager = new BalanceManagerContract(this.#config);
 		this.deepBook = new DeepBookContract(this.#config);
 		this.deepBookAdmin = new DeepBookAdminContract(this.#config);
 		this.flashLoans = new FlashLoanContract(this.#config);
 		this.governance = new GovernanceContract(this.#config);
+		this.marginAdmin = new MarginAdminContract(this.#config);
+		this.marginMaintainer = new MarginMaintainerContract(this.#config);
+		this.marginPool = new MarginPoolContract(this.#config);
+		this.marginManager = new MarginManagerContract(this.#config);
+		this.poolProxy = new PoolProxyContract(this.#config);
 	}
 
 	/**
@@ -743,5 +777,63 @@ export class DeepBookClient {
 			quote: quoteBalance / quoteScalar,
 			deep: deepBalance / DEEP_SCALAR,
 		};
+	}
+
+	async getPriceInfoObject(tx: Transaction, coinKey: string): Promise<string> {
+		const currentTime = Date.now();
+		const dbusdcPriceInfoObjectAge = (await this.getPriceInfoObjectAge(coinKey)) * 1000;
+		if (currentTime - dbusdcPriceInfoObjectAge < PRICE_INFO_OBJECT_MAX_AGE) {
+			return await this.#config.getCoin(coinKey).priceInfoObjectId!;
+		}
+
+		// Initialize connection to the Sui Price Service
+		const endpoint =
+			this.#config.env === 'testnet'
+				? 'https://hermes-beta.pyth.network'
+				: 'https://hermes.pyth.network';
+		const connection = new SuiPriceServiceConnection(endpoint);
+
+		// List of price feed IDs
+		const priceIDs = [
+			this.#config.getCoin(coinKey).feed!, // ASSET/USD price ID
+		];
+
+		// Fetch price feed update data
+		const priceUpdateData = await connection.getPriceFeedsUpdateData(priceIDs);
+
+		// Initialize Sui Client and Pyth Client
+		const wormholeStateId = this.#config.pyth.wormholeStateId;
+		const pythStateId = this.#config.pyth.pythStateId;
+
+		const client = new SuiPythClient(this.client, pythStateId, wormholeStateId);
+
+		return (await client.updatePriceFeeds(tx, priceUpdateData, priceIDs))[0]; // returns priceInfoObjectIds
+	}
+
+	/**
+	 * @description Get the age of the price info object for a specific coin
+	 * @param {string} coinKey Key of the coin
+	 * @returns {Promise<string>} The arrival time of the price info object
+	 */
+	async getPriceInfoObjectAge(coinKey: string) {
+		const priceInfoObjectId = this.#config.getCoin(coinKey).priceInfoObjectId!;
+		const res = await this.client.getObject({
+			id: priceInfoObjectId,
+			options: {
+				showContent: true,
+			},
+		});
+
+		if (!res.data?.content) {
+			throw new Error(`Price info object not found for ${coinKey}`);
+		}
+
+		// Type guard to check if content has fields property
+		if ('fields' in res.data.content) {
+			const fields = res.data.content.fields as any;
+			return fields.price_info?.fields?.arrival_time;
+		} else {
+			throw new Error(`Invalid price info object structure for ${coinKey}`);
+		}
 	}
 }

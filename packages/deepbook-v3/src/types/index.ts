@@ -11,16 +11,29 @@ export interface BalanceManager {
 	withdrawCap?: string;
 }
 
+export interface MarginManager {
+	address: string;
+	poolKey: string;
+}
+
 export interface Coin {
 	address: string;
 	type: string;
 	scalar: number;
+	feed?: string;
+	metadataId?: string;
+	priceInfoObjectId?: string;
 }
 
 export interface Pool {
 	address: string;
 	baseCoin: string;
 	quoteCoin: string;
+}
+
+export interface MarginPool {
+	address: string;
+	type: string;
 }
 
 // Trading constants
@@ -61,9 +74,38 @@ export interface PlaceMarketOrderParams {
 	payWithDeep?: boolean;
 }
 
+export interface PlaceMarginLimitOrderParams {
+	poolKey: string;
+	marginManagerKey: string;
+	clientOrderId: string;
+	price: number;
+	quantity: number;
+	isBid: boolean;
+	expiration?: number | bigint;
+	orderType?: OrderType;
+	selfMatchingOption?: SelfMatchingOptions;
+	payWithDeep?: boolean;
+}
+
+export interface PlaceMarginMarketOrderParams {
+	poolKey: string;
+	marginManagerKey: string;
+	clientOrderId: string;
+	quantity: number;
+	isBid: boolean;
+	selfMatchingOption?: SelfMatchingOptions;
+	payWithDeep?: boolean;
+}
+
 export interface ProposalParams {
 	poolKey: string;
 	balanceManagerKey: string;
+	takerFee: number;
+	makerFee: number;
+	stakeRequired: number;
+}
+
+export interface MarginProposalParams {
 	takerFee: number;
 	makerFee: number;
 	stakeRequired: number;
@@ -98,10 +140,33 @@ export interface CreatePermissionlessPoolParams {
 	deepCoin?: TransactionObjectArgument;
 }
 
-export interface SetEwmaParamsParams {
+export interface SetEwmaParams {
 	alpha: number;
 	zScoreThreshold: number;
 	additionalTakerFee: number;
+}
+
+export interface PoolConfigParams {
+	minWithdrawRiskRatio: number;
+	minBorrowRiskRatio: number;
+	liquidationRiskRatio: number;
+	targetLiquidationRiskRatio: number;
+	userLiquidationReward: number;
+	poolLiquidationReward: number;
+}
+
+export interface MarginPoolConfigParams {
+	supplyCap: number;
+	maxUtilizationRate: number;
+	referralSpread: number;
+	minBorrow: number;
+}
+
+export interface InterestConfigParams {
+	baseRate: number;
+	baseSlope: number;
+	optimalUtilization: number;
+	excessSlope: number;
 }
 
 export interface Config {
