@@ -53,7 +53,10 @@ export class BcsWriter {
 	private ensureSizeOrGrow(bytes: number) {
 		const requiredSize = this.bytePosition + bytes;
 		if (requiredSize > this.size) {
-			const nextSize = Math.min(this.maxSize, this.size + this.allocateSize);
+			const nextSize = Math.min(
+				this.maxSize,
+				Math.max(this.size + requiredSize, this.size + this.allocateSize),
+			);
 			if (requiredSize > nextSize) {
 				throw new Error(
 					`Attempting to serialize to BCS, but buffer does not have enough size. Allocated size: ${this.size}, Max size: ${this.maxSize}, Required size: ${requiredSize}`,
@@ -86,6 +89,21 @@ export class BcsWriter {
 		this.ensureSizeOrGrow(1);
 		this.dataView.setUint8(this.bytePosition, Number(value));
 		return this.shift(1);
+	}
+
+	/**
+	 * Write a U8 value into a buffer and shift cursor position by 1.
+	 * @param {Number} value Value to write.
+	 * @returns {this}
+	 */
+	writeBytes(bytes: Uint8Array): this {
+		this.ensureSizeOrGrow(bytes.length);
+
+		for (let i = 0; i < bytes.length; i++) {
+			this.dataView.setUint8(this.bytePosition + i, bytes[i]);
+		}
+
+		return this.shift(bytes.length);
 	}
 	/**
 	 * Write a U16 value into a buffer and shift cursor position by 2.
