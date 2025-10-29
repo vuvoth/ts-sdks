@@ -63,3 +63,13 @@ export type DeletePaymentRecordOptions = {
 	coinType: string;
 } & PaymentKeyArgs &
 	Registry;
+
+export type PaymentUriParams = {
+	receiverAddress: string;
+	amount: bigint;
+	coinType: string;
+	nonce: string;
+	label?: string;
+	message?: string;
+	iconUrl?: string;
+} & Partial<Registry>;

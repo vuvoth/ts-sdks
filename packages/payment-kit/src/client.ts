@@ -104,6 +104,15 @@ export class PaymentKitClient {
 		};
 	}
 
+	/**
+	 * Get the registry object id from a registry name.
+	 * Returns the derived registry id.
+	 *
+	 * @example
+	 * ```ts
+	 * const registryId = await client.getRegistryIdFromName("my-registry");
+	 * ```
+	 */
 	getRegistryIdFromName(registryName: string): string {
 		return getRegistryIdFromName(registryName, this.#packageConfig.namespaceId);
 	}

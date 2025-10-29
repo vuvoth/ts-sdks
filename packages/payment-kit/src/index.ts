@@ -15,6 +15,8 @@ export type {
 	SetRegistryManagedFundsOptions,
 	WithdrawFromRegistryOptions,
 	DeletePaymentRecordOptions,
+	PaymentUriParams,
 } from './types.js';
-export { PaymentKitClientError } from './error.js';
+export { PaymentKitClientError, PaymentKitUriError } from './error.js';
 export { DEFAULT_REGISTRY_NAME } from './constants.js';
+export { createPaymentTransactionUri, parsePaymentTransactionUri } from './uri.js';
