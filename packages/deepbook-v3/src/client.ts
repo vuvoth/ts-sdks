@@ -23,6 +23,7 @@ import { MarginAdminContract } from './transactions/marginAdmin.js';
 import { MarginMaintainerContract } from './transactions/marginMaintainer.js';
 import { MarginPoolContract } from './transactions/marginPool.js';
 import { MarginManagerContract } from './transactions/marginManager.js';
+import { MarginRegistryContract } from './transactions/marginRegistry.js';
 import { SuiPriceServiceConnection } from './pyth/pyth.js';
 import { SuiPythClient } from './pyth/pyth.js';
 import { PoolProxyContract } from './transactions/poolProxy.js';
@@ -43,6 +44,7 @@ export class DeepBookClient {
 	marginMaintainer: MarginMaintainerContract;
 	marginPool: MarginPoolContract;
 	marginManager: MarginManagerContract;
+	marginRegistry: MarginRegistryContract;
 	poolProxy: PoolProxyContract;
 
 	/**
@@ -102,6 +104,7 @@ export class DeepBookClient {
 		this.marginMaintainer = new MarginMaintainerContract(this.#config);
 		this.marginPool = new MarginPoolContract(this.#config);
 		this.marginManager = new MarginManagerContract(this.#config);
+		this.marginRegistry = new MarginRegistryContract(this.#config);
 		this.poolProxy = new PoolProxyContract(this.#config);
 	}
 
@@ -835,5 +838,829 @@ export class DeepBookClient {
 		} else {
 			throw new Error(`Invalid price info object structure for ${coinKey}`);
 		}
+	}
+
+	// === Margin Pool View Methods ===
+
+	/**
+	 * @description Get the margin pool ID
+	 * @param {string} coinKey The key to identify the margin pool
+	 * @returns {Promise<string>} The margin pool ID
+	 */
+	async getMarginPoolId(coinKey: string): Promise<string> {
+		const tx = new Transaction();
+		tx.add(this.marginPool.getId(coinKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		return bcs.Address.parse(new Uint8Array(bytes));
+	}
+
+	/**
+	 * @description Check if a deepbook pool is allowed for borrowing from margin pool
+	 * @param {string} coinKey The key to identify the margin pool
+	 * @param {string} deepbookPoolId The ID of the deepbook pool
+	 * @returns {Promise<boolean>} Whether the deepbook pool is allowed
+	 */
+	async isDeepbookPoolAllowed(coinKey: string, deepbookPoolId: string): Promise<boolean> {
+		const tx = new Transaction();
+		tx.add(this.marginPool.deepbookPoolAllowed(coinKey, deepbookPoolId));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		return bcs.bool().parse(new Uint8Array(bytes));
+	}
+
+	/**
+	 * @description Get the total supply amount in the margin pool
+	 * @param {string} coinKey The key to identify the margin pool
+	 * @param {number} decimals Number of decimal places to show (default: 6)
+	 * @returns {Promise<string>} The total supply amount as a string
+	 */
+	async getMarginPoolTotalSupply(coinKey: string, decimals: number = 6): Promise<string> {
+		const tx = new Transaction();
+		tx.add(this.marginPool.totalSupply(coinKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		const rawAmount = BigInt(bcs.U64.parse(new Uint8Array(bytes)));
+		const coin = this.#config.getCoin(coinKey);
+		return this.#formatTokenAmount(rawAmount, coin.scalar, decimals);
+	}
+
+	/**
+	 * @description Get the total supply shares in the margin pool
+	 * @param {string} coinKey The key to identify the margin pool
+	 * @param {number} decimals Number of decimal places to show (default: 6)
+	 * @returns {Promise<string>} The total supply shares as a string
+	 */
+	async getMarginPoolSupplyShares(coinKey: string, decimals: number = 6): Promise<string> {
+		const tx = new Transaction();
+		tx.add(this.marginPool.supplyShares(coinKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		const rawShares = BigInt(bcs.U64.parse(new Uint8Array(bytes)));
+		const coin = this.#config.getCoin(coinKey);
+		return this.#formatTokenAmount(rawShares, coin.scalar, decimals);
+	}
+
+	/**
+	 * @description Get the total borrow amount in the margin pool
+	 * @param {string} coinKey The key to identify the margin pool
+	 * @param {number} decimals Number of decimal places to show (default: 6)
+	 * @returns {Promise<string>} The total borrow amount as a string
+	 */
+	async getMarginPoolTotalBorrow(coinKey: string, decimals: number = 6): Promise<string> {
+		const tx = new Transaction();
+		tx.add(this.marginPool.totalBorrow(coinKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		const rawAmount = BigInt(bcs.U64.parse(new Uint8Array(bytes)));
+		const coin = this.#config.getCoin(coinKey);
+		return this.#formatTokenAmount(rawAmount, coin.scalar, decimals);
+	}
+
+	/**
+	 * @description Get the total borrow shares in the margin pool
+	 * @param {string} coinKey The key to identify the margin pool
+	 * @param {number} decimals Number of decimal places to show (default: 6)
+	 * @returns {Promise<string>} The total borrow shares as a string
+	 */
+	async getMarginPoolBorrowShares(coinKey: string, decimals: number = 6): Promise<string> {
+		const tx = new Transaction();
+		tx.add(this.marginPool.borrowShares(coinKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		const rawShares = BigInt(bcs.U64.parse(new Uint8Array(bytes)));
+		const coin = this.#config.getCoin(coinKey);
+		return this.#formatTokenAmount(rawShares, coin.scalar, decimals);
+	}
+
+	/**
+	 * @description Get the last update timestamp of the margin pool
+	 * @param {string} coinKey The key to identify the margin pool
+	 * @returns {Promise<number>} The last update timestamp in milliseconds
+	 */
+	async getMarginPoolLastUpdateTimestamp(coinKey: string): Promise<number> {
+		const tx = new Transaction();
+		tx.add(this.marginPool.lastUpdateTimestamp(coinKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		return Number(bcs.U64.parse(new Uint8Array(bytes)));
+	}
+
+	/**
+	 * @description Get the supply cap of the margin pool
+	 * @param {string} coinKey The key to identify the margin pool
+	 * @param {number} decimals Number of decimal places to show (default: 6)
+	 * @returns {Promise<string>} The supply cap as a string
+	 */
+	async getMarginPoolSupplyCap(coinKey: string, decimals: number = 6): Promise<string> {
+		const tx = new Transaction();
+		tx.add(this.marginPool.supplyCap(coinKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		const rawAmount = BigInt(bcs.U64.parse(new Uint8Array(bytes)));
+		const coin = this.#config.getCoin(coinKey);
+		return this.#formatTokenAmount(rawAmount, coin.scalar, decimals);
+	}
+
+	/**
+	 * @description Get the max utilization rate of the margin pool
+	 * @param {string} coinKey The key to identify the margin pool
+	 * @returns {Promise<number>} The max utilization rate (as a decimal, e.g., 0.95 for 95%)
+	 */
+	async getMarginPoolMaxUtilizationRate(coinKey: string): Promise<number> {
+		const tx = new Transaction();
+		tx.add(this.marginPool.maxUtilizationRate(coinKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		const rawRate = Number(bcs.U64.parse(new Uint8Array(bytes)));
+		return rawRate / FLOAT_SCALAR;
+	}
+
+	/**
+	 * @description Get the protocol spread of the margin pool
+	 * @param {string} coinKey The key to identify the margin pool
+	 * @returns {Promise<number>} The protocol spread (as a decimal)
+	 */
+	async getMarginPoolProtocolSpread(coinKey: string): Promise<number> {
+		const tx = new Transaction();
+		tx.add(this.marginPool.protocolSpread(coinKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		const rawSpread = Number(bcs.U64.parse(new Uint8Array(bytes)));
+		return rawSpread / FLOAT_SCALAR;
+	}
+
+	/**
+	 * @description Get the minimum borrow amount for the margin pool
+	 * @param {string} coinKey The key to identify the margin pool
+	 * @param {number} decimals Number of decimal places to show (default: 6)
+	 * @returns {Promise<string>} The minimum borrow amount as a string
+	 */
+	async getMarginPoolMinBorrow(coinKey: string, decimals: number = 6): Promise<string> {
+		const tx = new Transaction();
+		tx.add(this.marginPool.minBorrow(coinKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		const rawAmount = BigInt(bcs.U64.parse(new Uint8Array(bytes)));
+		const coin = this.#config.getCoin(coinKey);
+		return this.#formatTokenAmount(rawAmount, coin.scalar, decimals);
+	}
+
+	/**
+	 * @description Get the current interest rate of the margin pool
+	 * @param {string} coinKey The key to identify the margin pool
+	 * @returns {Promise<number>} The current interest rate (as a decimal)
+	 */
+	async getMarginPoolInterestRate(coinKey: string): Promise<number> {
+		const tx = new Transaction();
+		tx.add(this.marginPool.interestRate(coinKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		const rawRate = Number(bcs.U64.parse(new Uint8Array(bytes)));
+		return rawRate / FLOAT_SCALAR;
+	}
+
+	/**
+	 * @description Get user supply shares for a supplier cap
+	 * @param {string} coinKey The key to identify the margin pool
+	 * @param {string} supplierCapId The ID of the supplier cap
+	 * @param {number} decimals Number of decimal places to show (default: 6)
+	 * @returns {Promise<string>} The user's supply shares as a string
+	 */
+	async getUserSupplyShares(
+		coinKey: string,
+		supplierCapId: string,
+		decimals: number = 6,
+	): Promise<string> {
+		const tx = new Transaction();
+		tx.add(this.marginPool.userSupplyShares(coinKey, supplierCapId));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		const rawShares = BigInt(bcs.U64.parse(new Uint8Array(bytes)));
+		const coin = this.#config.getCoin(coinKey);
+		return this.#formatTokenAmount(rawShares, coin.scalar, decimals);
+	}
+
+	/**
+	 * @description Get user supply amount for a supplier cap
+	 * @param {string} coinKey The key to identify the margin pool
+	 * @param {string} supplierCapId The ID of the supplier cap
+	 * @param {number} decimals Number of decimal places to show (default: 6)
+	 * @returns {Promise<string>} The user's supply amount as a string
+	 */
+	async getUserSupplyAmount(
+		coinKey: string,
+		supplierCapId: string,
+		decimals: number = 6,
+	): Promise<string> {
+		const tx = new Transaction();
+		tx.add(this.marginPool.userSupplyAmount(coinKey, supplierCapId));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		const rawAmount = BigInt(bcs.U64.parse(new Uint8Array(bytes)));
+		const coin = this.#config.getCoin(coinKey);
+		return this.#formatTokenAmount(rawAmount, coin.scalar, decimals);
+	}
+
+	// === Margin Manager Read-Only Functions ===
+
+	/**
+	 * @description Get the owner address of a margin manager
+	 * @param {string} poolKey The key to identify the pool
+	 * @param {string} marginManagerId The ID of the margin manager
+	 * @returns {Promise<string>} The owner address
+	 */
+	async getMarginManagerOwner(poolKey: string, marginManagerId: string): Promise<string> {
+		const tx = new Transaction();
+		tx.add(this.marginManager.ownerByPoolKey(poolKey, marginManagerId));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		return normalizeSuiAddress(bcs.Address.parse(new Uint8Array(bytes)));
+	}
+
+	/**
+	 * @description Get the DeepBook pool ID associated with a margin manager
+	 * @param {string} poolKey The key to identify the pool
+	 * @param {string} marginManagerId The ID of the margin manager
+	 * @returns {Promise<string>} The DeepBook pool ID
+	 */
+	async getMarginManagerDeepbookPool(poolKey: string, marginManagerId: string): Promise<string> {
+		const tx = new Transaction();
+		tx.add(this.marginManager.deepbookPool(poolKey, marginManagerId));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		return normalizeSuiAddress(bcs.Address.parse(new Uint8Array(bytes)));
+	}
+
+	/**
+	 * @description Get the margin pool ID (if any) associated with a margin manager
+	 * @param {string} poolKey The key to identify the pool
+	 * @param {string} marginManagerId The ID of the margin manager
+	 * @returns {Promise<string | null>} The margin pool ID or null if no active loan
+	 */
+	async getMarginManagerMarginPoolId(
+		poolKey: string,
+		marginManagerId: string,
+	): Promise<string | null> {
+		const tx = new Transaction();
+		tx.add(this.marginManager.marginPoolId(poolKey, marginManagerId));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		const option = bcs.option(bcs.Address).parse(new Uint8Array(bytes));
+		return option ? normalizeSuiAddress(option) : null;
+	}
+
+	/**
+	 * @description Get borrowed shares for both base and quote assets
+	 * @param {string} poolKey The key to identify the pool
+	 * @param {string} marginManagerId The ID of the margin manager
+	 * @returns {Promise<{baseShares: string, quoteShares: string}>} The borrowed shares
+	 */
+	async getMarginManagerBorrowedShares(
+		poolKey: string,
+		marginManagerId: string,
+	): Promise<{ baseShares: string; quoteShares: string }> {
+		const tx = new Transaction();
+		tx.add(this.marginManager.borrowedShares(poolKey, marginManagerId));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const baseBytes = res.results![0].returnValues![0][0];
+		const quoteBytes = res.results![0].returnValues![1][0];
+		const baseShares = bcs.U64.parse(new Uint8Array(baseBytes)).toString();
+		const quoteShares = bcs.U64.parse(new Uint8Array(quoteBytes)).toString();
+
+		return { baseShares, quoteShares };
+	}
+
+	/**
+	 * @description Get borrowed base shares
+	 * @param {string} poolKey The key to identify the pool
+	 * @param {string} marginManagerId The ID of the margin manager
+	 * @returns {Promise<string>} The borrowed base shares
+	 */
+	async getMarginManagerBorrowedBaseShares(
+		poolKey: string,
+		marginManagerId: string,
+	): Promise<string> {
+		const tx = new Transaction();
+		tx.add(this.marginManager.borrowedBaseShares(poolKey, marginManagerId));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		return bcs.U64.parse(new Uint8Array(bytes)).toString();
+	}
+
+	/**
+	 * @description Get borrowed quote shares
+	 * @param {string} poolKey The key to identify the pool
+	 * @param {string} marginManagerId The ID of the margin manager
+	 * @returns {Promise<string>} The borrowed quote shares
+	 */
+	async getMarginManagerBorrowedQuoteShares(
+		poolKey: string,
+		marginManagerId: string,
+	): Promise<string> {
+		const tx = new Transaction();
+		tx.add(this.marginManager.borrowedQuoteShares(poolKey, marginManagerId));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		return bcs.U64.parse(new Uint8Array(bytes)).toString();
+	}
+
+	/**
+	 * @description Check if margin manager has base asset debt
+	 * @param {string} poolKey The key to identify the pool
+	 * @param {string} marginManagerId The ID of the margin manager
+	 * @returns {Promise<boolean>} True if has base debt, false otherwise
+	 */
+	async getMarginManagerHasBaseDebt(poolKey: string, marginManagerId: string): Promise<boolean> {
+		const tx = new Transaction();
+		tx.add(this.marginManager.hasBaseDebt(poolKey, marginManagerId));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		return bcs.bool().parse(new Uint8Array(bytes));
+	}
+
+	/**
+	 * @description Get the balance manager ID for a margin manager
+	 * @param {string} poolKey The key to identify the pool
+	 * @param {string} marginManagerId The ID of the margin manager
+	 * @returns {Promise<string>} The balance manager ID
+	 */
+	async getMarginManagerBalanceManagerId(
+		poolKey: string,
+		marginManagerId: string,
+	): Promise<string> {
+		const tx = new Transaction();
+		tx.add(this.marginManager.balanceManager(poolKey, marginManagerId));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		return normalizeSuiAddress(bcs.Address.parse(new Uint8Array(bytes)));
+	}
+
+	/**
+	 * @description Calculate assets (base and quote) for a margin manager
+	 * @param {string} poolKey The key to identify the pool
+	 * @param {string} marginManagerId The ID of the margin manager
+	 * @param {number} decimals Number of decimal places to show (default: 6)
+	 * @returns {Promise<{baseAsset: string, quoteAsset: string}>} The base and quote assets
+	 */
+	async getMarginManagerAssets(
+		poolKey: string,
+		marginManagerId: string,
+		decimals: number = 6,
+	): Promise<{ baseAsset: string; quoteAsset: string }> {
+		const tx = new Transaction();
+		tx.add(this.marginManager.calculateAssets(poolKey, marginManagerId));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const baseBytes = res.results![0].returnValues![0][0];
+		const quoteBytes = res.results![0].returnValues![1][0];
+		const pool = this.#config.getPool(poolKey);
+		const baseCoin = this.#config.getCoin(pool.baseCoin);
+		const quoteCoin = this.#config.getCoin(pool.quoteCoin);
+
+		const baseAsset = this.#formatTokenAmount(
+			BigInt(bcs.U64.parse(new Uint8Array(baseBytes))),
+			baseCoin.scalar,
+			decimals,
+		);
+		const quoteAsset = this.#formatTokenAmount(
+			BigInt(bcs.U64.parse(new Uint8Array(quoteBytes))),
+			quoteCoin.scalar,
+			decimals,
+		);
+
+		return { baseAsset, quoteAsset };
+	}
+
+	/**
+	 * @description Calculate debts (base and quote) for a margin manager
+	 * NOTE: This function automatically determines whether to use base or quote margin pool
+	 * based on hasBaseDebt. You don't need to specify the debt coin type.
+	 * @param {string} poolKey The key to identify the pool
+	 * @param {string} marginManagerId The ID of the margin manager
+	 * @param {number} decimals Number of decimal places to show (default: 6)
+	 * @returns {Promise<{baseDebt: string, quoteDebt: string}>} The base and quote debts
+	 */
+	async getMarginManagerDebts(
+		poolKey: string,
+		marginManagerId: string,
+		decimals: number = 6,
+	): Promise<{ baseDebt: string; quoteDebt: string }> {
+		// First check if the margin manager has base debt
+		const hasBaseDebt = await this.getMarginManagerHasBaseDebt(poolKey, marginManagerId);
+
+		// Get the pool configuration to determine base and quote coins
+		const pool = this.#config.getPool(poolKey);
+		const debtCoinKey = hasBaseDebt ? pool.baseCoin : pool.quoteCoin;
+
+		// Now call calculateDebts with the correct debt coin
+		const tx = new Transaction();
+		tx.add(this.marginManager.calculateDebts(poolKey, debtCoinKey, marginManagerId));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		// Check if the transaction failed
+		if (!res.results || !res.results[0] || !res.results[0].returnValues) {
+			throw new Error(
+				`Failed to get margin manager debts: ${res.effects?.status?.error || 'Unknown error'}`,
+			);
+		}
+
+		// The Move function returns a tuple (u64, u64), so returnValues has 2 elements
+		const baseBytes = res.results[0].returnValues[0][0];
+		const quoteBytes = res.results[0].returnValues[1][0];
+		const debtCoin = this.#config.getCoin(debtCoinKey);
+
+		const baseDebt = this.#formatTokenAmount(
+			BigInt(bcs.U64.parse(new Uint8Array(baseBytes))),
+			debtCoin.scalar,
+			decimals,
+		);
+		const quoteDebt = this.#formatTokenAmount(
+			BigInt(bcs.U64.parse(new Uint8Array(quoteBytes))),
+			debtCoin.scalar,
+			decimals,
+		);
+
+		return { baseDebt, quoteDebt };
+	}
+
+	// === Margin Registry Functions ===
+
+	/**
+	 * @description Check if a deepbook pool is enabled for margin trading
+	 * @param {string} poolKey The key to identify the pool
+	 * @returns {Promise<boolean>} True if the pool is enabled for margin trading
+	 */
+	async isPoolEnabledForMargin(poolKey: string): Promise<boolean> {
+		const tx = new Transaction();
+		tx.add(this.marginRegistry.poolEnabled(poolKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		return bcs.Bool.parse(new Uint8Array(bytes));
+	}
+
+	/**
+	 * @description Get the margin manager IDs for a given owner address
+	 * @param {string} owner The owner address
+	 * @returns {Promise<string[]>} Array of margin manager IDs
+	 */
+	async getMarginManagerIdsForOwner(owner: string): Promise<string[]> {
+		const tx = new Transaction();
+		tx.add(this.marginRegistry.getMarginManagerIds(owner));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		const vecSet = VecSet(bcs.Address).parse(new Uint8Array(bytes));
+		return vecSet.contents.map((id) => normalizeSuiAddress(id));
+	}
+
+	/**
+	 * @description Get the base margin pool ID for a deepbook pool
+	 * @param {string} poolKey The key to identify the pool
+	 * @returns {Promise<string>} The base margin pool ID
+	 */
+	async getBaseMarginPoolId(poolKey: string): Promise<string> {
+		const tx = new Transaction();
+		tx.add(this.marginRegistry.baseMarginPoolId(poolKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		const id = bcs.Address.parse(new Uint8Array(bytes));
+		return '0x' + id;
+	}
+
+	/**
+	 * @description Get the quote margin pool ID for a deepbook pool
+	 * @param {string} poolKey The key to identify the pool
+	 * @returns {Promise<string>} The quote margin pool ID
+	 */
+	async getQuoteMarginPoolId(poolKey: string): Promise<string> {
+		const tx = new Transaction();
+		tx.add(this.marginRegistry.quoteMarginPoolId(poolKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		const id = bcs.Address.parse(new Uint8Array(bytes));
+		return '0x' + id;
+	}
+
+	/**
+	 * @description Get the minimum withdraw risk ratio for a deepbook pool
+	 * @param {string} poolKey The key to identify the pool
+	 * @returns {Promise<number>} The minimum withdraw risk ratio as a decimal (e.g., 1.5 for 150%)
+	 */
+	async getMinWithdrawRiskRatio(poolKey: string): Promise<number> {
+		const tx = new Transaction();
+		tx.add(this.marginRegistry.minWithdrawRiskRatio(poolKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		const ratio = Number(bcs.U64.parse(new Uint8Array(bytes)));
+		return ratio / FLOAT_SCALAR;
+	}
+
+	/**
+	 * @description Get the minimum borrow risk ratio for a deepbook pool
+	 * @param {string} poolKey The key to identify the pool
+	 * @returns {Promise<number>} The minimum borrow risk ratio as a decimal (e.g., 1.25 for 125%)
+	 */
+	async getMinBorrowRiskRatio(poolKey: string): Promise<number> {
+		const tx = new Transaction();
+		tx.add(this.marginRegistry.minBorrowRiskRatio(poolKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		const ratio = Number(bcs.U64.parse(new Uint8Array(bytes)));
+		return ratio / FLOAT_SCALAR;
+	}
+
+	/**
+	 * @description Get the liquidation risk ratio for a deepbook pool
+	 * @param {string} poolKey The key to identify the pool
+	 * @returns {Promise<number>} The liquidation risk ratio as a decimal (e.g., 1.125 for 112.5%)
+	 */
+	async getLiquidationRiskRatio(poolKey: string): Promise<number> {
+		const tx = new Transaction();
+		tx.add(this.marginRegistry.liquidationRiskRatio(poolKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		const ratio = Number(bcs.U64.parse(new Uint8Array(bytes)));
+		return ratio / FLOAT_SCALAR;
+	}
+
+	/**
+	 * @description Get the target liquidation risk ratio for a deepbook pool
+	 * @param {string} poolKey The key to identify the pool
+	 * @returns {Promise<number>} The target liquidation risk ratio as a decimal (e.g., 1.25 for 125%)
+	 */
+	async getTargetLiquidationRiskRatio(poolKey: string): Promise<number> {
+		const tx = new Transaction();
+		tx.add(this.marginRegistry.targetLiquidationRiskRatio(poolKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		const ratio = Number(bcs.U64.parse(new Uint8Array(bytes)));
+		return ratio / FLOAT_SCALAR;
+	}
+
+	/**
+	 * @description Get the user liquidation reward for a deepbook pool
+	 * @param {string} poolKey The key to identify the pool
+	 * @returns {Promise<number>} The user liquidation reward as a decimal (e.g., 0.05 for 5%)
+	 */
+	async getUserLiquidationReward(poolKey: string): Promise<number> {
+		const tx = new Transaction();
+		tx.add(this.marginRegistry.userLiquidationReward(poolKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		const reward = Number(bcs.U64.parse(new Uint8Array(bytes)));
+		return reward / FLOAT_SCALAR;
+	}
+
+	/**
+	 * @description Get the pool liquidation reward for a deepbook pool
+	 * @param {string} poolKey The key to identify the pool
+	 * @returns {Promise<number>} The pool liquidation reward as a decimal (e.g., 0.05 for 5%)
+	 */
+	async getPoolLiquidationReward(poolKey: string): Promise<number> {
+		const tx = new Transaction();
+		tx.add(this.marginRegistry.poolLiquidationReward(poolKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		const reward = Number(bcs.U64.parse(new Uint8Array(bytes)));
+		return reward / FLOAT_SCALAR;
+	}
+
+	/**
+	 * @description Get all allowed maintainer cap IDs
+	 * @returns {Promise<string[]>} Array of allowed maintainer cap IDs
+	 */
+	async getAllowedMaintainers(): Promise<string[]> {
+		const tx = new Transaction();
+		tx.add(this.marginRegistry.allowedMaintainers());
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		const vecSet = VecSet(bcs.Address).parse(new Uint8Array(bytes));
+		return vecSet.contents.map((id) => normalizeSuiAddress(id));
+	}
+
+	/**
+	 * @description Get all allowed pause cap IDs
+	 * @returns {Promise<string[]>} Array of allowed pause cap IDs
+	 */
+	async getAllowedPauseCaps(): Promise<string[]> {
+		const tx = new Transaction();
+		tx.add(this.marginRegistry.allowedPauseCaps());
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		const vecSet = VecSet(bcs.Address).parse(new Uint8Array(bytes));
+		return vecSet.contents.map((id) => normalizeSuiAddress(id));
+	}
+
+	/**
+	 * @description Helper function to format token amounts without floating point errors
+	 * @param {bigint} rawAmount The raw amount as bigint
+	 * @param {number} scalar The token scalar (e.g., 1000000000 for 9 decimals)
+	 * @param {number} decimals Number of decimal places to show
+	 * @returns {string} Formatted amount as string
+	 */
+	#formatTokenAmount(rawAmount: bigint, scalar: number, decimals: number): string {
+		const scalarBigInt = BigInt(scalar);
+		const integerPart = rawAmount / scalarBigInt;
+		const fractionalPart = rawAmount % scalarBigInt;
+
+		// If no fractional part, return just the integer
+		if (fractionalPart === 0n) {
+			return integerPart.toString();
+		}
+
+		// Convert fractional part to string with leading zeros
+		const scalarDigits = scalar.toString().length - 1;
+		const fractionalStr = fractionalPart.toString().padStart(scalarDigits, '0');
+
+		// Truncate to desired decimal places
+		const truncated = fractionalStr.slice(0, decimals);
+
+		// Remove trailing zeros for cleaner output
+		const trimmed = truncated.replace(/0+$/, '');
+
+		// If nothing left after trimming, return just integer
+		if (!trimmed) {
+			return integerPart.toString();
+		}
+
+		return `${integerPart}.${trimmed}`;
 	}
 }
