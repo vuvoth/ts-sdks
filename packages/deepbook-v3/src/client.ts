@@ -11,12 +11,18 @@ import { DeepBookContract } from './transactions/deepbook.js';
 import { DeepBookAdminContract } from './transactions/deepbookAdmin.js';
 import { FlashLoanContract } from './transactions/flashLoans.js';
 import { GovernanceContract } from './transactions/governance.js';
-import type { BalanceManager, Environment, MarginManager } from './types/index.js';
+import type {
+	BalanceManager,
+	Environment,
+	MarginManager,
+	CanPlaceLimitOrderParams,
+	CanPlaceMarketOrderParams,
+} from './types/index.js';
 import {
 	DEEP_SCALAR,
 	DeepBookConfig,
 	FLOAT_SCALAR,
-	PRICE_INFO_OBJECT_MAX_AGE,
+	PRICE_INFO_OBJECT_MAX_AGE_MS,
 } from './utils/config.js';
 import type { CoinMap, PoolMap } from './utils/constants.js';
 import { MarginAdminContract } from './transactions/marginAdmin.js';
@@ -784,8 +790,8 @@ export class DeepBookClient {
 
 	async getPriceInfoObject(tx: Transaction, coinKey: string): Promise<string> {
 		const currentTime = Date.now();
-		const dbusdcPriceInfoObjectAge = (await this.getPriceInfoObjectAge(coinKey)) * 1000;
-		if (currentTime - dbusdcPriceInfoObjectAge < PRICE_INFO_OBJECT_MAX_AGE) {
+		const priceInfoObjectAge = (await this.getPriceInfoObjectAge(coinKey)) * 1000;
+		if (currentTime - priceInfoObjectAge < PRICE_INFO_OBJECT_MAX_AGE_MS) {
 			return await this.#config.getCoin(coinKey).priceInfoObjectId!;
 		}
 
@@ -1420,6 +1426,9 @@ export class DeepBookClient {
 		basePythDecimals: number;
 		quotePythPrice: string;
 		quotePythDecimals: number;
+		currentPrice: bigint;
+		lowestTriggerAbovePrice: bigint;
+		highestTriggerBelowPrice: bigint;
 	}> {
 		const manager = this.#config.getMarginManager(marginManagerKey);
 		const tx = new Transaction();
@@ -1478,6 +1487,13 @@ export class DeepBookClient {
 		const quotePythDecimals = Number(
 			bcs.u8().parse(new Uint8Array(res.results[0].returnValues[10][0])),
 		);
+		const currentPrice = BigInt(bcs.U64.parse(new Uint8Array(res.results[0].returnValues[11][0])));
+		const lowestTriggerAbovePrice = BigInt(
+			bcs.U64.parse(new Uint8Array(res.results[0].returnValues[12][0])),
+		);
+		const highestTriggerBelowPrice = BigInt(
+			bcs.U64.parse(new Uint8Array(res.results[0].returnValues[13][0])),
+		);
 
 		return {
 			managerId,
@@ -1491,6 +1507,9 @@ export class DeepBookClient {
 			basePythDecimals,
 			quotePythPrice: quotePythPrice.toString(),
 			quotePythDecimals,
+			currentPrice,
+			lowestTriggerAbovePrice,
+			highestTriggerBelowPrice,
 		};
 	}
 
@@ -1829,6 +1848,410 @@ export class DeepBookClient {
 		const bytes = res.results![0].returnValues![0][0];
 		const vecSet = VecSet(bcs.Address).parse(new Uint8Array(bytes));
 		return vecSet.contents.map((id) => normalizeSuiAddress(id));
+	}
+
+	/**
+	 * @description Check if a pool is a stable pool
+	 * @param {string} poolKey Key of the pool
+	 * @returns {Promise<boolean>} Whether the pool is a stable pool
+	 */
+	async stablePool(poolKey: string): Promise<boolean> {
+		const tx = new Transaction();
+		tx.add(this.deepBook.stablePool(poolKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		return bcs.bool().parse(new Uint8Array(bytes));
+	}
+
+	/**
+	 * @description Check if a pool is registered
+	 * @param {string} poolKey Key of the pool
+	 * @returns {Promise<boolean>} Whether the pool is registered
+	 */
+	async registeredPool(poolKey: string): Promise<boolean> {
+		const tx = new Transaction();
+		tx.add(this.deepBook.registeredPool(poolKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		return bcs.bool().parse(new Uint8Array(bytes));
+	}
+
+	/**
+	 * @description Get the quote quantity out using input token as fee
+	 * @param {string} poolKey Key of the pool
+	 * @param {number} baseQuantity Base quantity
+	 * @returns {Promise<{baseQuantity: number, baseOut: number, quoteOut: number, deepRequired: number}>}
+	 */
+	async getQuoteQuantityOutInputFee(poolKey: string, baseQuantity: number) {
+		const tx = new Transaction();
+		const pool = this.#config.getPool(poolKey);
+		const baseScalar = this.#config.getCoin(pool.baseCoin).scalar;
+		const quoteScalar = this.#config.getCoin(pool.quoteCoin).scalar;
+
+		tx.add(this.deepBook.getQuoteQuantityOutInputFee(poolKey, baseQuantity));
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const baseOut = Number(bcs.U64.parse(new Uint8Array(res.results![0].returnValues![0][0])));
+		const quoteOut = Number(bcs.U64.parse(new Uint8Array(res.results![0].returnValues![1][0])));
+		const deepRequired = Number(bcs.U64.parse(new Uint8Array(res.results![0].returnValues![2][0])));
+
+		return {
+			baseQuantity,
+			baseOut: Number((baseOut / baseScalar).toFixed(9)),
+			quoteOut: Number((quoteOut / quoteScalar).toFixed(9)),
+			deepRequired: Number((deepRequired / DEEP_SCALAR).toFixed(9)),
+		};
+	}
+
+	/**
+	 * @description Get the base quantity out using input token as fee
+	 * @param {string} poolKey Key of the pool
+	 * @param {number} quoteQuantity Quote quantity
+	 * @returns {Promise<{quoteQuantity: number, baseOut: number, quoteOut: number, deepRequired: number}>}
+	 */
+	async getBaseQuantityOutInputFee(poolKey: string, quoteQuantity: number) {
+		const tx = new Transaction();
+		const pool = this.#config.getPool(poolKey);
+		const baseScalar = this.#config.getCoin(pool.baseCoin).scalar;
+		const quoteScalar = this.#config.getCoin(pool.quoteCoin).scalar;
+
+		tx.add(this.deepBook.getBaseQuantityOutInputFee(poolKey, quoteQuantity));
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const baseOut = Number(bcs.U64.parse(new Uint8Array(res.results![0].returnValues![0][0])));
+		const quoteOut = Number(bcs.U64.parse(new Uint8Array(res.results![0].returnValues![1][0])));
+		const deepRequired = Number(bcs.U64.parse(new Uint8Array(res.results![0].returnValues![2][0])));
+
+		return {
+			quoteQuantity,
+			baseOut: Number((baseOut / baseScalar).toFixed(9)),
+			quoteOut: Number((quoteOut / quoteScalar).toFixed(9)),
+			deepRequired: Number((deepRequired / DEEP_SCALAR).toFixed(9)),
+		};
+	}
+
+	/**
+	 * @description Get the quantity out using input token as fee
+	 * @param {string} poolKey Key of the pool
+	 * @param {number} baseQuantity Base quantity
+	 * @param {number} quoteQuantity Quote quantity
+	 * @returns {Promise<{baseQuantity: number, quoteQuantity: number, baseOut: number, quoteOut: number, deepRequired: number}>}
+	 */
+	async getQuantityOutInputFee(poolKey: string, baseQuantity: number, quoteQuantity: number) {
+		const tx = new Transaction();
+		const pool = this.#config.getPool(poolKey);
+		const baseScalar = this.#config.getCoin(pool.baseCoin).scalar;
+		const quoteScalar = this.#config.getCoin(pool.quoteCoin).scalar;
+
+		tx.add(this.deepBook.getQuantityOutInputFee(poolKey, baseQuantity, quoteQuantity));
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const baseOut = Number(bcs.U64.parse(new Uint8Array(res.results![0].returnValues![0][0])));
+		const quoteOut = Number(bcs.U64.parse(new Uint8Array(res.results![0].returnValues![1][0])));
+		const deepRequired = Number(bcs.U64.parse(new Uint8Array(res.results![0].returnValues![2][0])));
+
+		return {
+			baseQuantity,
+			quoteQuantity,
+			baseOut: Number((baseOut / baseScalar).toFixed(9)),
+			quoteOut: Number((quoteOut / quoteScalar).toFixed(9)),
+			deepRequired: Number((deepRequired / DEEP_SCALAR).toFixed(9)),
+		};
+	}
+
+	/**
+	 * @description Get the base quantity needed to receive target quote quantity
+	 * @param {string} poolKey Key of the pool
+	 * @param {number} targetQuoteQuantity Target quote quantity
+	 * @param {boolean} payWithDeep Whether to pay fees with DEEP
+	 * @returns {Promise<{baseIn: number, quoteOut: number, deepRequired: number}>}
+	 */
+	async getBaseQuantityIn(poolKey: string, targetQuoteQuantity: number, payWithDeep: boolean) {
+		const tx = new Transaction();
+		const pool = this.#config.getPool(poolKey);
+		const baseScalar = this.#config.getCoin(pool.baseCoin).scalar;
+		const quoteScalar = this.#config.getCoin(pool.quoteCoin).scalar;
+
+		tx.add(this.deepBook.getBaseQuantityIn(poolKey, targetQuoteQuantity, payWithDeep));
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const baseIn = Number(bcs.U64.parse(new Uint8Array(res.results![0].returnValues![0][0])));
+		const quoteOut = Number(bcs.U64.parse(new Uint8Array(res.results![0].returnValues![1][0])));
+		const deepRequired = Number(bcs.U64.parse(new Uint8Array(res.results![0].returnValues![2][0])));
+
+		return {
+			baseIn: Number((baseIn / baseScalar).toFixed(9)),
+			quoteOut: Number((quoteOut / quoteScalar).toFixed(9)),
+			deepRequired: Number((deepRequired / DEEP_SCALAR).toFixed(9)),
+		};
+	}
+
+	/**
+	 * @description Get the quote quantity needed to receive target base quantity
+	 * @param {string} poolKey Key of the pool
+	 * @param {number} targetBaseQuantity Target base quantity
+	 * @param {boolean} payWithDeep Whether to pay fees with DEEP
+	 * @returns {Promise<{baseOut: number, quoteIn: number, deepRequired: number}>}
+	 */
+	async getQuoteQuantityIn(poolKey: string, targetBaseQuantity: number, payWithDeep: boolean) {
+		const tx = new Transaction();
+		const pool = this.#config.getPool(poolKey);
+		const baseScalar = this.#config.getCoin(pool.baseCoin).scalar;
+		const quoteScalar = this.#config.getCoin(pool.quoteCoin).scalar;
+
+		tx.add(this.deepBook.getQuoteQuantityIn(poolKey, targetBaseQuantity, payWithDeep));
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const baseOut = Number(bcs.U64.parse(new Uint8Array(res.results![0].returnValues![0][0])));
+		const quoteIn = Number(bcs.U64.parse(new Uint8Array(res.results![0].returnValues![1][0])));
+		const deepRequired = Number(bcs.U64.parse(new Uint8Array(res.results![0].returnValues![2][0])));
+
+		return {
+			baseOut: Number((baseOut / baseScalar).toFixed(9)),
+			quoteIn: Number((quoteIn / quoteScalar).toFixed(9)),
+			deepRequired: Number((deepRequired / DEEP_SCALAR).toFixed(9)),
+		};
+	}
+
+	/**
+	 * @description Get account order details for a balance manager
+	 * @param {string} poolKey Key of the pool
+	 * @param {string} managerKey Key of the balance manager
+	 * @returns {Promise<Array>} Array of order details
+	 */
+	async getAccountOrderDetails(poolKey: string, managerKey: string) {
+		const tx = new Transaction();
+		tx.add(this.deepBook.getAccountOrderDetails(poolKey, managerKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		try {
+			const orderInformation = res.results![0].returnValues![0][0];
+			return bcs.vector(Order).parse(new Uint8Array(orderInformation));
+		} catch {
+			return [];
+		}
+	}
+
+	/**
+	 * @description Get the DEEP required for an order
+	 * @param {string} poolKey Key of the pool
+	 * @param {number} baseQuantity Base quantity
+	 * @param {number} price Price
+	 * @returns {Promise<{deepRequiredTaker: number, deepRequiredMaker: number}>}
+	 */
+	async getOrderDeepRequired(poolKey: string, baseQuantity: number, price: number) {
+		const tx = new Transaction();
+		tx.add(this.deepBook.getOrderDeepRequired(poolKey, baseQuantity, price));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const deepRequiredTaker = Number(
+			bcs.U64.parse(new Uint8Array(res.results![0].returnValues![0][0])),
+		);
+		const deepRequiredMaker = Number(
+			bcs.U64.parse(new Uint8Array(res.results![0].returnValues![1][0])),
+		);
+
+		return {
+			deepRequiredTaker: Number((deepRequiredTaker / DEEP_SCALAR).toFixed(9)),
+			deepRequiredMaker: Number((deepRequiredMaker / DEEP_SCALAR).toFixed(9)),
+		};
+	}
+
+	/**
+	 * @description Check if account exists for a balance manager
+	 * @param {string} poolKey Key of the pool
+	 * @param {string} managerKey Key of the balance manager
+	 * @returns {Promise<boolean>} Whether account exists
+	 */
+	async accountExists(poolKey: string, managerKey: string): Promise<boolean> {
+		const tx = new Transaction();
+		tx.add(this.deepBook.accountExists(poolKey, managerKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		return bcs.bool().parse(new Uint8Array(bytes));
+	}
+
+	/**
+	 * @description Get the next epoch trade parameters
+	 * @param {string} poolKey Key of the pool
+	 * @returns {Promise<{takerFee: number, makerFee: number, stakeRequired: number}>}
+	 */
+	async poolTradeParamsNext(poolKey: string) {
+		const tx = new Transaction();
+		tx.add(this.deepBook.poolTradeParamsNext(poolKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const takerFee = Number(bcs.U64.parse(new Uint8Array(res.results![0].returnValues![0][0])));
+		const makerFee = Number(bcs.U64.parse(new Uint8Array(res.results![0].returnValues![1][0])));
+		const stakeRequired = Number(
+			bcs.U64.parse(new Uint8Array(res.results![0].returnValues![2][0])),
+		);
+
+		return {
+			takerFee: takerFee / FLOAT_SCALAR,
+			makerFee: makerFee / FLOAT_SCALAR,
+			stakeRequired: stakeRequired / DEEP_SCALAR,
+		};
+	}
+
+	/**
+	 * @description Get the quorum for a pool
+	 * @param {string} poolKey Key of the pool
+	 * @returns {Promise<number>} The quorum amount in DEEP
+	 */
+	async quorum(poolKey: string): Promise<number> {
+		const tx = new Transaction();
+		tx.add(this.deepBook.quorum(poolKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		const quorum = Number(bcs.U64.parse(new Uint8Array(bytes)));
+		return quorum / DEEP_SCALAR;
+	}
+
+	/**
+	 * @description Get the pool ID
+	 * @param {string} poolKey Key of the pool
+	 * @returns {Promise<string>} The pool ID
+	 */
+	async poolId(poolKey: string): Promise<string> {
+		const tx = new Transaction();
+		tx.add(this.deepBook.poolId(poolKey));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		return normalizeSuiAddress(bcs.Address.parse(new Uint8Array(bytes)));
+	}
+
+	/**
+	 * @description Check if a limit order can be placed
+	 * @param {CanPlaceLimitOrderParams} params Parameters for checking limit order placement
+	 * @returns {Promise<boolean>} Whether order can be placed
+	 */
+	async canPlaceLimitOrder(params: CanPlaceLimitOrderParams): Promise<boolean> {
+		const tx = new Transaction();
+		tx.add(this.deepBook.canPlaceLimitOrder(params));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		return bcs.bool().parse(new Uint8Array(bytes));
+	}
+
+	/**
+	 * @description Check if a market order can be placed
+	 * @param {CanPlaceMarketOrderParams} params Parameters for checking market order placement
+	 * @returns {Promise<boolean>} Whether order can be placed
+	 */
+	async canPlaceMarketOrder(params: CanPlaceMarketOrderParams): Promise<boolean> {
+		const tx = new Transaction();
+		tx.add(this.deepBook.canPlaceMarketOrder(params));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		return bcs.bool().parse(new Uint8Array(bytes));
+	}
+
+	/**
+	 * @description Check if market order params are valid
+	 * @param {string} poolKey Key of the pool
+	 * @param {number} quantity Quantity
+	 * @returns {Promise<boolean>} Whether params are valid
+	 */
+	async checkMarketOrderParams(poolKey: string, quantity: number): Promise<boolean> {
+		const tx = new Transaction();
+		tx.add(this.deepBook.checkMarketOrderParams(poolKey, quantity));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		return bcs.bool().parse(new Uint8Array(bytes));
+	}
+
+	/**
+	 * @description Check if limit order params are valid
+	 * @param {string} poolKey Key of the pool
+	 * @param {number} price Price
+	 * @param {number} quantity Quantity
+	 * @param {number} expireTimestamp Expiration timestamp
+	 * @returns {Promise<boolean>} Whether params are valid
+	 */
+	async checkLimitOrderParams(
+		poolKey: string,
+		price: number,
+		quantity: number,
+		expireTimestamp: number,
+	): Promise<boolean> {
+		const tx = new Transaction();
+		tx.add(this.deepBook.checkLimitOrderParams(poolKey, price, quantity, expireTimestamp));
+
+		const res = await this.client.devInspectTransactionBlock({
+			sender: normalizeSuiAddress(this.#address),
+			transactionBlock: tx,
+		});
+
+		const bytes = res.results![0].returnValues![0][0];
+		return bcs.bool().parse(new Uint8Array(bytes));
 	}
 
 	/**
