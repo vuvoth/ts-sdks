@@ -100,7 +100,7 @@ import type {
 	WriteBlobFlowUploadOptions,
 	WalrusOptions,
 } from './types.js';
-import { blobIdToInt, IntentType, SliverData, StorageConfirmation } from './utils/bcs.js';
+import { blobIdToInt, IntentType, StorageConfirmation } from './utils/bcs.js';
 import {
 	encodedBlobLength,
 	getShardIndicesByNodeId,
@@ -363,7 +363,10 @@ export class WalrusClient {
 		}
 
 		const bindings = await this.#wasmBindings();
-		const { blobId, metadata, rootHash } = bindings.computeMetadata(shardCount, bytes);
+		const { blobId, rootHash, unencodedLength, encodingType } = bindings.computeMetadata(
+			shardCount,
+			bytes,
+		);
 		let sha256Hash: Promise<Uint8Array> | undefined;
 		const nonce = crypto.getRandomValues(new Uint8Array(32));
 
@@ -371,12 +374,8 @@ export class WalrusClient {
 			rootHash,
 			blobId,
 			metadata: {
-				encodingType: metadata.V1.encoding_type,
-				hashes: Array.from(metadata.V1.hashes).map((hashes) => ({
-					primaryHash: hashes.primary_hash,
-					secondaryHash: hashes.secondary_hash,
-				})),
-				unencodedLength: metadata.V1.unencoded_length,
+				encodingType,
+				unencodedLength,
 			},
 			nonce,
 			blobDigest: () => {
@@ -1687,14 +1686,17 @@ export class WalrusClient {
 
 		const numShards = systemState.committee.n_shards;
 		const bindings = await this.#wasmBindings();
-		const { blobId, metadata, sliverPairs, rootHash } = bindings.encodeBlob(numShards, blob);
+		const { blobId, metadata, primarySlivers, secondarySlivers, rootHash } = bindings.encodeBlob(
+			numShards,
+			blob,
+		);
 
 		const sliversByNodeMap = new Map<number, SliversForNode>();
 
-		while (sliverPairs.length > 0) {
-			// remove from list so we don't preserve references to the original data
-			const { primary, secondary } = sliverPairs.pop()!;
-			const sliverPairIndex = primary.index;
+		// Process each sliver pair (already BCS-encoded)
+		for (let sliverPairIndex = 0; sliverPairIndex < primarySlivers.length; sliverPairIndex++) {
+			const primarySliver = primarySlivers[sliverPairIndex];
+			const secondarySliver = secondarySlivers[sliverPairIndex];
 
 			const shardIndex = toShardIndex(sliverPairIndex, blobId, numShards);
 			const node = await this.#getNodeByShardIndex(committee, shardIndex);
@@ -1704,17 +1706,17 @@ export class WalrusClient {
 			}
 
 			sliversByNodeMap.get(node.nodeIndex)!.primary.push({
-				sliverIndex: primary.index,
+				sliverIndex: sliverPairIndex,
 				sliverPairIndex,
 				shardIndex,
-				sliver: SliverData.serialize(primary).toBytes(),
+				sliver: primarySliver,
 			});
 
 			sliversByNodeMap.get(node.nodeIndex)!.secondary.push({
-				sliverIndex: secondary.index,
+				sliverIndex: sliverPairIndex,
 				sliverPairIndex,
 				shardIndex,
-				sliver: SliverData.serialize(secondary).toBytes(),
+				sliver: secondarySliver,
 			});
 		}
 
