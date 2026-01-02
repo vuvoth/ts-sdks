@@ -18,6 +18,7 @@ export { MarginMaintainerContract } from './transactions/marginMaintainer.js';
 export { MarginManagerContract } from './transactions/marginManager.js';
 export { MarginPoolContract } from './transactions/marginPool.js';
 export { PoolProxyContract } from './transactions/poolProxy.js';
+export { MarginTPSLContract } from './transactions/marginTPSL.js';
 
 // Pyth price feed integration
 export { SuiPythClient, SuiPriceServiceConnection } from './pyth/pyth.js';
@@ -51,6 +52,13 @@ export type {
 	PoolConfigParams,
 	MarginPoolConfigParams,
 	InterestConfigParams,
+} from './types/index.js';
+
+// TPSL (Take Profit / Stop Loss) parameter interfaces
+export type {
+	PendingLimitOrderParams,
+	PendingMarketOrderParams,
+	AddConditionalOrderParams,
 } from './types/index.js';
 
 // Enums for trading
