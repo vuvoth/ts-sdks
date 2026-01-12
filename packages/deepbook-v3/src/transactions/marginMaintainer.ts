@@ -1,11 +1,18 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Transaction } from '@mysten/sui/transactions';
+import type {
+	Transaction,
+	TransactionArgument,
+	TransactionObjectArgument,
+} from '@mysten/sui/transactions';
 
 import type { DeepBookConfig } from '../utils/config.js';
-import type { TransactionArgument } from '@mysten/sui/transactions';
-import type { MarginPoolConfigParams, InterestConfigParams } from '../types/index.js';
+import type {
+	MarginPoolConfigParams,
+	MarginPoolConfigWithRateLimitParams,
+	InterestConfigParams,
+} from '../types/index.js';
 import { FLOAT_SCALAR } from '../utils/config.js';
 
 /**
@@ -97,6 +104,39 @@ export class MarginMaintainerContract {
 		};
 
 	/**
+	 * @description Create a new margin pool config with rate limit
+	 * @param {string} coinKey The key to identify the coin
+	 * @param {MarginPoolConfigWithRateLimitParams} marginPoolConfig The configuration for the margin pool with rate limit
+	 * @returns A function that takes a Transaction object
+	 */
+	newMarginPoolConfigWithRateLimit =
+		(coinKey: string, marginPoolConfig: MarginPoolConfigWithRateLimitParams) =>
+		(tx: Transaction) => {
+			const coin = this.#config.getCoin(coinKey);
+			const {
+				supplyCap,
+				maxUtilizationRate,
+				referralSpread,
+				minBorrow,
+				rateLimitCapacity,
+				rateLimitRefillRatePerMs,
+				rateLimitEnabled,
+			} = marginPoolConfig;
+			return tx.moveCall({
+				target: `${this.#config.MARGIN_PACKAGE_ID}::protocol_config::new_margin_pool_config_with_rate_limit`,
+				arguments: [
+					tx.pure.u64(supplyCap * coin.scalar),
+					tx.pure.u64(maxUtilizationRate * FLOAT_SCALAR),
+					tx.pure.u64(referralSpread * FLOAT_SCALAR),
+					tx.pure.u64(Math.round(minBorrow * coin.scalar)),
+					tx.pure.u64(Math.round(rateLimitCapacity * coin.scalar)),
+					tx.pure.u64(Math.round(rateLimitRefillRatePerMs * coin.scalar)),
+					tx.pure.bool(rateLimitEnabled),
+				],
+			});
+		};
+
+	/**
 	 * @description Create a new interest config
 	 * @param {InterestConfigParams} interestConfig The configuration for the interest
 	 * @returns A function that takes a Transaction object
@@ -118,11 +158,12 @@ export class MarginMaintainerContract {
 	 * @description Enable a deepbook pool for loan
 	 * @param {string} deepbookPoolKey The key to identify the deepbook pool
 	 * @param {string} coinKey The key to identify the margin pool
-	 * @param {string} marginPoolCap The margin pool cap
+	 * @param {TransactionObjectArgument} marginPoolCap The margin pool cap
 	 * @returns A function that takes a Transaction object
 	 */
 	enableDeepbookPoolForLoan =
-		(deepbookPoolKey: string, coinKey: string, marginPoolCap: string) => (tx: Transaction) => {
+		(deepbookPoolKey: string, coinKey: string, marginPoolCap: TransactionObjectArgument) =>
+		(tx: Transaction) => {
 			const deepbookPool = this.#config.getPool(deepbookPoolKey);
 			const marginPool = this.#config.getMarginPool(coinKey);
 			tx.moveCall({
@@ -142,11 +183,12 @@ export class MarginMaintainerContract {
 	 * @description Disable a deepbook pool for loan
 	 * @param {string} deepbookPoolKey The key to identify the deepbook pool
 	 * @param {string} coinKey The key to identify the margin pool
-	 * @param {string} marginPoolCap The margin pool cap
+	 * @param {TransactionObjectArgument} marginPoolCap The margin pool cap
 	 * @returns A function that takes a Transaction object
 	 */
 	disableDeepbookPoolForLoan =
-		(deepbookPoolKey: string, coinKey: string, marginPoolCap: string) => (tx: Transaction) => {
+		(deepbookPoolKey: string, coinKey: string, marginPoolCap: TransactionObjectArgument) =>
+		(tx: Transaction) => {
 			const deepbookPool = this.#config.getPool(deepbookPoolKey);
 			const marginPool = this.#config.getMarginPool(coinKey);
 			tx.moveCall({
@@ -165,12 +207,16 @@ export class MarginMaintainerContract {
 	/**
 	 * @description Update the interest params
 	 * @param {string} coinKey The key to identify the margin pool
-	 * @param {string} marginPoolCap The margin pool cap
+	 * @param {TransactionObjectArgument} marginPoolCap The margin pool cap
 	 * @param {InterestConfigParams} interestConfig The configuration for the interest
 	 * @returns A function that takes a Transaction object
 	 */
 	updateInterestParams =
-		(coinKey: string, marginPoolCap: string, interestConfig: InterestConfigParams) =>
+		(
+			coinKey: string,
+			marginPoolCap: TransactionObjectArgument,
+			interestConfig: InterestConfigParams,
+		) =>
 		(tx: Transaction) => {
 			const marginPool = this.#config.getMarginPool(coinKey);
 			const interestConfigObject = this.newInterestConfig(interestConfig)(tx);
@@ -190,12 +236,16 @@ export class MarginMaintainerContract {
 	/**
 	 * @description Update the margin pool config
 	 * @param {string} coinKey The key to identify the margin pool
-	 * @param {string} marginPoolCap The margin pool cap
+	 * @param {TransactionObjectArgument} marginPoolCap The margin pool cap
 	 * @param {MarginPoolConfigParams} marginPoolConfig The configuration for the margin pool
 	 * @returns A function that takes a Transaction object
 	 */
 	updateMarginPoolConfig =
-		(coinKey: string, marginPoolCap: string, marginPoolConfig: MarginPoolConfigParams) =>
+		(
+			coinKey: string,
+			marginPoolCap: TransactionObjectArgument,
+			marginPoolConfig: MarginPoolConfigParams,
+		) =>
 		(tx: Transaction) => {
 			const marginPool = this.#config.getMarginPool(coinKey);
 			const marginPoolConfigObject = this.newMarginPoolConfig(coinKey, marginPoolConfig)(tx);
