@@ -11,6 +11,7 @@ import type { HexString } from './PriceServiceConnection.js';
 import { PriceServiceConnection } from './PriceServiceConnection.js';
 import { extractVaaBytesFromAccumulatorMessage } from './pyth-helpers.js';
 import { State as PythState } from '../contracts/pyth/state.js';
+import { State as WormholeState } from '../contracts/wormhole/state.js';
 
 const MAX_ARGUMENT_SIZE = 16 * 1024;
 export type ObjectId = string;
@@ -195,28 +196,27 @@ export class SuiPythClient {
 	 * @returns Price table object ID and field type
 	 */
 	async #fetchPriceTableInfo(): Promise<{ id: ObjectId; fieldType: ObjectId }> {
-		const nameBytes = bcs.string().serialize('price_info').toBytes();
-
-		const result = await this.provider.core.getDynamicField({
+		const result = await this.provider.core.getDynamicObjectField({
 			parentId: this.pythStateId,
 			name: {
 				type: 'vector<u8>',
-				bcs: nameBytes,
+				bcs: bcs.string().serialize('price_info').toBytes(),
 			},
 		});
 
-		if (!result.dynamicField || !result.dynamicField.type) {
+		if (!result.object) {
 			throw new Error('Price Table not found, contract may not be initialized');
 		}
 
-		const priceIdentifier = parseStructTag(result.dynamicField.type).typeParams[0];
+		const tableType = parseStructTag(result.object.type);
+		const priceIdentifier = tableType.typeParams[0];
 		if (
 			typeof priceIdentifier === 'object' &&
 			priceIdentifier !== null &&
 			priceIdentifier.name === 'PriceIdentifier' &&
 			'address' in priceIdentifier
 		) {
-			return { id: result.dynamicField.fieldId, fieldType: priceIdentifier.address };
+			return { id: result.object.objectId, fieldType: priceIdentifier.address };
 		} else {
 			throw new Error('fieldType not found');
 		}
@@ -235,7 +235,17 @@ export class SuiPythClient {
 	 * Fetches the package ID for the Wormhole contract (no caching).
 	 */
 	async #fetchWormholePackageId(): Promise<ObjectId> {
-		return await this.#getPackageId(this.wormholeStateId);
+		const result = await this.provider.core.getObject({
+			objectId: this.wormholeStateId,
+			include: { content: true },
+		});
+
+		if (!result.object?.content) {
+			throw new Error('Unable to fetch Wormhole state object');
+		}
+
+		const state = WormholeState.parse(result.object.content);
+		return state.upgrade_cap.package;
 	}
 
 	/**
@@ -252,28 +262,20 @@ export class SuiPythClient {
 	 * Fetches the package ID for the Pyth contract (no caching).
 	 */
 	async #fetchPythPackageId(): Promise<ObjectId> {
-		return await this.#getPackageId(this.pythStateId);
-	}
-
-	/**
-	 * Fetches the package ID for a given object.
-	 *
-	 * @param objectId Object ID to fetch the package ID for.
-	 */
-	async #getPackageId(objectId: ObjectId): Promise<ObjectId> {
 		const result = await this.provider.core.getObject({
-			objectId: objectId,
+			objectId: this.pythStateId,
 			include: { content: true },
 		});
 
 		if (!result.object?.content) {
-			throw new Error(`Cannot fetch package ID for object ${objectId}`);
+			throw new Error(`Cannot fetch Pyth package ID for object ${this.pythStateId}`);
 		}
 
 		// Parse the BCS content to get the upgrade_cap.package field
 		const state = PythState.parse(result.object.content);
 		return state.upgrade_cap.package;
 	}
+
 	/**
 	 * Gets the base update fee from the Pyth state object.
 	 */
